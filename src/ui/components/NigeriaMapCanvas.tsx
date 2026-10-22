@@ -1,345 +1,311 @@
-import React, { useState, useRef } from 'react';
-import { GameState } from '../../engine/types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import NigeriaMapData from '@svg-maps/nigeria';
+import { GameState, FlightEvent, StateNode } from '../../engine/types';
+import { getStateCentroid } from '../../engine/data/mapGeometry';
+import { toDataId } from '../../engine/data/mapIds';
+import { AIRPORT_HUBS } from '../../engine/data/zones';
+import { BALANCE } from '../../engine/balance';
+import { seedSparkId } from '../../engine/actions';
 import { SparkBubble } from './SparkBubble';
+import { SpinBubble } from './SpinBubble';
+import { ShatterBurst } from './common';
 
 interface MapCanvasProps {
   gameState: GameState;
-  onStateTap: (stateId: string) => void;
-  onSparkTap: (sparkId: string, amount: number) => void;
-  plantSeed?: (stateId: string) => void;
+  ticking: boolean;
+  onStateTap: (stateId: string | null) => void;
+  onSparkTap: (sparkId: string) => void;
+  onSpinTap: (spinId: string) => void;
 }
 
-// Helper to generate a scattered grid of dots over a specific area
-const generateDotGrid = (bbox: { x: number; y: number; w: number; h: number }, _density: number) => {
-  const dots: { x: number; y: number }[] = [];
-  const spacing = 8; // Distance between dots
-  for (let px = bbox.x; px < bbox.x + bbox.w; px += spacing) {
-    for (let py = bbox.y; py < bbox.y + bbox.h; py += spacing) {
-      // Add slight random jitter so it looks like ink, not a perfect grid
-      const jitterX = (Math.random() - 0.5) * 4;
-      const jitterY = (Math.random() - 0.5) * 4;
-      dots.push({ x: px + jitterX, y: py + jitterY });
-    }
-  }
-  // Shuffle array for random reveal order
-  return dots.sort(() => Math.random() - 0.5);
+const SHATTER_MS = 400;
+const FLIGHT_MS = 1500;
+const DRAG_THRESHOLD = 6;
+
+// ---- colour helpers ----
+const hexToRgb = (hex: string): [number, number, number] => {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const lerpColor = (a: string, b: string, t: number): string => {
+  const k = Math.max(0, Math.min(1, t));
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  const c = (x: number, y: number) => Math.round(x + (y - x) * k).toString(16).padStart(2, '0');
+  return `#${c(ar, br)}${c(ag, bg)}${c(ab, bb)}`;
 };
 
-// The wrapper for SVG Paths with dynamic dot density masking
-const StatePathRenderer: React.FC<{ 
-  stateId: string; 
-  pathData: string; 
-  bbox: { x: number; y: number; w: number; h: number };
-  gameState: GameState; 
-  isSelected: boolean;
-  onClick: () => void;
-}> = ({ stateId, pathData, bbox, gameState, isSelected, onClick }) => {
-  const id = stateId.toLowerCase().replace(/[^a-z]/g, '');
-  const entry = Object.entries(gameState.states).find(([k]) => {
-    const normK = k.toLowerCase().replace(/[^a-z]/g, '');
-    return normK === id || normK.startsWith(id.slice(0, 3)) || id.startsWith(normK.slice(0, 3));
-  });
-  const s = entry ? entry[1] : gameState.states[stateId];
-  const heardPct = s && s.population ? s.heard / s.population : 0;
-  const believersPct = s && s.population ? s.believers / s.population : 0;
+// Spec §4A choropleth: heard tints pale amber -> warm orange, believers tint light crimson -> blood red at 60%.
+export const stateFill = (s: StateNode | undefined): string => {
+  if (!s || (s.heard === 0 && s.believers === 0)) return '#F4F1EA';
+  const heardPct = s.heard / s.population;
+  const believerPct = s.believers / s.population;
+  const heardColor = lerpColor('#FEF3C7', '#F59E0B', heardPct / 0.5);
+  if (believerPct <= 0) return heardColor;
+  const believerColor = lerpColor('#FECACA', '#991B1B', believerPct / 0.6);
+  const weight = believerPct / (believerPct + heardPct + 1e-9);
+  return lerpColor(heardColor, believerColor, weight * 1.4);
+};
 
-  // Generate dots once per state based on its bounding box
-  const dots = React.useMemo(() => generateDotGrid(bbox, 100), [bbox.x, bbox.y, bbox.w, bbox.h]);
-  const isStartingState = gameState.startingStateId === stateId;
-
+const FlightArc: React.FC<{ from: { x: number; y: number }; to: { x: number; y: number } }> = ({ from, to }) => {
+  const mx = (from.x + to.x) / 2;
+  const my = (from.y + to.y) / 2;
+  const dist = Math.hypot(to.x - from.x, to.y - from.y);
+  const d = `M ${from.x} ${from.y} Q ${mx} ${my - dist * 0.35} ${to.x} ${to.y}`;
+  const dur = `${FLIGHT_MS / 1000}s`;
   return (
-    <g onClick={onClick} className="cursor-pointer group">
-      {/* 1. Define the clipping mask using the state's exact border */}
-      <defs>
-        <clipPath id={`clip-${stateId}`}>
-          <path d={pathData} />
-        </clipPath>
-      </defs>
-
-      {/* 2. Base Paper Background */}
-      <path 
-        d={pathData} 
-        fill={isStartingState ? "#FEF3C7" : "#F4F1EA"} 
-        stroke={isStartingState ? "#B45309" : "#1A1A1A"} 
-        strokeWidth={isStartingState ? "2" : "1"} 
-        className={`transition-all ${isStartingState ? 'animate-pulse' : 'group-hover:stroke-2'}`} 
-      />
-      
-      {/* 3. The Dots (Clipped strictly inside the state border) */}
-      <g clipPath={`url(#clip-${stateId})`}>
-        {dots.map((dot, i) => {
-          const threshold = i / dots.length;
-          let fill = "transparent";
-          let scale = 0;
-
-          // Reveal red dots for believers, amber for heard
-          if (threshold < believersPct) {
-            fill = "#D9381E"; // Red
-            scale = 1;
-          } else if (threshold < heardPct) {
-            fill = "#D97706"; // Amber
-            scale = 1;
-          }
-
-          return (
-            <circle 
-              key={i} 
-              cx={dot.x} 
-              cy={dot.y} 
-              r="1.5" 
-              fill={fill} 
-              className="transition-all duration-500"
-              style={{ transform: `scale(${scale})`, transformOrigin: `${dot.x}px ${dot.y}px` }}
-            />
-          );
-        })}
+    <g pointerEvents="none">
+      <path d={d} fill="none" stroke="#8B0000" strokeWidth="2" strokeDasharray="6 5" strokeLinecap="round" style={{ animation: 'flight-dash 0.6s linear infinite' }}>
+        <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur={`${(FLIGHT_MS + 200) / 1000}s`} fill="freeze" />
+      </path>
+      <g>
+        <path d="M -5 -5 L 9 0 L -5 5 L -2 0 Z" fill="#8B0000" stroke="#F4F1EA" strokeWidth="0.8" />
+        <animateMotion dur={dur} path={d} rotate="auto" fill="freeze" />
+        <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.92;1" dur={dur} fill="freeze" />
       </g>
     </g>
   );
 };
 
-// Exact Bounding Boxes for all Nigerian states in @svg-maps/nigeria (viewBox: "0 0 744 600")
-const STATE_BBOXES: Record<string, { x: number; y: number; w: number; h: number }> = {
-  abia: { x: 277, y: 491, w: 52, h: 75 },
-  adamawa: { x: 540, y: 185, w: 143, h: 219 },
-  'akwa-ibom': { x: 297, y: 522, w: 55, h: 66 },
-  anambra: { x: 244, y: 444, w: 48, h: 68 },
-  bauchi: { x: 373, y: 87, w: 149, h: 189 },
-  benue: { x: 298, y: 360, w: 152, h: 106 },
-  borno: { x: 555, y: 11, w: 189, h: 232 },
-  bayelsa: { x: 167, y: 530, w: 85, h: 70 },
-  'cross-river': { x: 322, y: 437, w: 100, h: 137 },
-  delta: { x: 144, y: 460, w: 110, h: 94 },
-  ebonyi: { x: 301, y: 443, w: 57, h: 70 },
-  edo: { x: 143, y: 395, w: 107, h: 115 },
-  ekiti: { x: 138, y: 364, w: 57, h: 51 },
-  enugu: { x: 262, y: 424, w: 61, h: 74 },
-  fct: { x: 252, y: 284, w: 56, h: 60 },
-  gombe: { x: 487, y: 161, w: 88, h: 110 },
-  imo: { x: 245, y: 497, w: 49, h: 47 },
-  jigawa: { x: 337, y: 56, w: 155, h: 131 },
-  kaduna: { x: 212, y: 150, w: 168, h: 157 },
-  kebbi: { x: 51, y: 41, w: 158, h: 198 },
-  kano: { x: 311, y: 82, w: 104, h: 129 },
-  kogi: { x: 166, y: 323, w: 158, h: 138 },
-  katsina: { x: 260, y: 34, w: 131, h: 141 },
-  kwara: { x: 4, y: 235, w: 216, h: 137 },
-  lagos: { x: 2, y: 449, w: 103, h: 21 },
-  nassarawa: { x: 264, y: 284, w: 167, h: 100 },
-  niger: { x: 57, y: 160, w: 233, h: 197 },
-  ogun: { x: 0, y: 370, w: 120, h: 104 },
-  ondo: { x: 104, y: 383, w: 105, h: 119 },
-  osun: { x: 84, y: 363, w: 65, h: 71 },
-  oyo: { x: 0, y: 295, w: 118, h: 134 },
-  plateau: { x: 364, y: 223, w: 131, h: 125 },
-  rivers: { x: 230, y: 510, w: 75, h: 85 },
-  sokoto: { x: 90, y: 0, w: 165, h: 149 },
-  taraba: { x: 399, y: 269, w: 178, h: 193 },
-  yobe: { x: 434, y: 32, w: 175, h: 176 },
-  zamfara: { x: 146, y: 44, w: 138, h: 147 }
-};
-
-function getStateBBox(stateId: string): { x: number; y: number; w: number; h: number } {
-  const norm = stateId.toLowerCase().replace(/[^a-z]/g, '');
-  const entry = Object.entries(STATE_BBOXES).find(([k]) => {
-    const kNorm = k.toLowerCase().replace(/[^a-z]/g, '');
-    return kNorm === norm || kNorm.startsWith(norm.slice(0, 3)) || norm.startsWith(kNorm.slice(0, 3));
-  });
-  return entry ? entry[1] : { x: 0, y: 0, w: 744, h: 600 };
-}
-
-// Centroids for spark positioning in @svg-maps/nigeria (viewBox: "0 0 744 600")
-const STATE_CENTROIDS: Record<string, { x: number; y: number }> = {
-  abia: { x: 303, y: 529 },
-  adamawa: { x: 612, y: 295 },
-  'akwa-ibom': { x: 324, y: 555 },
-  anambra: { x: 268, y: 478 },
-  bauchi: { x: 447, y: 182 },
-  benue: { x: 374, y: 413 },
-  borno: { x: 650, y: 127 },
-  bayelsa: { x: 210, y: 565 },
-  'cross-river': { x: 372, y: 506 },
-  delta: { x: 199, y: 507 },
-  ebonyi: { x: 329, y: 478 },
-  edo: { x: 197, y: 452 },
-  ekiti: { x: 167, y: 389 },
-  enugu: { x: 292, y: 461 },
-  fct: { x: 280, y: 314 },
-  gombe: { x: 531, y: 216 },
-  imo: { x: 269, y: 521 },
-  jigawa: { x: 415, y: 121 },
-  kaduna: { x: 296, y: 229 },
-  kebbi: { x: 130, y: 140 },
-  kano: { x: 363, y: 147 },
-  kogi: { x: 245, y: 392 },
-  katsina: { x: 326, y: 105 },
-  kwara: { x: 112, y: 303 },
-  lagos: { x: 54, y: 460 },
-  nassarawa: { x: 348, y: 334 },
-  niger: { x: 173, y: 259 },
-  ogun: { x: 60, y: 422 },
-  ondo: { x: 157, y: 443 },
-  osun: { x: 117, y: 398 },
-  oyo: { x: 59, y: 362 },
-  plateau: { x: 429, y: 285 },
-  rivers: { x: 268, y: 553 },
-  sokoto: { x: 173, y: 74 },
-  taraba: { x: 488, y: 366 },
-  yobe: { x: 521, y: 120 },
-  zamfara: { x: 215, y: 118 }
-};
-
-function getStateCentroid(stateId: string): { x: number; y: number } {
-  const norm = stateId.toLowerCase().replace(/[^a-z]/g, '');
-  const entry = Object.entries(STATE_CENTROIDS).find(([k]) => {
-    const kNorm = k.toLowerCase().replace(/[^a-z]/g, '');
-    return kNorm === norm || kNorm.startsWith(norm.slice(0, 3)) || norm.startsWith(kNorm.slice(0, 3));
-  });
-  return entry ? entry[1] : { x: 372, y: 300 };
-}
-
-export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ 
-  gameState, 
-  onStateTap, 
-  onSparkTap,
-  plantSeed
-}) => {
+export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking, onStateTap, onSparkTap, onSpinTap }) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const startPan = useRef({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const moved = useRef(false);
+  const origin = useRef({ px: 0, py: 0, tx: 0, ty: 0 });
 
-  // Basic Pan Handlers
+  // Bubbles mid-shatter: the seed spark (deferred collect) and ghosts for already-collected sparks.
+  const [seedShattering, setSeedShattering] = useState(false);
+  const [ghosts, setGhosts] = useState<{ key: string; x: number; y: number; animating: boolean }[]>([]);
+
+  // Flight arcs and border pulses are driven by transient events from the last tick.
+  const seenFlights = useRef<Set<string>>(new Set());
+  const [arcs, setArcs] = useState<FlightEvent[]>([]);
+  const [pulsing, setPulsing] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fresh = gameState.flightEvents.filter(f => !seenFlights.current.has(f.id));
+    if (fresh.length === 0) return;
+    fresh.forEach(f => seenFlights.current.add(f.id));
+    setArcs(prev => [...prev, ...fresh]);
+    const timer = setTimeout(() => setArcs(prev => prev.filter(a => !fresh.some(f => f.id === a.id))), FLIGHT_MS + 300);
+    return () => clearTimeout(timer);
+  }, [gameState.flightEvents]);
+
+  const newlyInfectedKey = gameState.newlyInfectedIds.join(',');
+  useEffect(() => {
+    if (!newlyInfectedKey) return;
+    setPulsing(newlyInfectedKey.split(','));
+    const timer = setTimeout(() => setPulsing([]), 2000);
+    return () => clearTimeout(timer);
+  }, [newlyInfectedKey, gameState.currentDay]);
+
+  useEffect(() => {
+    if (!gameState.hasPlantedSeed || gameState.hasPoppedFirstSpark) setSeedShattering(false);
+  }, [gameState.hasPlantedSeed, gameState.hasPoppedFirstSpark]);
+
+  // ---- pan / zoom ----
   const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = true;
-    startPan.current = { x: e.clientX - transform.x, y: e.clientY - transform.y };
+    dragging.current = true;
+    moved.current = false;
+    origin.current = { px: e.clientX, py: e.clientY, tx: transform.x, ty: transform.y };
   };
-
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging.current) return;
-    setTransform(prev => ({
-      ...prev,
-      x: e.clientX - startPan.current.x,
-      y: e.clientY - startPan.current.y
-    }));
+    if (!dragging.current) return;
+    const dx = e.clientX - origin.current.px;
+    const dy = e.clientY - origin.current.py;
+    if (!moved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    moved.current = true;
+    setTransform(prev => ({ ...prev, x: origin.current.tx + dx, y: origin.current.ty + dy }));
   };
-
-  const handlePointerUp = () => { isDragging.current = false; };
-
+  const handlePointerUp = () => { dragging.current = false; };
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomSensitivity = 0.001;
-    setTransform(prev => ({
-      ...prev,
-      scale: Math.min(Math.max(0.5, prev.scale - e.deltaY * zoomSensitivity), 3)
-    }));
+    setTransform(prev => ({ ...prev, scale: Math.min(Math.max(0.6, prev.scale - e.deltaY * 0.001), 3) }));
   };
+
+  const tapSpark = (sparkId: string, x: number, y: number) => {
+    const isSeed = !gameState.hasPoppedFirstSpark && gameState.startingStateId !== null && sparkId === seedSparkId(gameState.startingStateId);
+    if (isSeed) {
+      // Spec §3.5: 400ms shatter first, then bank +15 and pop the Ground Zero alert.
+      setSeedShattering(true);
+      setTimeout(() => onSparkTap(sparkId), SHATTER_MS);
+      return;
+    }
+    const key = `${sparkId}_${Date.now()}`;
+    setGhosts(g => [...g, { key, x, y, animating: false }]);
+    requestAnimationFrame(() => setGhosts(g => g.map(gh => (gh.key === key ? { ...gh, animating: true } : gh))));
+    setTimeout(() => setGhosts(g => g.filter(gh => gh.key !== key)), SHATTER_MS);
+    onSparkTap(sparkId);
+  };
+
+  const locations = useMemo(() => NigeriaMapData?.locations ?? [], []);
+  const selectedId = gameState.selectedStateId;
+
+  // Render the selected / starting state last so its border is never covered by a neighbour.
+  const ordered = useMemo(() => {
+    return [...locations].sort((a, b) => {
+      const rank = (id: string) => (toDataId(id) === selectedId ? 2 : toDataId(id) === gameState.startingStateId ? 1 : 0);
+      return rank(a.id) - rank(b.id);
+    });
+  }, [locations, selectedId, gameState.startingStateId]);
+
+  const earlyPulse = gameState.currentDay <= 3 || !gameState.hasPoppedFirstSpark;
 
   return (
-    <div 
-      className="w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center bg-[#EADCC8]"
-      ref={mapRef}
+    <div
+      className="w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center bg-[#EADCC8] touch-none"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onWheel={handleWheel}
+      onClick={() => { if (!moved.current) onStateTap(null); }}
     >
-      <div 
-        className="w-full h-full absolute flex items-center justify-center transition-transform duration-75"
+      <div
+        className="w-full h-full absolute flex items-center justify-center"
         style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})` }}
       >
-        {/* SVG MAP OF NIGERIA */}
-        <svg 
-          viewBox={NigeriaMapData?.viewBox || "0 0 744 600"} 
-          className="w-[90%] h-[90%] max-w-[620px] max-h-[500px] drop-shadow-md select-none overflow-visible"
-        >
+        <svg viewBox={NigeriaMapData?.viewBox || '0 0 744 600'} className="w-[94%] h-[94%] max-w-[640px] max-h-[520px] drop-shadow-md select-none overflow-visible">
+          <defs>
+            <pattern id="jadedHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" strokeWidth="1.8" />
+            </pattern>
+            <pattern id="halftone" width="5" height="5" patternUnits="userSpaceOnUse">
+              <circle cx="2.5" cy="2.5" r="0.9" fill="#8B0000" />
+            </pattern>
+          </defs>
+
+          {/* STATES */}
           <g>
-            {NigeriaMapData?.locations?.map(location => {
-              const isSelected = selectedStateId === location.id || gameState.startingStateId === location.id;
-              const bbox = getStateBBox(location.id);
+            {ordered.map(location => {
+              const dataId = toDataId(location.id);
+              const s = gameState.states[dataId];
+              const isStart = gameState.startingStateId === dataId;
+              const isSelected = selectedId === dataId;
+              const isPulsing = pulsing.includes(dataId);
+              const infected = !!s && (s.heard > 0 || s.believers > 0);
+              const jadedRatio = s && s.population ? s.jaded / s.population : 0;
+              const awareness = s && s.population ? (s.heard + s.believers) / s.population : 0;
+
+              let stroke = '#1A1A1A';
+              let strokeWidth = 1;
+              if (isStart) { stroke = '#B45309'; strokeWidth = 2.5; }
+              if (isSelected) { strokeWidth = 3; if (!isStart) stroke = '#1A1A1A'; }
+              if (isPulsing) { stroke = '#F59E0B'; strokeWidth = 3; }
 
               return (
-                <StatePathRenderer
+                <g
                   key={location.id}
-                  stateId={location.id}
-                  pathData={location.path}
-                  bbox={bbox}
-                  gameState={gameState}
-                  isSelected={isSelected}
-                  onClick={() => {
-                    const stateId = location.id;
-                    setSelectedStateId(stateId);
-                    if (!gameState.hasPlantedSeed) {
-                      if (plantSeed) {
-                        plantSeed(stateId);
-                      } else {
-                        onStateTap(stateId);
-                      }
-                    } else {
-                      onStateTap(stateId);
-                    }
+                  className="cursor-pointer"
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (moved.current) return;
+                    onStateTap(dataId);
                   }}
-                />
+                >
+                  <path
+                    d={location.path}
+                    fill={isStart && !gameState.hasPoppedFirstSpark ? '#FEF3C7' : stateFill(s)}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    strokeLinejoin="round"
+                    className={`transition-colors duration-500 ${isStart && earlyPulse ? 'animate-pulse' : ''} ${isPulsing ? 'animate-border-pulse' : ''}`}
+                  />
+                  {infected && (
+                    <path d={location.path} fill="url(#halftone)" opacity={Math.min(0.4, 0.08 + awareness * 0.5)} pointerEvents="none" />
+                  )}
+                  {jadedRatio > 0.25 && (
+                    <path d={location.path} fill="url(#jadedHatch)" opacity="0.55" pointerEvents="none" />
+                  )}
+                </g>
               );
             })}
           </g>
 
-          {/* DYNAMIC SPARK BUBBLES PINNED IN SVG SPACE */}
-          {gameState.hasPlantedSeed && (gameState.activeSparks || []).map(spark => {
-            const centroid = getStateCentroid(spark.stateId);
-            const posX = centroid.x + (spark.offsetX || 0);
-            const posY = centroid.y + (spark.offsetY || 0);
-
+          {/* AIRPORT HUB MARKERS */}
+          {AIRPORT_HUBS.map(id => {
+            const c = getStateCentroid(id);
             return (
-              <foreignObject
-                key={spark.id}
-                x={posX - 20}
-                y={posY - 20}
-                width={40}
-                height={40}
-                className="overflow-visible"
-                style={{ overflow: 'visible' }}
-              >
-                <div className="w-full h-full relative flex items-center justify-center">
+              <text key={`hub_${id}`} x={c.x} y={c.y + 4} fontSize="11" textAnchor="middle" fill="#1A1A1A" opacity="0.55" pointerEvents="none">
+                ✈
+              </text>
+            );
+          })}
+
+          {/* FLIGHT ARCS */}
+          {arcs.map(a => (
+            <FlightArc key={a.id} from={getStateCentroid(a.from)} to={getStateCentroid(a.to)} />
+          ))}
+
+          {/* SPARK BUBBLES */}
+          {gameState.hasPlantedSeed && gameState.activeSparks.map(spark => {
+            const c = getStateCentroid(spark.stateId);
+            const x = c.x + spark.offsetX;
+            const y = c.y + spark.offsetY;
+            const isSeed = gameState.startingStateId !== null && spark.id === seedSparkId(gameState.startingStateId) && !gameState.hasPoppedFirstSpark;
+            return (
+              <foreignObject key={spark.id} x={x - 20} y={y - 20} width={40} height={40} style={{ overflow: 'visible' }}>
+                <div onClick={e => e.stopPropagation()}>
                   <SparkBubble
-                    id={spark.id}
                     amount={spark.amount}
-                    x={20}
-                    y={20}
-                    onCollect={onSparkTap}
+                    urgent={spark.ticksRemaining <= 1}
+                    shattering={isSeed && seedShattering}
+                    onTap={() => tapSpark(spark.id, x, y)}
                   />
                 </div>
               </foreignObject>
             );
           })}
+
+          {/* SPIN BUBBLES */}
+          {gameState.activeSpinBubbles.map(spin => {
+            const c = getStateCentroid(spin.stateId);
+            return (
+              <foreignObject key={spin.id} x={c.x + spin.offsetX - 22} y={c.y + spin.offsetY - 22} width={44} height={44} style={{ overflow: 'visible' }}>
+                <div onClick={e => e.stopPropagation()}>
+                  <SpinBubble
+                    ticksRemaining={spin.ticksRemaining}
+                    lifetime={BALANCE.spinLifetimeTicks}
+                    paused={!ticking}
+                    onTap={() => onSpinTap(spin.id)}
+                  />
+                </div>
+              </foreignObject>
+            );
+          })}
+
+          {/* SHATTER GHOSTS for sparks that were just banked */}
+          {ghosts.map(g => (
+            <foreignObject key={g.key} x={g.x - 20} y={g.y - 20} width={40} height={40} style={{ overflow: 'visible' }} pointerEvents="none">
+              <div className="relative w-10 h-10">
+                <ShatterBurst animating={g.animating} />
+              </div>
+            </foreignObject>
+          ))}
         </svg>
       </div>
-      
+
       {/* ZOOM & RESET CONTROLS */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-        <button 
-          onClick={() => setTransform(p => ({ ...p, scale: Math.min(3, p.scale + 0.4) }))} 
+      <div className="absolute top-3 right-3 flex flex-col gap-2 z-20" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+        <button
+          onClick={() => setTransform(p => ({ ...p, scale: Math.min(3, p.scale + 0.4) }))}
           className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
-          title="Zoom In"
+          aria-label="Zoom in"
         >
           +
         </button>
-        <button 
-          onClick={() => setTransform(p => ({ ...p, scale: Math.max(0.6, p.scale - 0.4) }))} 
+        <button
+          onClick={() => setTransform(p => ({ ...p, scale: Math.max(0.6, p.scale - 0.4) }))}
           className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
-          title="Zoom Out"
+          aria-label="Zoom out"
         >
           -
         </button>
-        <button 
-          onClick={() => setTransform({ x: 0, y: 0, scale: 1 })} 
-          className="w-10 h-10 bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_rgba(0,0,0,0.3)] rounded-lg font-black text-xs flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
-          title="Reset View"
+        <button
+          onClick={() => setTransform({ x: 0, y: 0, scale: 1 })}
+          className="w-10 h-10 bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_rgba(0,0,0,0.3)] rounded-lg font-black text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+          aria-label="Reset view"
         >
-          ▣
+          ■
         </button>
       </div>
     </div>

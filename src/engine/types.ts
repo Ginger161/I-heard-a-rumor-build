@@ -1,82 +1,69 @@
+import type { ScandalCategory } from './data/channels';
+import type { TargetId } from './data/targets';
+
 // --- GLOBAL STATE ---
-export type ModalState = 'NONE' | 'LOBBY_DOSSIER' | 'PAST_LOG' | 'CHANNELS_DESK' | 'EVIDENCE_DESK' | 'COUNTER_OPS_DESK' | 'BREAKING_NEWS' | 'VERDICT' | 'BELIEVERS_INFO' | 'HEAT_INFO';
+export type ModalState =
+  | 'NONE'
+  | 'CHANNELS_DESK'
+  | 'EVIDENCE_DESK'
+  | 'COUNTER_OPS_DESK'
+  | 'PAUSE_MENU'
+  | 'HISTORY_LOG'
+  | 'BELIEVERS_INFO'
+  | 'HEAT_INFO';
 
-export type GameStatus = 'LOBBY' | 'PLAYING' | 'VICTORY' | 'DEFEAT_HEAT' | 'DEFEAT_TIME';
+export type GameStatus = 'LOBBY' | 'PLAYING' | 'WON' | 'LOST_HEAT' | 'LOST_TIME';
 
-export type AlertArchetype = 
-  | 'STREET_WHISPER'    // Torn notebook scrap / Napkin (Seed pop, Regional sweep)
-  | 'VIRAL_RECEIPT'     // Social media / WhatsApp card (Social/Street channels, Evidence, Backfire)
-  | 'BREAKING_FRONT'    // Tabloid newspaper clipping (Press/Elite channels, Critical mass, Clock warnings, Endgame)
-  | 'TARGET_PR'         // Official letterhead / Legal threat (Doubt stagnation, Target counter-moves)
-  | 'SECURITY_WIRE'     // Red carbon-copy DSS dossier (Heat thresholds, Defense upgrades)
-  | 'INFORMANT_TIP';    // Manila folder / Redacted note (Investigation unlocks)
+export type AlertArchetype =
+  | 'STREET_WHISPER'    // Torn notebook scrap (Seed pop, Power Hub Breach, Regional Sweep)
+  | 'VIRAL_RECEIPT'     // WhatsApp / blog cutout (Street/Social channels, successful forgery)
+  | 'BREAKING_FRONT'    // Newspaper front page (Press/Elite channels, genuine evidence, critical mass, clock)
+  | 'TARGET_PR'         // Official letterhead (Doubt stagnation, counter-offensives, forensic backfire)
+  | 'SECURITY_WIRE'     // Carbon-copy DSS telex (Heat thresholds, Defense purchases)
+  | 'INFORMANT_TIP';    // Manila envelope (Investigation tiers)
 
 export type DemographicTag = 'GRASSROOTS' | 'HYPER_ONLINE' | 'ELITE_HUB';
 
 export interface SpinBubbleData {
   id: string;
   stateId: string;
-  doubtPenalty: number; // How much Doubt spikes if ignored (e.g., +15%)
+  doubtPenalty: number;  // Doubt added to the host state if it detonates (e.g. 15)
   offsetX: number;
   offsetY: number;
-  ticksRemaining: number; // Explodes when it hits 0
+  ticksRemaining: number; // Detonates when it hits 0
+}
+
+export interface SparkBubble {
+  id: string;
+  stateId: string;
+  amount: number;
+  offsetX: number; // pixel offset from state center
+  offsetY: number;
+  ticksRemaining: number; // Sparks expire after a set number of ticks
+}
+
+// Transient map events produced by a tick and consumed by the map canvas. Never persisted.
+export interface FlightEvent {
+  id: string;
+  from: string;
+  to: string;
 }
 
 export interface GameAlert {
   id: string;
   archetype: AlertArchetype;
-  stampText: string;       // e.g., "BREAKING NEWS", "CONFIDENTIAL // DSS", "WHATSAPP FORWARD"
+  stampText: string;
   headline: string;
   body: string;
-  subtext?: string;        // e.g., "-15% Doubt | +10% Heat" or source attribution
+  subtext?: string;
   buttonText: string;
-  priority: number;        // 100 = Immediate Player Action, 90 = Endgame, 80 = Security/Heat, 60 = Target/Map, 40 = Clock/Tip
+  priority: number; // 100 = player action, 90 = endgame, 80 = security, 60 = target/map, 40 = clock/tip
 }
 
-export interface GameState {
-  status: GameStatus;
-  isPaused: boolean;
-  activeModal: ModalState;
-  hasPlantedSeed: boolean;
-  hasPoppedFirstSpark: boolean; // Engine stays frozen until this is true
-  startingStateId: string | null; // To highlight the chosen state
-  
-  // Progression
-  tier: 'NOVICE' | 'REGIONAL' | 'HEAVYWEIGHT' | 'ELITE' | 'APEX';
-  targetsDefeated: string[];
-  
-  // Active Match Data (Only valid if status === 'PLAYING')
-  matchId: string | null;
-  activeTargetId: string | null;
-  activeStoryId: string | null;
-  
-  currentDay: number;
-  dayBudget: number;
-  sparks: number;
-  heat: number; // 0 to 100
-  investigationProgress: number; // 0 to 100 (Unlocks Endgame Evidence)
-  endgameShotFired: boolean;
-  
-  // Plague Inc. Style Nodes
-  states: Record<string, StateNode>;
-  
-  // Interrupts & AI Director
-  lastInterruptDay: number;
-  scramble: ScrambleState;
-  pastHistoryLog: HistoryLogEntry[];
-  
-  // Upgrades Acquired
-  unlockedChannels: string[];
-  droppedEvidence: string[];
-  activeCounterOps: string[];
-
-  // Dynamic board entities
-  activeSparks: SparkBubble[];
-  activeSpinBubbles: SpinBubbleData[]; // NEW: Target AI counter-bubbles on the map
-
-  // Event & Alert Queue System
-  notificationQueue: GameAlert[];
-  triggeredMilestones: string[]; // Stores IDs like 'HEAT_40', 'BELIEVERS_25', 'HUB_LAGOS' so they never repeat
+export interface HistoryLogEntry {
+  day: number;
+  headline: string;
+  impact: string;
 }
 
 export interface StateNode {
@@ -85,38 +72,61 @@ export interface StateNode {
   population: number;
   region: string;
   traits: string[];
-  demographicTag: DemographicTag; // NEW: Controls channel resistance & Doubt speed
-  neighbors: string[];            // NEW: Adjacent state IDs for land border contagion
-  hasAirport: boolean;            // NEW: Domestic flight hub (Lagos, FCT, Kano, Rivers, Enugu)
+  demographicTag: DemographicTag;
+  neighbors: string[];
+  hasAirport: boolean;
   unaware: number;
   heard: number;
   believers: number;
-  jaded: number;                  // NEW: "Gist Fatigue" burnout pool when Doubt stays > 70%
-  highDoubtTicks: number;         // NEW: Tracks consecutive ticks with Doubt > 70%
+  jaded: number;           // "Gist Fatigue" burnout pool
+  highDoubtTicks: number;  // Consecutive ticks with Doubt >= 70
   doubt: number;
   gistReport?: string;
-  hasSpawnedFirstWhisper?: boolean;
+  hasSpawnedFirstWhisper: boolean;
 }
 
-export interface SparkBubble {
-  id: string;
-  stateId: string;
-  amount: number;
-  offsetX: number; // -15 to +15 (pixel offset from state center)
-  offsetY: number; 
-  ticksRemaining: number; // Sparks expire after a set number of ticks
+export interface GameState {
+  status: GameStatus;
+  isPaused: boolean;
+  activeModal: ModalState;
+
+  // Phase 1 hard lock
+  hasPlantedSeed: boolean;
+  hasPoppedFirstSpark: boolean; // Engine stays frozen until this is true
+  startingStateId: string | null;
+  selectedStateId: string | null;
+
+  // Loadout
+  activeTargetId: TargetId | null;
+  scandalCategory: ScandalCategory;
+
+  // Clock & economy
+  currentDay: number;
+  dayBudget: number;
+  sparks: number;
+  heat: number;                  // 0..100
+  peakHeat: number;
+  investigationProgress: number; // 0..100
+
+  // Map
+  states: Record<string, StateNode>;
+
+  // Upgrades acquired
+  unlockedChannels: string[];
+  droppedEvidence: string[];
+  defensePurchases: Record<string, number>;
+
+  // Bubbles & map events
+  activeSparks: SparkBubble[];
+  activeSpinBubbles: SpinBubbleData[];
+  flightEvents: FlightEvent[];     // Transient (cleared on save/load)
+  newlyInfectedIds: string[];      // Transient (states infected this tick)
+
+  // Alert queue
+  notificationQueue: GameAlert[];
+  triggeredMilestones: string[];
+  historyLog: HistoryLogEntry[];
 }
 
-export interface ScrambleState {
-  active: boolean;
-  hoursRemaining: number;
-  subtleClue: string;
-  queuedMoveId: string | null;
-  damageReductionMuliplier: number; // Used if player counters
-}
-
-export interface HistoryLogEntry {
-  day: number;
-  headline: string;
-  impact: string;
-}
+export const isGameOver = (status: GameStatus): boolean =>
+  status === 'WON' || status === 'LOST_HEAT' || status === 'LOST_TIME';

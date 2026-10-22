@@ -1,80 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { ShatterBurst } from './common';
 
 interface SparkBubbleProps {
-  id: string;
   amount: number;
-  x: number;
-  y: number;
-  onCollect: (id: string, amount: number) => void;
+  urgent?: boolean;       // Last tick of life: bounce faster
+  shattering?: boolean;   // Controlled by the map: plays the 6-shard shatter
+  onTap: () => void;
 }
 
-export const SparkBubble: React.FC<SparkBubbleProps> = ({ id, amount, x, y, onCollect }) => {
-  const [isShattering, setIsShattering] = useState(false);
-  const [animating, setAnimating] = useState(false);
+// A Spark (⚡) clout bubble pinned over a state. Tapping banks it.
+export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, urgent = false, shattering = false, onTap }) => {
+  const [animating, setAnimating] = React.useState(false);
 
-  useEffect(() => {
-    if (isShattering) {
-      const raf = requestAnimationFrame(() => setAnimating(true));
-      return () => cancelAnimationFrame(raf);
-    }
-  }, [isShattering]);
-
-  const handleTap = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
-    e.stopPropagation();
-    if (isShattering) return;
-    
-    setIsShattering(true);
-    // Wait for the shatter animation to play before updating the game state
-    setTimeout(() => {
-      onCollect(id, amount);
-    }, 400);
-  };
-
-  // Generate 6 shards that shoot out in a circle
-  const renderShards = () => {
-    return Array.from({ length: 6 }).map((_, i) => {
-      const angle = (i * 60) * (Math.PI / 180);
-      // Math for shooting the shards outward
-      const dx = Math.cos(angle) * 30; 
-      const dy = Math.sin(angle) * 30;
-
-      return (
-        <div 
-          key={i}
-          className="absolute w-2 h-2 bg-[#B45309] rotate-45 transition-all duration-300 ease-out"
-          style={{
-            transform: animating ? `translate(${dx}px, ${dy}px) scale(0)` : `translate(0px, 0px) scale(1)`,
-            opacity: animating ? 0 : 1,
-            top: '50%',
-            left: '50%',
-            marginTop: '-4px',
-            marginLeft: '-4px'
-          }}
-        />
-      );
-    });
-  };
+  React.useEffect(() => {
+    if (!shattering) return;
+    const raf = requestAnimationFrame(() => setAnimating(true));
+    return () => cancelAnimationFrame(raf);
+  }, [shattering]);
 
   return (
-    <div 
-      className="absolute z-40"
-      style={{ left: `${x}px`, top: `${y}px`, transform: `translate(-50%, -50%)` }}
-    >
+    <div className="relative w-10 h-10">
       <button
-        onPointerDown={handleTap}
-        className={`relative flex items-center justify-center w-10 h-10 bg-white border-2 border-[#1A1A1A] rounded-full shadow-[2px_2px_0px_#1A1A1A] cursor-pointer transition-all duration-150 ease-out ${
-          isShattering ? 'scale-0 opacity-0' : 'animate-bounce active:scale-75 hover:scale-105'
+        aria-label={`Collect ${amount} sparks`}
+        onPointerDown={e => { e.stopPropagation(); if (!shattering) onTap(); }}
+        className={`relative w-10 h-10 flex flex-col items-center justify-center bg-[#FEF3C7] border-2 border-[#1A1A1A] rounded-full shadow-[2px_2px_0px_#1A1A1A] cursor-pointer transition-all duration-150 ease-out leading-none ${
+          shattering ? 'scale-0 opacity-0' : urgent ? 'animate-bounce [animation-duration:0.5s]' : 'animate-bounce active:scale-75 hover:scale-105'
         }`}
       >
-        <span className="text-base font-black text-[#B45309]">⚡</span>
+        <span className="text-[13px] font-black text-[#B45309]">⚡</span>
+        <span className="text-[9px] font-black text-[#1A1A1A] -mt-0.5">{amount}</span>
       </button>
-
-      {/* SHARDS (Only visible during the exact moment of the shatter) */}
-      {isShattering && (
-        <div className="absolute inset-0 pointer-events-none">
-          {renderShards()}
-        </div>
-      )}
+      {shattering && <ShatterBurst color="#B45309" animating={animating} />}
     </div>
   );
 };

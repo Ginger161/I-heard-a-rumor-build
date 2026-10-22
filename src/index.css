@@ -22,3 +22,44 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes stamp-in {
+  0% { transform: scale(2.2) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(0.95) rotate(-6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+@keyframes border-pulse {
+  0%, 100% { stroke-width: 1; opacity: 1; }
+  50% { stroke-width: 4; opacity: 0.7; }
+}
+@keyframes spin-ring {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 100; }
+}
+@keyframes flight-dash {
+  to { stroke-dashoffset: -24; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.animate-slide-up { animation: slide-up 0.25s ease-out both; }
+.animate-fade-in { animation: fade-in 0.2s ease-out both; }
+.animate-stamp-in { animation: stamp-in 0.35s ease-out both; }
+.animate-shake { animation: shake 0.35s ease-in-out both; }
+.animate-border-pulse { animation: border-pulse 0.9s ease-in-out 2; }
+
+@keyframes ring-deplete {
+  from { stroke-dashoffset: var(--ring-from); }
+  to { stroke-dashoffset: var(--ring-to); }
+}
