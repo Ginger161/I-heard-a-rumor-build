@@ -10,6 +10,7 @@ import { SparkBubble } from './SparkBubble';
 import { SpinBubble } from './SpinBubble';
 import { ShatterBurst } from './common';
 import { haptic, sfx } from '../audio';
+import { usePanZoom } from '../../hooks/usePanZoom';
 
 interface MapCanvasProps {
   gameState: GameState;
@@ -21,7 +22,6 @@ interface MapCanvasProps {
 
 const SHATTER_MS = 400;
 const FLIGHT_MS = 1500;
-const DRAG_THRESHOLD = 6;
 
 // ---- colour helpers ----
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -69,10 +69,7 @@ const FlightArc: React.FC<{ from: { x: number; y: number }; to: { x: number; y: 
 };
 
 export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking, onStateTap, onSparkTap, onSpinTap }) => {
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const dragging = useRef(false);
-  const moved = useRef(false);
-  const origin = useRef({ px: 0, py: 0, tx: 0, ty: 0 });
+  const { t: transform, viewRef, moved, handlers, zoomBy, reset } = usePanZoom({ minScale: 1, maxScale: 4, content: null, origin: 'center' });
 
   // Bubbles mid-shatter: the seed spark (deferred collect) and ghosts for already-collected sparks.
   const [seedShattering, setSeedShattering] = useState(false);
@@ -106,25 +103,6 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
   useEffect(() => {
     if (!gameState.hasPlantedSeed || gameState.hasPoppedFirstSpark) setSeedShattering(false);
   }, [gameState.hasPlantedSeed, gameState.hasPoppedFirstSpark]);
-
-  // ---- pan / zoom ----
-  const handlePointerDown = (e: React.PointerEvent) => {
-    dragging.current = true;
-    moved.current = false;
-    origin.current = { px: e.clientX, py: e.clientY, tx: transform.x, ty: transform.y };
-  };
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
-    const dx = e.clientX - origin.current.px;
-    const dy = e.clientY - origin.current.py;
-    if (!moved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-    moved.current = true;
-    setTransform(prev => ({ ...prev, x: origin.current.tx + dx, y: origin.current.ty + dy }));
-  };
-  const handlePointerUp = () => { dragging.current = false; };
-  const handleWheel = (e: React.WheelEvent) => {
-    setTransform(prev => ({ ...prev, scale: Math.min(Math.max(0.6, prev.scale - e.deltaY * 0.001), 3) }));
-  };
 
   const tapSpark = (sparkId: string, x: number, y: number) => {
     const isSeed = !gameState.hasPoppedFirstSpark && gameState.startingStateId !== null && sparkId === seedSparkId(gameState.startingStateId);
@@ -169,12 +147,9 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
 
   return (
     <div
+      ref={viewRef}
       className="w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center bg-transparent touch-none"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      onWheel={handleWheel}
+      {...handlers}
       onClick={() => { if (!moved.current) onStateTap(null); }}
     >
       <div
@@ -316,21 +291,21 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
       {/* ZOOM & RESET CONTROLS */}
       <div className="absolute top-3 right-3 flex flex-col gap-2 z-20" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
         <button
-          onClick={() => setTransform(p => ({ ...p, scale: Math.min(3, p.scale + 0.4) }))}
+          onClick={() => zoomBy(1.4)}
           className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Zoom in"
         >
           +
         </button>
         <button
-          onClick={() => setTransform(p => ({ ...p, scale: Math.max(0.6, p.scale - 0.4) }))}
+          onClick={() => zoomBy(1 / 1.4)}
           className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Zoom out"
         >
           -
         </button>
         <button
-          onClick={() => setTransform({ x: 0, y: 0, scale: 1 })}
+          onClick={() => reset()}
           className="w-10 h-10 bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_rgba(0,0,0,0.3)] rounded-lg font-black text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Reset view"
         >

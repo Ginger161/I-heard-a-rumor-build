@@ -124,7 +124,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
       </div>
 
       {/* ZONE 2: MAP */}
-      <div className="flex-1 relative overflow-hidden border-b-2 border-[#1A1A1A] transition-colors duration-[2000ms]" id="map-container" data-tour="map" style={{ backgroundColor: mood.mapBg }}>
+      <div className="flex-1 min-h-0 relative overflow-hidden border-b-2 border-[#1A1A1A] transition-colors duration-[2000ms]" id="map-container" data-tour="map" style={{ backgroundColor: mood.mapBg }}>
         <NigeriaMapCanvas
           gameState={gameState}
           ticking={ticking}

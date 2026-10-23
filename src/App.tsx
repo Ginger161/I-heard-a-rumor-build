@@ -180,8 +180,8 @@ function Game() {
   );
 
   return desktop ? (
-    <div className="w-screen h-screen h-[100dvh] desk-room overflow-hidden select-none text-slate-100 flex flex-col font-sans relative">{content}{overlays}</div>
+    <div className="app-h w-screen desk-room overflow-hidden select-none text-slate-100 flex flex-col font-sans relative">{content}{overlays}</div>
   ) : (
-    <div className="w-full max-w-[440px] h-screen h-[100dvh] mx-auto relative overflow-hidden select-none shadow-2xl bg-[#0B0E14] text-slate-100 flex flex-col font-sans">{content}{overlays}</div>
+    <div className="app-h app-safe w-full max-w-[440px] mx-auto relative overflow-hidden select-none shadow-2xl bg-[#0B0E14] text-slate-100 flex flex-col font-sans">{content}{overlays}</div>
   );
 }

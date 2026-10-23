@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { GameState } from '../../engine/types';
+import { usePanZoom } from '../../hooks/usePanZoom';
 import { CHANNELS_DATA, ChannelUpgrade } from '../../engine/data/channels';
 import { getTarget } from '../../engine/data/targets';
 import { channelFlavorLine } from '../../engine/data/flavor';
@@ -15,9 +16,6 @@ interface BoardProps {
 
 const CANVAS_W = 2000;
 const CANVAS_H = 1000;
-const PAN_MIN = { x: -1600, y: -500 };
-const PAN_MAX = { x: 100, y: 100 };
-const DRAG_THRESHOLD = 6;
 
 const BRANCH_LABELS = [
   { name: 'STREET', y: 150 },
@@ -95,37 +93,10 @@ const StatBar: React.FC<{ label: string; value: number; max: number; color: stri
 );
 
 export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBuy, docked = false }) => {
-  const viewRef = useRef<HTMLDivElement>(null);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const { t: pan, viewRef, moved, handlers, zoomBy } = usePanZoom({ minScale: 0.4, maxScale: 1.6, content: { w: CANVAS_W, h: CANVAS_H }, origin: 'topleft', slack: 100 });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const dragging = useRef(false);
-  const moved = useRef(false);
-  const origin = useRef({ px: 0, py: 0, tx: 0, ty: 0 });
   const target = getTarget(gameState.activeTargetId);
   const category = gameState.scandalCategory;
-
-  // Pan limits follow the real size of the viewport, so a wide desktop panel never shows empty space past the board.
-  const clampPan = (x: number, y: number) => {
-    const w = viewRef.current?.clientWidth, h = viewRef.current?.clientHeight;
-    const minX = w ? Math.min(PAN_MAX.x, w - CANVAS_W - 100) : PAN_MIN.x;
-    const minY = h ? Math.min(PAN_MAX.y, h - CANVAS_H - 100) : PAN_MIN.y;
-    return { x: Math.max(minX, Math.min(PAN_MAX.x, x)), y: Math.max(minY, Math.min(PAN_MAX.y, y)) };
-  };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    dragging.current = true;
-    moved.current = false;
-    origin.current = { px: e.clientX, py: e.clientY, tx: pan.x, ty: pan.y };
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
-    const dx = e.clientX - origin.current.px;
-    const dy = e.clientY - origin.current.py;
-    if (!moved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-    moved.current = true;
-    setPan(clampPan(origin.current.tx + dx, origin.current.ty + dy));
-  };
-  const onPointerUp = () => { dragging.current = false; };
 
   const selected: ChannelUpgrade | undefined = CHANNELS_DATA.find(c => c.id === selectedNode);
 
@@ -139,7 +110,7 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
             The Conspiracy<br />Board
           </h2>
           <div className="text-[9px] font-black tracking-widest uppercase text-[#1A1A1A]/50">
-            {gameState.unlockedChannels.length}/{CHANNELS_DATA.length} channels • drag to pan
+            {gameState.unlockedChannels.length}/{CHANNELS_DATA.length} channels • drag to pan, pinch to zoom
           </div>
         </div>
         <div className="flex items-center gap-3 relative">
@@ -158,15 +129,12 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
       <div
         ref={viewRef}
         className="flex-1 relative cursor-grab active:cursor-grabbing bg-[#EFEBE0] touch-none overflow-hidden"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        {...handlers}
       >
         <PaperGrain />
         <div
           className="absolute top-0 left-0 origin-top-left"
-          style={{ width: CANVAS_W, height: CANVAS_H, transform: `translate(${pan.x}px, ${pan.y}px)` }}
+          style={{ width: CANVAS_W, height: CANVAS_H, transform: `translate(${pan.x}px, ${pan.y}px) scale(${pan.scale})` }}
         >
           {/* LANE DIVIDERS */}
           <svg className="absolute inset-0 pointer-events-none" width={CANVAS_W} height={CANVAS_H}>
