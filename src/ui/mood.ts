@@ -1,5 +1,6 @@
 import { GameState } from '../engine/types';
 import { nationalBelieverPct } from '../engine/selectors';
+import type { Emotion } from './components/Face';
 
 // The game's colours react to how the case is going. Heat tints the frame and pulses a red vignette, a stale story
 // drains colour, belief builds a golden glow, frozen channels bring an icy edge, and the map slowly moves from
@@ -64,4 +65,31 @@ export const moodOf = (s: GameState): Mood => {
     glow: believers >= 50 ? 'inset 0 0 36px rgba(245,158,11,0.45)' : believers >= 25 ? 'inset 0 0 22px rgba(245,158,11,0.22)' : null,
     frost: frozen
   };
+};
+
+// ---------------------------------------------------------------------------
+// The Target's face follows the case. Unbothered while nobody believes the story, angry when the first counter-offensive
+// lands, worried as belief builds, in a panic near the win line, smug while their Cover-Up is winning. After the match they
+// are crushed (you won) or laughing (you lost). Chatter pings override it for a few seconds (see PolaroidChatter).
+// ---------------------------------------------------------------------------
+export const targetEmotion = (s: GameState): Emotion => {
+  if (s.status === 'WON') return 'DEFEATED';
+  if (s.status === 'LOST_HEAT' || s.status === 'LOST_TIME' || s.status === 'LOST_COVERUP') return 'LAUGH';
+  const believers = nationalBelieverPct(s.states);
+  if (believers >= 50) return 'PANIC';
+  if (s.coverUp >= 60 && believers < 40) return 'SMUG';
+  if (believers >= 28) return 'WORRIED';
+  if (believers >= 8) return 'ANGRY';
+  return s.coverUp >= 35 ? 'SMUG' : 'CONFIDENT';
+};
+
+export const pingEmotion = (event: string | undefined): Emotion | null => {
+  switch (event) {
+    case 'onStart': return 'SMUG';
+    case 'onBackfire': return 'LAUGH';
+    case 'onCritical': return 'PANIC';
+    case 'onEvidenceDropped': return 'WORRIED';
+    case 'onChannelBought': return 'ANGRY';
+    default: return null;
+  }
 };

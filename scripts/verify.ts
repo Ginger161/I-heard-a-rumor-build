@@ -1,5 +1,6 @@
 // Spec conformance checks for the engine.
 //   npx esbuild scripts/verify.ts --bundle --platform=node --format=cjs --outfile=<tmp>/v.cjs && node <tmp>/v.cjs
+import { LOOKS } from '../src/engine/data/looks';
 import { Actions, seedSparkId } from '../src/engine/actions';
 import { SimulationEngine, canTick, evaluateEndgame } from '../src/engine/simulation';
 import { AlertFactory } from '../src/engine/alerts';
@@ -620,7 +621,8 @@ ok('the Story Mode cast is a valid pack with no errors', packCheck.errors.length
 ok('every Story Target registered and is hidden from the Dossier folders', STORY_PACK.targets.every(d => TARGETS.some(x => x.id === d.id && x.storyOnly)) && TARGETS.filter(x => x.storyOnly).every(x => ![1, 2, 3, 4, 5, 'SPOTLIGHT'].some(fo => targetsInFolder(fo as never).includes(x))));
 ok('every chapter points at registered Targets and has a motive, a win and a loss epilogue', STORY_CHAPTERS.every(c => c.variants.every(vr => TARGETS.some(x => x.id === vr.targetId && x.scandals.length >= 1) && vr.motive.length >= 2 && vr.win.length >= 1 && vr.lose.length > 0)));
 ok('story pairs: ex, cheater and ex-spouse each offer two Targets', STORY_CHAPTERS.filter(c => c.variants.length === 2).length === 3);
-ok('the full cast spans the requested relationships', ['story_ex_boyfriend', 'story_ex_girlfriend', 'story_cheating_girlfriend', 'story_cheating_boyfriend', 'story_ex_husband', 'story_ex_wife', 'story_colleague', 'story_former_bestie', 'story_boss'].every(id => TARGETS.some(x => x.id === id)));
+ok('the full cast spans the requested relationships', ['story_ex_boyfriend', 'story_ex_girlfriend', 'story_cheating_girlfriend', 'story_cheating_boyfriend', 'story_ex_husband', 'story_ex_wife', 'story_colleague', 'story_former_bestie', 'story_boss', 'story_rival', 'story_uncle', 'story_fixer', 'story_client', 'story_mentor'].every(id => TARGETS.some(x => x.id === id)));
+ok('every built-in Target has a portrait Look (gender, age, region)', TARGETS.filter(x => !x.id.startsWith('verify_')).every(x => !!LOOKS[x.id] && !!LOOKS[x.id].g && !!LOOKS[x.id].age && !!LOOKS[x.id].region), TARGETS.filter(x => !LOOKS[x.id]).map(x => x.id).join(','));
 ok('Story Targets use the comic voice (never arrests)', STORY_PACK.targets.every(d => TARGETS.find(x => x.id === d.id)!.parody));
 // validation catches what it should
 const blank = newBlankDef();
@@ -642,7 +644,7 @@ ok('the estimated rating sits inside the tier range', estimateRating(blank) >= R
 
 // story rules
 ok('story approaches and reputation are encoded in the perk id and resolve to effects', parseStoryPerk(storyPerkId('truth', 'high'))?.approach === 'truth' && perkEffects(storyPerkId('truth', 'high')).doubtDelta === -5 && perkEffects(storyPerkId('whatever', 'low')).startSparks === 30 && perkEffects(storyPerkId('mercy', 'mid')).heatMult === 0.8);
-const storyStart = (approach: 'truth' | 'whatever' | 'mercy', integrity = 0) => Actions.startMatch('story_ex_boyfriend', 'FINANCIAL', perkIdFor({ ...emptyStory(), integrity }, approach), 'CLEAR_SKIES', { storyId: 'ch1' });
+const storyStart = (approach: 'truth' | 'whatever' | 'mercy', integrity = 0) => Actions.startMatch('story_ex_boyfriend', 'FINANCIAL', perkIdFor({ ...emptyStory(), integrity }, approach), 'CLEAR_SKIES', { storyId: 'c01' });
 const firstDoubt = (s: GameState) => Object.values(s.states)[0].doubt;
 ok('Whatever Works starts with extra sparks; Receipts Only starts with investigation and less Doubt', storyStart('whatever').sparks === 30 && storyStart('truth').investigationProgress === 30 && firstDoubt(storyStart('truth')) < firstDoubt(Actions.startMatch('story_ex_boyfriend', 'FINANCIAL')));
 ok('low reputation makes everyone start with more Doubt', firstDoubt(storyStart('truth', -5)) > firstDoubt(storyStart('truth', 0)));
@@ -650,15 +652,15 @@ const wonStory = (approach: 'truth' | 'whatever' | 'mercy', backfires = 0): Game
 const profS = emptyProfile();
 const wonT = wonStory('truth');
 const sr1 = recordChapter(profS, wonT);
-ok('winning a chapter unlocks the next, scores reputation by approach', chapterUnlocked(sr1.story, 1) && !chapterUnlocked(profS.story, 1) && sr1.story.integrity === 2 && sr1.story.results['ch1'].won);
+ok('winning a chapter unlocks the next, scores reputation by approach', chapterUnlocked(sr1.story, 1) && !chapterUnlocked(profS.story, 1) && sr1.story.integrity === 2 && sr1.story.results['c01'].won);
 ok('the same match is never recorded twice', JSON.stringify(recordChapter(sr1, wonT)) === JSON.stringify(sr1));
 const sr2 = recordChapter(sr1, { ...wonStory('whatever'), copySeed: 12345 });
 ok('replaying a won chapter changes stars at most, never reputation', sr2.story.integrity === 2);
 ok('Whatever Works costs reputation; exposed forgeries cost more', recordChapter(profS, wonStory('whatever')).story.integrity === -2 && recordChapter(profS, wonStory('whatever', 3)).story.integrity === -4);
 const sLoss = recordChapter(profS, { ...storyStart('truth'), status: 'LOST_HEAT' });
-ok('a defeat costs nothing but an attempt and does not unlock', !chapterUnlocked(sLoss.story, 1) && sLoss.story.integrity === 0 && sLoss.story.results['ch1'].attempts === 1);
+ok('a defeat costs nothing but an attempt and does not unlock', !chapterUnlocked(sLoss.story, 1) && sLoss.story.integrity === 0 && sLoss.story.results['c01'].attempts === 1);
 ok('reputation bands and the three season endings', repBand(-3) === 'low' && repBand(0) === 'mid' && repBand(3) === 'high' && new Set([seasonEnding(6).id, seasonEnding(0).id, seasonEnding(-6).id]).size === 3);
-ok('imported story progress is sanitised', (() => { const s = sanitizeStory({ integrity: 999, picks: { ch1: 'nope', ch2: 'story_cheating_boyfriend' }, results: { ch1: { targetId: 'nope' }, ch2: { targetId: 'story_cheating_boyfriend', won: true, stars: 99 } } }); return s.integrity === 12 && !s.picks.ch1 && s.picks.ch2 === 'story_cheating_boyfriend' && !s.results.ch1 && s.results.ch2.stars === 3; })());
+ok('imported story progress is sanitised', (() => { const s = sanitizeStory({ integrity: 999, picks: { c01: 'nope', c02: 'story_cheating_boyfriend' }, results: { c01: { targetId: 'nope' }, c02: { targetId: 'story_cheating_boyfriend', won: true, stars: 99 } } }); return s.integrity === 12 && !s.picks.c01 && s.picks.c02 === 'story_cheating_boyfriend' && !s.results.c01 && s.results.c02.stars === 3; })());
 ok('a full season of wins completes the story', (() => { let p = emptyProfile(); STORY_CHAPTERS.forEach(c => { const tid = c.variants[0].targetId; p = recordChapter(p, { ...Actions.startMatch(tid, 'FINANCIAL', perkIdFor(p.story, 'truth'), 'CLEAR_SKIES', { storyId: c.id }), status: 'WON', currentDay: 8 }); }); return seasonComplete(p.story); })());
 ok('all three approaches exist with a reputation effect', APPROACHES.length === 3 && APPROACHES.some(a => a.integrity < 0) && APPROACHES.some(a => a.integrity > 0));
 

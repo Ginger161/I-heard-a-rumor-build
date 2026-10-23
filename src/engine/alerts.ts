@@ -165,7 +165,7 @@ export const AlertFactory = {
 
   // Evidence leaked: genuine => BREAKING_FRONT, forgery success => VIRAL_RECEIPT, exposed => TARGET_PR
   createEvidenceAlert: (item: EvidenceItem, backfired: boolean, category: ScandalCategory, target: TargetArchetype, copySeed = 0): GameAlert => {
-    const variant = getEvidenceVariant(item, category, target.parody);
+    const variant = getEvidenceVariant(item, category, target.parody, target.storyOnly);
     if (backfired) {
       return {
         id: uid(`ev_backfire_${item.id}`),

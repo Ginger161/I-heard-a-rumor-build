@@ -369,7 +369,10 @@ export const DossierScreen: React.FC<DossierProps> = ({
           <>
             <div>
               <div className="flex items-start justify-between gap-2">
-                <div className="font-black text-sm leading-tight">{selected.fullName}</div>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex-shrink-0 w-14 h-[68px] bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden"><Avatar target={selected} emotion={starsOf(profile, selected.id) > 0 ? 'DEFEATED' : 'SMUG'} className="w-full h-full" /></div>
+                  <div className="font-black text-sm leading-tight">{selected.fullName}</div>
+                </div>
                 <Stars n={starsOf(profile, selected.id)} className="text-sm flex-shrink-0" />
               </div>
               <div className="flex flex-wrap gap-1 mt-1">

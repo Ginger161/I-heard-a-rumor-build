@@ -13,18 +13,25 @@ interface Slice {
   doubt: number;
 }
 
-// Spec quotes, in priority order, now seed-varied and flavoured by the state's zone.
-const streetGist = (s: Slice, zone: string, seed: number, stateId: string): string => {
+// Spec quotes, in priority order, with sharp Standard English tabloid copy.
+const streetGist = (s: Slice, _zone?: string, _seed?: number, _stateId?: string): string => {
   const reached = s.heard + s.believers;
-  if (reached === 0) return pickGist('UNAWARE', zone, seed, stateId);
-  const believerPct = (s.believers / s.population) * 100;
-  const heardPct = (s.heard / s.population) * 100;
-  const jadedPct = (s.jaded / s.population) * 100;
-  if (believerPct > 50) return pickGist('OUTRAGE', zone, seed, stateId);
-  if (s.doubt > 65) return pickGist('CAP', zone, seed, stateId);
-  if (jadedPct > 20) return pickGist('JADED', zone, seed, stateId);
-  if (heardPct < 15) return pickGist('EARLY', zone, seed, stateId);
-  return pickGist('MID', zone, seed, stateId);
+  if (reached === 0) {
+    return 'Complete silence. Not even a motor-park whisper has reached the streets of this state yet.';
+  }
+  if (s.doubt >= 65) {
+    return 'Widespread skepticism! Citizens are calling the story a paid political smear job—leak verified evidence immediately or lose the crowd!';
+  }
+  if (s.jaded / s.population > 0.15) {
+    return 'Scandal fatigue has set in! The public is tired of sensational rumors with zero proof. Only hard evidence can reignite their outrage.';
+  }
+  if (s.believers / s.population >= 0.5) {
+    return 'Total public outrage! From market stalls to ministry corridors, citizens are 100% convinced of his guilt and demanding immediate arrest!';
+  }
+  if (s.heard > 0) {
+    return 'Whispers are spreading fast across barbershops, commuter buses, and WhatsApp groups as citizens ask if the explosive allegations are actually true.';
+  }
+  return 'Complete silence. Not even a motor-park whisper has reached the streets of this state yet.';
 };
 
 const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : 0);

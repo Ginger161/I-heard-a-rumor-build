@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { BrutalButton, PaperGrain } from '../components/common';
 import { Avatar } from '../components/Silhouette';
 import { sfx } from '../audio';
-import { APPROACHES, ACTS, STORY_CHAPTERS, STORY_PROLOGUE, StoryChapter, StoryVariant, getChapter, seasonEnding } from '../../engine/data/story';
+import { APPROACHES, ACTS, Act, STORY_CHAPTERS, STORY_PROLOGUE, StoryChapter, StoryVariant, getChapter, seasonEnding } from '../../engine/data/story';
 import { getTarget } from '../../engine/data/targets';
 import { StoryApproach } from '../../engine/data/perks';
 import { MetaProfile } from '../../engine/profile';
@@ -15,6 +15,13 @@ import { getClimate } from '../../engine/data/climates';
 // A narrative card: scene-setting text, or Biko's DMs rendered like a chat bubble.
 const Beat: React.FC<{ text: string; index: number }> = ({ text, index }) => {
   const biko = /^Your intern /.test(text);
+  const halo = /^Your mentor (writes|texts)[,.:]?\s*/i.test(text);
+  if (halo) return (
+    <div key={index} className="animate-pop-in bg-[#1A1A1A] text-[#F4F1EA] border-2 border-[#1A1A1A] rounded-2xl rounded-tr-sm p-3.5 shadow-[3px_3px_0px_#B45309]">
+      <div className="text-[9px] font-black uppercase tracking-widest text-[#FDE68A] mb-1">💬 Your mentor</div>
+      <p className="font-sans text-[13px] leading-snug">{text.replace(/^Your mentor (writes|texts)[,.:]?\s*/i, '')}</p>
+    </div>
+  );
   return biko ? (
     <div key={index} className="animate-pop-in bg-[#DCF8C6] border-2 border-[#1A1A1A] rounded-2xl rounded-tl-sm p-3.5 shadow-[3px_3px_0px_#1A1A1A]">
       <div className="text-[9px] font-black uppercase tracking-widest text-[#065F46] mb-1">💬 Your intern</div>
@@ -131,7 +138,7 @@ export const StoryScreen: React.FC<StoryProps> = ({ profile, onBack, onStart, on
       return (
         <Shell onBack={() => setView({ kind: 'map' })} title={`Chapter ${STORY_CHAPTERS.indexOf(ch) + 1} • ${ch.title}`}>
           <div className="flex items-center gap-3">
-            <Avatar target={target} className="w-14 h-16 flex-shrink-0 bg-[#D9CBB0] rounded border-2 border-[#1A1A1A]" />
+            <Avatar target={target} emotion={step === 'setting' ? 'SMUG' : 'ANGRY'} className="w-14 h-16 flex-shrink-0 bg-[#D9CBB0] rounded border-2 border-[#1A1A1A]" />
             <div className="min-w-0">
               <div className="text-[9px] font-black uppercase tracking-[0.2em] text-[#8B0000]">{ch.kicker}</div>
               <div className="font-serif font-black text-lg leading-tight">{target.fullName}</div>
@@ -189,7 +196,7 @@ export const StoryScreen: React.FC<StoryProps> = ({ profile, onBack, onStart, on
           {ending.body.map((b, i) => <p key={i} className="text-[12px] font-sans leading-snug mt-2 text-slate-200">{b}</p>)}
         </div>
       )}
-      {([1, 2, 3] as const).map(act => (
+      {(Object.keys(ACTS).map(Number) as Act[]).map(act => (
         <div key={act}>
           <div className="flex items-baseline justify-between border-b-2 border-[#1A1A1A] pb-1 mb-2">
             <div className="font-serif font-black text-base uppercase tracking-wide">Act {act} • {ACTS[act].name}</div>
@@ -270,9 +277,12 @@ export const StoryEpilogue: React.FC<{ gameState: GameState; profile: MetaProfil
   return (
     <div className="absolute inset-0 z-[120] bg-[#EFEBE0] text-[#1A1A1A] font-serif flex flex-col overflow-hidden animate-fade-in">
       <PaperGrain />
-      <div className="relative px-3.5 py-3 border-b-4 border-double border-[#1A1A1A] flex-shrink-0">
-        <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Chapter {idx + 1} • {ch.title}</div>
-        <div className="font-serif font-black text-xl leading-tight">{won ? 'Epilogue' : 'Not this time'}</div>
+      <div className="relative px-3.5 py-3 border-b-4 border-double border-[#1A1A1A] flex-shrink-0 flex items-center gap-3">
+        <div className="flex-shrink-0 w-14 h-16 bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden"><Avatar target={getTarget(variant.targetId)} emotion={won ? 'DEFEATED' : 'LAUGH'} className="w-full h-full" /></div>
+        <div>
+          <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Chapter {idx + 1} • {ch.title}</div>
+          <div className="font-serif font-black text-xl leading-tight">{won ? 'Epilogue' : 'Not this time'}</div>
+        </div>
       </div>
       <div className="relative flex-1 min-h-0 overflow-y-auto no-scrollbar p-3.5 flex flex-col gap-3.5">
         {stage === 'beats' ? (

@@ -1,5 +1,6 @@
 import { ScandalCategory } from './channels';
 import { PARODY_EVIDENCE } from './parody';
+import { STORY_EVIDENCE } from './adult';
 
 export type EvidenceKind = 'VERIFIED' | 'FORGERY';
 
@@ -27,7 +28,11 @@ export interface EvidenceItem {
 }
 
 // Parody Targets never get an accusatory file: they get the comic variant.
-export const getEvidenceVariant = (item: EvidenceItem, category: ScandalCategory, parody = false): EvidenceVariant => {
+export const getEvidenceVariant = (item: EvidenceItem, category: ScandalCategory, parody = false, storyOnly = false): EvidenceVariant => {
+  if (storyOnly && STORY_EVIDENCE[item.id]) {
+    const p = STORY_EVIDENCE[item.id];
+    return { name: p.name, flavor: [p.flavor] };
+  }
   if (parody && PARODY_EVIDENCE[item.id]) {
     const p = PARODY_EVIDENCE[item.id];
     return { name: p.name, flavor: [p.flavor] };
@@ -41,7 +46,7 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     id: 'ev_tier1_wire',
     kind: 'VERIFIED',
     tier: 1,
-    name: 'Redacted Wire / Call Log Snippet',
+    name: 'Redacted Offshore Wire & Call Log',
     cost: 10,
     requiredInvestigation: 25,
     doubtReduction: 18,
@@ -53,18 +58,17 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 20,
     isFabricated: false,
     variants: {
-      DEFAULT: { name: 'Redacted Wire / Call Log Snippet', flavor: ['A half-blacked-out call log showing the target phoning people he swore he never knew.'] },
-      FINANCIAL: { name: 'Leaked Offshore Bank Transfer', flavor: ['A crumpled transaction slip from a Cayman Islands holding firm.'] },
-      AFFAIR: { name: 'Hotel Check-In Call Log', flavor: ['Forty-one calls to the same number between 11 PM and 3 AM, all from a Maitama hotel line.'] },
-      LEAKED_MEDIA: { name: 'Metadata Log of the Leaked Clip', flavor: ['A server log proving the video was uploaded from the target\'s own office network.'] },
-      FAKE_CREDENTIALS: { name: 'Registrar Call Record', flavor: ['A phone log of the target calling a registrar\'s office to "arrange" a transcript.'] }
+      DEFAULT: {
+        name: 'Redacted Offshore Wire & Call Log',
+        flavor: ['Exposes a 2:14 AM transfer of public funds to a shell company registered under his personal driver\'s name.']
+      }
     }
   },
   {
     id: 'ev_tier2_voice_memo',
     kind: 'VERIFIED',
     tier: 2,
-    name: 'Insider Voice Note & Stamped Memo',
+    name: 'Whistleblower Audio & Stamped Memo',
     cost: 18,
     requiredInvestigation: 50,
     doubtReduction: 28,
@@ -76,24 +80,17 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 30,
     isFabricated: false,
     variants: {
-      DEFAULT: { name: 'Insider Voice Note & Stamped Memo', flavor: ['A nervous voice note from a staffer, backed by a memo carrying a real ministry stamp.'] },
-      FINANCIAL: {
-        name: 'Intercepted WhatsApp Audio Memo',
-        flavor: [
-          'A frantic 30-second audio note instructing bags of cash to be moved.',
-          'A sworn statement detailing burner phones and off-the-books bribes.'
-        ]
-      },
-      AFFAIR: { name: 'Mistress Voice Note & Lease Memo', flavor: ['A tearful voice note begging the target to "stop pretending", plus a stamped lease for the Cyprus villa.'] },
-      LEAKED_MEDIA: { name: 'Studio Engineer Voice Note', flavor: ['The sound engineer who cleaned the audio confirms in his own voice that the target never asked him to delete it.'] },
-      FAKE_CREDENTIALS: { name: 'Clerk Voice Note & Stamped Query', flavor: ['A records clerk admits on tape that no file exists, and a stamped "no record found" query backs her up.'] }
+      DEFAULT: {
+        name: 'Whistleblower Audio & Stamped Memo',
+        flavor: ['Secret boardroom recording capturing the target ordering aides to shred audit files and pay off witnesses.']
+      }
     }
   },
   {
     id: 'ev_tier3_footage',
     kind: 'VERIFIED',
     tier: 3,
-    name: 'Uncensored HD Footage / Forensic Audit',
+    name: 'Uncensored 4K CCTV & Forensic Audit',
     cost: 28,
     requiredInvestigation: 75,
     doubtReduction: 40,
@@ -105,24 +102,17 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 45,
     isFabricated: false,
     variants: {
-      DEFAULT: { name: 'Uncensored HD Footage / Forensic Audit', flavor: ['Crisp, timestamped footage and a forensic audit that no lawyer can wave away.'] },
-      FINANCIAL: {
-        name: 'Grainy VIP Lounge CCTV Reel & CAC Registry',
-        flavor: [
-          'Timestamped surveillance tape showing the midnight cash handover.',
-          'Corporate Affairs Commission filing tying luxury estates to a front company.'
-        ]
-      },
-      AFFAIR: { name: 'Uncensored Villa Gate Footage', flavor: ['Clean HD footage from the villa\'s own security cameras, date and time burned into the corner.'] },
-      LEAKED_MEDIA: { name: 'Forensic Audio Authentication Report', flavor: ['An independent lab certifies the leaked recording as unedited, down to the background generator hum.'] },
-      FAKE_CREDENTIALS: { name: 'University Forensic Records Audit', flavor: ['A full forensic audit of the university\'s admissions archive finds no trace of the target, in any year.'] }
+      DEFAULT: {
+        name: 'Uncensored 4K CCTV & Forensic Audit',
+        flavor: ['Raw, timestamped video footage and bank ledger trails that not even a Senior Advocate can spin.']
+      }
     }
   },
   {
     id: 'ev_tier4_smoking_gun',
     kind: 'VERIFIED',
     tier: 4,
-    name: 'The Smoking Gun Master File',
+    name: 'The Smoking Gun Master Dossier',
     cost: 40,
     requiredInvestigation: 100,
     doubtReduction: 65,
@@ -134,11 +124,10 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 70,
     isFabricated: false,
     variants: {
-      DEFAULT: { name: 'The Smoking Gun Master File', flavor: ['Everything, in one folder, with signatures. The kind of file that ends careers.'] },
-      FINANCIAL: { name: 'Unredacted EFCC Secret Dossier', flavor: ['The smoking gun: an anti-graft commission file buried by high command.'] },
-      AFFAIR: { name: 'The Complete Entanglement Dossier', flavor: ['Photos, receipts, tapes and a notarized statement from the spouse, bound in one folder marked "DO NOT RELEASE".'] },
-      LEAKED_MEDIA: { name: 'The Full Uncut Original Recording', flavor: ['The complete, unedited original with the target\'s own laughter, plus the phone it was recorded on.'] },
-      FAKE_CREDENTIALS: { name: 'Joint Registrar & NYSC Denial File', flavor: ['Signed denials from the university and the NYSC directorate, side by side with the forged certificates.'] }
+      DEFAULT: {
+        name: 'The Smoking Gun Master Dossier',
+        flavor: ['Complete BVN trails, international passport stamps, offshore deeds, and signed confessions. An undeniable career obituary.']
+      }
     }
   },
 
@@ -146,7 +135,7 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
   {
     id: 'ev_fake_whatsapp',
     kind: 'FORGERY',
-    name: 'Doctored WhatsApp Receipt',
+    name: 'Doctored WhatsApp Screenshot',
     cost: 8,
     requiredInvestigation: 0,
     doubtReduction: 22,
@@ -158,17 +147,16 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 10,
     isFabricated: true,
     variants: {
-      DEFAULT: { name: 'Doctored WhatsApp Receipt', flavor: ['A screenshot of a chat that looks right at first glance and wrong at second.'] },
-      FINANCIAL: { name: 'Altered Private Jet Manifest', flavor: ['Doctored flight documents placing the target in Dubai during the crisis.'] },
-      AFFAIR: { name: 'Doctored Chat Screenshot', flavor: ['A "leaked" chat between the target and a mistress, fonts almost right, timestamps almost consistent.'] },
-      LEAKED_MEDIA: { name: 'Doctored Transcript Screenshot', flavor: ['A typed "transcript" of the recording, stitched together from three different interviews.'] },
-      FAKE_CREDENTIALS: { name: 'Doctored Admission Letter', flavor: ['A photoshopped admission letter that "proves" the target was never enrolled. The seal is slightly off-centre.'] }
+      DEFAULT: {
+        name: 'Doctored WhatsApp Screenshot',
+        flavor: ['Fabricated chat logs cooked up to look like a confession. Explosive viral bait if the public is gullible, but risky under scrutiny.']
+      }
     }
   },
   {
     id: 'ev_deepfake_audio',
     kind: 'FORGERY',
-    name: 'Deepfake Audio Leak',
+    name: 'AI-Synthesized Voice Leak',
     cost: 15,
     requiredInvestigation: 0,
     doubtReduction: 35,
@@ -180,11 +168,10 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     freshnessBoost: 15,
     isFabricated: true,
     variants: {
-      DEFAULT: { name: 'Deepfake Audio Leak', flavor: ['An AI-cloned voice note that sounds exactly like the target, saying exactly what you need.'] },
-      FINANCIAL: { name: 'Deepfake "Share the Loot" Call', flavor: ['A cloned voice instructs an aide to "share the money before EFCC arrives". Convincing, until someone checks the metadata.'] },
-      AFFAIR: { name: 'Deepfake Pillow-Talk Recording', flavor: ['A synthetic bedroom conversation in the target\'s voice. The breathing is a little too regular.'] },
-      LEAKED_MEDIA: { name: 'Deepfake "Second Take" Audio', flavor: ['A fabricated follow-up recording where the target repeats the leaked confession in a different room.'] },
-      FAKE_CREDENTIALS: { name: 'Deepfake Confession to a Friend', flavor: ['A cloned voice admits, "Nobody checks those certificates anyway." Nobody had said that. Yet.'] }
+      DEFAULT: {
+        name: 'AI-Synthesized Voice Leak',
+        flavor: ['Deepfake audio of the target mocking ordinary citizens. Massive shock value, though digital forensics can expose the audio artifacts.']
+      }
     }
   }
 ];

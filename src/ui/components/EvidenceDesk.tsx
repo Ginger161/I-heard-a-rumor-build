@@ -96,7 +96,7 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
           )}
 
           {items.map(item => {
-            const variant = getEvidenceVariant(item, category, target.parody);
+            const variant = getEvidenceVariant(item, category, target.parody, target.storyOnly);
             const dropped = gameState.droppedEvidence.includes(item.id);
             const unlocked = progress >= item.requiredInvestigation;
             const canAfford = gameState.sparks >= item.cost;

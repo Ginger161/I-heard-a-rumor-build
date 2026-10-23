@@ -109,34 +109,34 @@ export const ZONE_PLACES: Record<string, string[]> = {
 
 export const GIST = {
   UNAWARE: [
+    'Complete silence. Not even a motor-park whisper has reached the streets of this state yet.',
     'Dead silence. Nobody in this state has heard a single whisper yet.',
-    'Business as usual in {place}. Not one person has mentioned the story.',
-    'Quiet as a Sunday afternoon. This place has no idea yet.'
+    'Business as usual in {place}. Not one person has mentioned the story.'
   ],
   EARLY: [
+    'Whispers are spreading fast across barbershops, commuter buses, and WhatsApp groups as citizens ask if the explosive allegations are actually true.',
     'Quiet whispers at {place}. People are asking if it\'s true...',
-    'A few people at {place} are leaning in and lowering their voices.',
-    'The first rumours are drifting around {place}. Nobody is sure yet.'
+    'A few people at {place} are leaning in and lowering their voices.'
   ],
   MID: [
+    'Whispers are spreading fast across barbershops, commuter buses, and WhatsApp groups as citizens ask if the explosive allegations are actually true.',
     'Screenshots are flying and everyone has an opinion. The debate is getting louder by the hour.',
-    '{place} is buzzing. Everybody has an uncle who "knows somebody".',
-    'The gist is everywhere now. Even the people who do not care are pretending to.'
+    '{place} is buzzing. Everybody has an uncle who "knows somebody".'
   ],
   CAP: [
+    'Widespread skepticism! Citizens are calling the story a paid political smear job—leak verified evidence immediately or lose the crowd!',
     'The streets are calling cap! People think this is a paid political hatchet job without receipts.',
-    '{place} is rolling its eyes. "Where is the proof?" is the question of the day.',
-    'Doubt is everywhere. People here want receipts, not rumours.'
+    '{place} is rolling its eyes. "Where is the proof?" is the question of the day.'
   ],
   JADED: [
+    'Scandal fatigue has set in! The public is tired of sensational rumors with zero proof. Only hard evidence can reignite their outrage.',
     'Gist fatigue has set in. Citizens are tired of hearing talk with no hard evidence.',
-    'People at {place} have heard it all before and have stopped listening.',
-    'The excitement has gone flat. Nobody wants to hear it again without proof.'
+    'People at {place} have heard it all before and have stopped listening.'
   ],
   OUTRAGE: [
+    'Total public outrage! From market stalls to ministry corridors, citizens are 100% convinced of his guilt and demanding immediate arrest!',
     'Open outrage across the state! Street debates and radio callers are demanding immediate arrest.',
-    '{place} has boiled over. Radio lines are jammed and the whole state wants answers.',
-    'Placards are being painted at {place}. This is no longer gossip.'
+    '{place} has boiled over. Radio lines are jammed and the whole state wants answers.'
   ]
 } as const;
 

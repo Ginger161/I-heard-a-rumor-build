@@ -3,6 +3,8 @@ import { GameState, WinRewards } from '../../engine/types';
 import { getTarget, SCANDALS } from '../../engine/data/targets';
 import { countEvidence, nationalBelieverPct } from '../../engine/selectors';
 import { BrutalButton, PaperGrain } from '../components/common';
+import { Avatar } from '../components/Silhouette';
+import { targetEmotion } from '../mood';
 import { BALANCE } from '../../engine/balance';
 import { pickFrom } from '../../engine/data/copy';
 import {
@@ -160,6 +162,19 @@ const ShareButton: React.FC<{ gameState: GameState; stars: number; tone: 'ink' |
   );
 };
 
+// How the Target took it: crushed when you won, laughing when you lost.
+const EndPortrait: React.FC<{ gameState: GameState }> = ({ gameState }) => {
+  const target = getTarget(gameState.activeTargetId);
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="w-28 h-32 bg-[#D9CBB0] border-4 border-[#1A1A1A] rounded-lg shadow-[4px_4px_0px_#1A1A1A] overflow-hidden -rotate-2">
+        <Avatar target={target} emotion={targetEmotion(gameState)} className="w-full h-full" />
+      </div>
+      <div className="font-serif font-black text-[11px] uppercase tracking-widest">{target.shortName}</div>
+    </div>
+  );
+};
+
 export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNewInvestigation, continueLabel = 'New Investigation' }) => {
   const target = getTarget(gameState.activeTargetId);
   const believers = nationalBelieverPct(gameState.states);
@@ -210,6 +225,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
           <p className="font-serif text-sm leading-relaxed border-t-2 border-b-2 border-[#1A1A1A] py-3 first-letter:text-4xl first-letter:font-black first-letter:float-left first-letter:mr-1.5 first-letter:leading-none">
             {fillEnd(body, vars)}
           </p>
+          <EndPortrait gameState={gameState} />
           <div className="flex flex-col gap-2">
             {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-[#EBE5D9] shadow-[2px_2px_0px_#1A1A1A]" />)}
           </div>
@@ -236,6 +252,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
           <div className="self-start rotate-[-4deg] border-4 border-[#8B0000] text-[#8B0000] font-black text-lg tracking-[0.2em] px-3 py-1 animate-stamp-in">BUSTED</div>
           <h1 className="font-mono font-black text-2xl uppercase leading-tight text-[#8B0000]">{fillEnd(pickFrom(LOSE_HEAT_HEADLINES, 'lh-h', seed), vars)}</h1>
           <p className="font-mono text-xs leading-relaxed bg-white/70 border border-[#8B0000] p-3">{fillEnd(pickFrom(LOSE_HEAT_BODIES, 'lh-b', seed), vars)}</p>
+          <EndPortrait gameState={gameState} />
           <div className="flex flex-col gap-2">
             {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-white/70 border-[#8B0000] font-mono" />)}
           </div>
@@ -276,6 +293,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
               "After a thorough review, the matter is closed. All allegations were baseless and unsupported by evidence. {target.fullName} thanks the people for their prayers and looks forward to continuing."
             </p>
             <p className="font-serif text-xs leading-relaxed">{fillEnd(pickFrom(LOSE_COVERUP_BODIES, 'lc-b', seed), vars)}</p>
+            <EndPortrait gameState={gameState} />
             <div className="flex flex-col gap-2">
               {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-[#EBE5D9] shadow-[2px_2px_0px_#1A1A1A]" />)}
             </div>
@@ -311,6 +329,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
         <p className="font-serif text-sm leading-relaxed border-t-2 border-b-2 border-[#1A1A1A] py-3 first-letter:text-4xl first-letter:font-black first-letter:float-left first-letter:mr-1.5 first-letter:leading-none">
           {fillEnd(pickFrom(LOSE_TIME_BODIES, 'lt-b', seed), vars)}
         </p>
+        <EndPortrait gameState={gameState} />
         <div className="flex flex-col gap-2">
           {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-[#D9D3C3] shadow-[2px_2px_0px_#1A1A1A]" />)}
         </div>

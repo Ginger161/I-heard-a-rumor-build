@@ -12,7 +12,9 @@
     "rate": "esbuild scripts/rate.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/rate.cjs --log-level=warning && node node_modules/.cache/rate.cjs",
     "simulate:story": "esbuild scripts/storySim.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/storysim.cjs --log-level=warning && node node_modules/.cache/storysim.cjs",
     "build:studio": "tsc --noEmit && vite build --mode studio --outDir dist-studio",
-    "egg:hash": "node scripts/eggHash.mjs"
+    "egg:hash": "node scripts/eggHash.mjs",
+    "build:offline": "npm run build && node scripts/singleFile.mjs",
+    "avatars": "esbuild scripts/avatarSheet.tsx --bundle --platform=node --format=cjs --jsx=automatic --outfile=node_modules/.cache/avatars.cjs --log-level=error && node node_modules/.cache/avatars.cjs"
   },
   "dependencies": {
     "@svg-maps/nigeria": "^2.0.0",

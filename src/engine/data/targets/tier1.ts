@@ -1,6 +1,8 @@
 import { TargetBase, ab, sc } from '../targetTypes';
 
 // TIER 1: NEIGHBOURHOOD BIG MEN. Local power, small stakes, gentle counter-moves.
+// Voice: adult and unfiltered (these are invented characters). Entries that are re-skinned by data/parody.ts
+// (owambe_dj, skit_king) keep their original text, because those stay comic.
 export const TIER_1: TargetBase[] = [
   {
     id: 'iyaloja_general',
@@ -8,19 +10,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Madam Bisi "Iyaloja General" Adegoke',
     shortName: 'Madam Adegoke',
     title: 'Market Association President',
-    personality: 'Controls every stall from the pepper section to the bus stop. Nobody sells tomatoes without her blessing.',
+    personality: 'Controls every stall from the pepper section to the bus stop. Nobody sells tomatoes without her blessing, and nobody argues with her bosom.',
     silhouette: 'gele',
     scandals: [
-      sc('FINANCIAL', 'Market Levy Money That Never Reached the Association Account'),
-      sc('AFFAIR', 'A Secret Second Husband in Ibadan'),
-      sc('FAKE_CREDENTIALS', '"Chief" Title Bought From a Roadside Chieftaincy Shop')
+      sc('FINANCIAL', 'Market Levy Money That Never Reached the Association Account, Only Her Gold Teeth'),
+      sc('AFFAIR', 'A Secret Second Husband in Ibadan, Twenty Years Younger and Very Thirsty'),
+      sc('FAKE_CREDENTIALS', '"Chief" Title Bought From a Roadside Chieftaincy Shop With a Free Wrapper')
     ],
     passiveName: 'Market Loyalty',
-    passiveFlavor: 'Traders will defend her until the last wrapper is sold.',
+    passiveFlavor: 'Traders will defend her until the last wrapper is sold, and then they will defend her from the floor.',
     mods: { tagDoubt: { GRASSROOTS: 8 } },
     abilities: [
       ab('COUNTER_STORY', 9, 8, 6, 'MARKET SOLIDARITY MARCH', 'Traders March in Her Defence',
-        'Hundreds of traders in matching wrappers marched to the state secretariat singing that {Target} is "a mother to us all".')
+        'Hundreds of traders in matching wrappers marched to the secretariat, singing that {Target} is "a mother to us all" and the journalists are "motherless".')
     ]
   },
   {
@@ -29,19 +31,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Alhaji Sule "Owner of the Road" Garba',
     shortName: 'Alhaji Garba',
     title: 'Motor Park Union Chairman',
-    personality: 'Collects a daily ticket from every danfo in the state and answers to nobody.',
+    personality: 'Collects a daily ticket from every danfo in the state, answers to nobody, and has slapped more conductors than he has paid.',
     silhouette: 'cap',
     scandals: [
-      sc('FINANCIAL', 'Daily Ticket Money Vanishing Into a Mansion in Kubwa'),
-      sc('LEAKED_MEDIA', 'Video of Him Slapping a Conductor Goes Viral'),
-      sc('FAKE_CREDENTIALS', 'Union Chairman Certificate Signed by Himself')
+      sc('FINANCIAL', 'Daily Ticket Money Vanishing Into a Mansion in Kubwa With a Swimming Pool'),
+      sc('LEAKED_MEDIA', 'Video of Him Slapping a Conductor Over ₦200 Goes Viral'),
+      sc('FAKE_CREDENTIALS', 'A Union Chairman Certificate Signed by Himself, in Green Ink')
     ],
     passiveName: 'Area Boys',
-    passiveFlavor: 'A loyal crowd of young men who can appear in any comment section.',
+    passiveFlavor: 'A loyal crowd of young men who can appear in any comment section, usually smelling of last night.',
     mods: {},
     abilities: [
       ab('BOT_SWARM', 8, 9, 2, 'PARK BOYS ON THE TIMELINE', 'The Park Boys Are Online',
-        'Union youths flooded every thread about {Target} with identical praise and threats.')
+        'Union youths flooded every thread about {Target} with identical praise, identical threats and identical spelling mistakes.')
     ]
   },
   {
@@ -50,19 +52,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Pastor Gbenga "Fire-Fire" Alade',
     shortName: 'Pastor Alade',
     title: 'Neighbourhood Prophet',
-    personality: 'Predicts your breakthrough for a seed of ten thousand naira. His church has no roof but plenty of generators.',
+    personality: 'Predicts your breakthrough for a seed of ten thousand naira. His church has no roof but plenty of generators, and plenty of "deliverance" for the choir.',
     silhouette: 'robe',
     scandals: [
-      sc('AFFAIR', 'Midnight Prayer Sessions With the Choir Mistress'),
-      sc('FINANCIAL', 'Seed-Sowing Offerings Spent on a Jeep'),
-      sc('LEAKED_MEDIA', 'Fake Healing Video Edited in the Vestry')
+      sc('AFFAIR', '"Midnight Prayer Sessions" With the Choir Mistress, and Her Sister, and Her Cousin'),
+      sc('FINANCIAL', 'Seed-Sowing Offerings Spent on a Jeep With Tinted Windows'),
+      sc('LEAKED_MEDIA', 'A Fake Healing Video Edited in the Vestry; the "Blind Man" Reads a Menu')
     ],
     passiveName: 'Prayer Warriors',
-    passiveFlavor: 'The congregation fasts for him and fights for him.',
+    passiveFlavor: 'The congregation fasts for him, fights for him, and has never once asked where the offering went.',
     mods: { tagDoubt: { GRASSROOTS: 6 } },
     abilities: [
       ab('DISTRACTION', 8, 7, 12, 'REVIVAL CRUSADE', 'Three-Day Revival Crusade Announced',
-        '{Target} announced a "Fire Revival Night" with free rice, pulling attention away from the allegations.')
+        '{Target} announced a "Fire Revival Night" with free rice and free tongues, and the allegations went quiet under the speakers.')
     ]
   },
   {
@@ -71,19 +73,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Mr. Emeka "Caution Fee" Obiora',
     shortName: 'Mr. Obiora',
     title: 'Estate Landlord',
-    personality: 'Owns forty rooms and has never returned a caution fee. Disputes are settled by thugs.',
+    personality: 'Owns forty rooms and has never returned a caution fee. Disputes are settled by thugs, and complaints by a very large dog.',
     silhouette: 'glasses',
     scandals: [
-      sc('FINANCIAL', 'Caution Fees Never Refunded to 200 Tenants'),
-      sc('FAKE_CREDENTIALS', 'A "C of O" the Land Registry Has Never Seen'),
-      sc('LEAKED_MEDIA', 'Recording of Him Threatening Tenants With Thugs')
+      sc('FINANCIAL', 'Caution Fees Never Refunded to 200 Tenants, Who Are Now Sharing One Bucket'),
+      sc('FAKE_CREDENTIALS', 'A "C of O" the Land Registry Has Never Seen and the Land Has Never Heard Of'),
+      sc('LEAKED_MEDIA', 'A Recording of Him Threatening Tenants: "I Go Put Una For Road Naked"')
     ],
     passiveName: 'Thugs on Retainer',
-    passiveFlavor: 'Street-level muscle that can shut a lane of gossip by force.',
+    passiveFlavor: 'Street-level muscle that can shut a lane of gossip by force, and sometimes a lane of traffic.',
     mods: {},
     abilities: [
-      ab('INJUNCTION', 8, 8, 2, 'STREET INTIMIDATION', 'Landlord\'s Boys Shut Down the Street',
-        '{Target}\'s thugs visited the shops and motor parks. Street talk went quiet overnight.', 'STREET')
+      ab('INJUNCTION', 8, 8, 2, 'STREET INTIMIDATION', 'Landlord’s Boys Shut Down the Street',
+        '{Target}’s thugs visited every shop and motor park. By nightfall the street was so quiet you could hear a tenant weeping.', 'STREET')
     ]
   },
   {
@@ -92,19 +94,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Hon. Ebuka "Constituency Project" Nwosu',
     shortName: 'Hon. Nwosu',
     title: 'Local Government Chairman',
-    personality: 'Commissions the same borehole in three different budgets. Loves a ribbon-cutting.',
+    personality: 'Commissions the same borehole in three different budgets. Loves a ribbon-cutting more than he loves his wife, which is not hard.',
     silhouette: 'suit',
     scandals: [
-      sc('FINANCIAL', 'Borehole Projects That Exist Only on Paper'),
-      sc('FAKE_CREDENTIALS', 'WAEC Result With Four F9s "Upgraded" to A1s'),
-      sc('AFFAIR', 'A Second Wife Registered as "Constituency Aide"')
+      sc('FINANCIAL', 'Borehole Projects That Exist Only on Paper, and in His Cousin’s Bank Account'),
+      sc('FAKE_CREDENTIALS', 'A WAEC Result With Four F9s "Upgraded" to A1s by a Man Called Kingsley'),
+      sc('AFFAIR', 'A Second Wife Registered as "Constituency Aide" With a Very Generous Allowance')
     ],
     passiveName: 'Paper Projects',
-    passiveFlavor: 'The local radio station depends on his advertising.',
+    passiveFlavor: 'The local radio station depends on his advertising, and his advertising depends on nobody looking.',
     mods: {},
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'AIRTIME BOUGHT', 'Local Radio Suddenly Goes Quiet',
-        '{Target}\'s office paid the radio stations for "exclusive project coverage". The phone-ins stopped.', 'PRESS')
+        '{Target}’s office paid the stations for "exclusive project coverage". The phone-ins stopped, and one presenter bought a motorbike.', 'PRESS')
     ]
   },
   {
@@ -134,19 +136,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Coach Biodun "Next Super Eagle" Alabi',
     shortName: 'Coach Alabi',
     title: 'Football Academy Owner',
-    personality: 'Promises every teenager a trial in Europe. The trials are always next month.',
+    personality: 'Promises every teenager a trial in Europe. The trials are always next month, and the boys are always sleeping on the pitch.',
     silhouette: 'uniform',
     scandals: [
-      sc('FINANCIAL', 'Parents Paid Millions for Overseas Trials That Never Happened'),
-      sc('FAKE_CREDENTIALS', 'A CAF Licence From a Football Body That Does Not Exist'),
-      sc('LEAKED_MEDIA', 'Voice Note Selling Squad Places to the Highest Bidder')
+      sc('FINANCIAL', 'Parents Paid Millions for Overseas Trials That Never Happened, to a Man Who Cannot Spell "Visa"'),
+      sc('FAKE_CREDENTIALS', 'A CAF Licence From a Football Body That Does Not Exist, With a Stamp From a Chemist'),
+      sc('LEAKED_MEDIA', 'A Voice Note Selling Squad Places: "Bring Cash, Not Talent, Oga"')
     ],
     passiveName: 'Grateful Parents',
-    passiveFlavor: 'Every family he "helped" will say so on camera.',
+    passiveFlavor: 'Every family he "helped" will say so on camera, because they have already paid.',
     mods: { tagDoubt: { GRASSROOTS: 4 } },
     abilities: [
       ab('DISTRACTION', 9, 8, 10, 'NEW TRIALS ANNOUNCED', 'Open Trials Announced This Weekend',
-        '{Target} announced free trials with a "European scout". The streets suddenly care about football again.')
+        '{Target} announced free trials with a "European scout", who turned out to be a cousin in a borrowed blazer. The streets care about football again.')
     ]
   },
   {
@@ -155,19 +157,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Dr. "Doctor of Everything" Amadi',
     shortName: 'Dr. Amadi',
     title: 'Herbal Medicine Seller',
-    personality: 'Cures malaria, ulcer, and heartbreak with one bottle. Has a PhD in nothing in particular.',
+    personality: 'Cures malaria, ulcer, and heartbreak with one bottle. His "man-power" bitters have caused three divorces and one very surprised wife.',
     silhouette: 'glasses',
     scandals: [
       sc('FAKE_CREDENTIALS', 'A Medical Degree From the "University of Roadside Anambra"'),
-      sc('FINANCIAL', 'Cure-All Bitters Sold at a 400% Markup'),
-      sc('LEAKED_MEDIA', 'Video Relabelling Paracetamol as "Ancient Root Extract"')
+      sc('FINANCIAL', 'Cure-All Bitters Sold at a 400% Markup, Mostly to Men Who Regret It'),
+      sc('LEAKED_MEDIA', 'A Video Relabelling Paracetamol as "Ancient Root Extract for Strong Back"')
     ],
     passiveName: 'Miracle Testimonies',
-    passiveFlavor: 'A parade of cured customers appears whenever he is in trouble.',
+    passiveFlavor: 'A parade of cured customers appears whenever he is in trouble. Several look suspiciously like the same man.',
     mods: {},
     abilities: [
       ab('COUNTER_STORY', 8, 7, 7, 'TESTIMONY MARATHON', 'Cured Customers Line Up',
-        'A parade of "miraculously healed" customers swore on live radio that {Target} saved their lives.')
+        'A parade of "miraculously healed" customers swore on live radio that {Target} saved their lives, their marriages and one very tired nether region.')
     ]
   },
   {
@@ -176,19 +178,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Prince Dele "Forex God" Adeyinka',
     shortName: 'Prince Dele',
     title: 'Instagram Forex Trader',
-    personality: 'Rents the car, rents the jet, rents the confidence. Teaches you to trade for ₦150,000.',
+    personality: 'Rents the car, rents the jet, rents the confidence. Teaches you to trade for ₦150,000 and to cry for free.',
     silhouette: 'hoodie',
     scandals: [
-      sc('FINANCIAL', 'An Investment Group That Froze Withdrawals at 3 AM'),
-      sc('LEAKED_MEDIA', 'Rented Lamborghini Returned in a Live Video'),
-      sc('FAKE_CREDENTIALS', 'A "Certified Trader" Badge Bought for $20')
+      sc('FINANCIAL', 'An Investment Group That Froze Withdrawals at 3 AM and Then Blocked Everybody'),
+      sc('LEAKED_MEDIA', 'A Rented Lamborghini Returned in a Live Video, With the Rental Man Shouting'),
+      sc('FAKE_CREDENTIALS', 'A "Certified Trader" Badge Bought for $20 and a Follow-Back')
     ],
     passiveName: 'Flex Culture',
-    passiveFlavor: 'The online crowd mistakes rented success for wisdom.',
+    passiveFlavor: 'The online crowd mistakes rented success for wisdom, and rented girlfriends for a lifestyle.',
     mods: { tagDoubt: { HYPER_ONLINE: 10 }, spinHubs: true },
     abilities: [
       ab('BOT_SWARM', 7, 8, 2, 'SUCCESS STORIES POSTED', 'Fake Profit Screenshots Flood In',
-        '{Target}\'s students posted screenshots of staggering profits. Every one used the same template.')
+        '{Target}’s students posted screenshots of staggering profits. Every one used the same template, and the same typo in "withdrawal".')
     ]
   },
   {
@@ -197,19 +199,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Oga Kemi "Land Guard" Salami',
     shortName: 'Oga Salami',
     title: 'Omo-Onile Land Grabber',
-    personality: 'Sells your plot to you, then to your neighbour, then back to you.',
+    personality: 'Sells your plot to you, then to your neighbour, then back to you. Has never been to a funeral he did not profit from.',
     silhouette: 'cap',
     scandals: [
-      sc('FINANCIAL', 'The Same Plot Sold to Seven Different Buyers'),
-      sc('LEAKED_MEDIA', 'Clip of Thugs Demolishing a Family Compound'),
-      sc('FAKE_CREDENTIALS', 'A Forged Family Land Document Stamped by a Dead Surveyor')
+      sc('FINANCIAL', 'The Same Plot Sold to Seven Different Buyers, Each With a Receipt and a Dream'),
+      sc('LEAKED_MEDIA', 'A Clip of Thugs Demolishing a Family Compound While He Eats Suya on the Bonnet'),
+      sc('FAKE_CREDENTIALS', 'A Forged Family Land Document Stamped by a Surveyor Who Died in 1998')
     ],
     passiveName: 'Omo-Onile Boys',
-    passiveFlavor: 'His boys know every informant in the neighbourhood.',
+    passiveFlavor: 'His boys know every informant in the neighbourhood and most of their mothers.',
     mods: {},
     abilities: [
       ab('HEAT_SURGE', 7, 9, 6, 'THUGS TIP THE POLICE', 'Land Boys Report Your Network',
-        '{Target}\'s associates named your couriers to a divisional police officer. Heat is rising.')
+        '{Target}’s associates named your couriers to a divisional police officer, who is very interested in the "contribution" that followed. Heat is rising.')
     ]
   },
   {
@@ -218,19 +220,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Slay Queen "Soft Life" Amaka',
     shortName: 'Amaka',
     title: 'Lifestyle Influencer',
-    personality: 'Posts the soft life from a rented flat, a borrowed car and a very understanding "sponsor".',
+    personality: 'Posts the soft life from a rented flat, a borrowed car and a very understanding "sponsor" with a wife and four children.',
     silhouette: 'gele',
     scandals: [
-      sc('AFFAIR', 'A "Sponsor" Who Turns Out to Be a Married Senator'),
-      sc('FINANCIAL', 'A Fashion Brand That Never Ships a Single Dress'),
-      sc('LEAKED_MEDIA', 'A Livestream Revealing Her Mansion Is a Hotel Lobby')
+      sc('AFFAIR', 'A "Sponsor" Who Turns Out to Be a Married Senator With a Loud Wife'),
+      sc('FINANCIAL', 'A Fashion Brand That Never Ships a Single Dress, Only Excuses'),
+      sc('LEAKED_MEDIA', 'A Livestream Revealing Her "Mansion" Is a Hotel Lobby and Her Chef Is the Receptionist')
     ],
     passiveName: 'Soft Life Squad',
-    passiveFlavor: 'Her followers defend the lifestyle, and screenshot every critic.',
+    passiveFlavor: 'Her followers defend the lifestyle, and screenshot every critic into a group called "Haters (Tag Them)".',
     mods: { tagDoubt: { HYPER_ONLINE: 6 } },
     abilities: [
       ab('BOT_SWARM', 8, 8, 2, 'SQUAD ACTIVATED', 'The Soft Life Squad Strikes Back',
-        '{Target}\'s followers are replying to every post with "hater" and a crown emoji.')
+        '{Target}’s followers are replying to every post with "hater" and a crown emoji. Several have also sent a bucket of toxic DMs.')
     ]
   },
   {
@@ -239,19 +241,19 @@ export const TIER_1: TargetBase[] = [
     fullName: 'Chukwudi "Forex Signals" Okafor',
     shortName: 'Chukwudi Okafor',
     title: 'Telegram Signals Seller',
-    personality: 'Sells winning trade signals for ₦20,000 a month. His own account has never won a single trade.',
+    personality: 'Sells winning trade signals for ₦20,000 a month. His own account has never won a single trade, or a single argument.',
     silhouette: 'hoodie',
     scandals: [
-      sc('FINANCIAL', 'Paid Signals That Lose Money Every Single Time'),
-      sc('LEAKED_MEDIA', 'A Screen-Share Showing His Trading Account Is Empty'),
-      sc('FAKE_CREDENTIALS', 'A "Certified Analyst" Licence From a Facebook Group')
+      sc('FINANCIAL', 'Paid Signals That Lose Money Every Single Time, Like Clockwork and Gonorrhoea'),
+      sc('LEAKED_MEDIA', 'A Screen-Share Showing His Trading Account Is Empty, Next to a Pizza Order'),
+      sc('FAKE_CREDENTIALS', 'A "Certified Analyst" Licence From a Facebook Group Called "Wealth Brothers"')
     ],
     passiveName: 'Signal Group Loyalty',
-    passiveFlavor: 'His paying members cannot admit they were fooled.',
+    passiveFlavor: 'His paying members cannot admit they were fooled, because their wives are already asking.',
     mods: { tagDoubt: { HYPER_ONLINE: 6 } },
     abilities: [
       ab('DISTRACTION', 9, 8, 10, 'FREE SIGNAL DAY', 'A "Free Signal Day" Dominates Telegram',
-        '{Target} announced free signals for everyone. The channels are suddenly full of other conversations.')
+        '{Target} announced free signals for everyone. The channels are suddenly full of other conversations, and several marriages.')
     ]
   },
   {

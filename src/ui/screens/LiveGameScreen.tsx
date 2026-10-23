@@ -10,7 +10,7 @@ import { InspectionCard } from '../components/InspectionCard';
 import { PaperGrain, SparkCounter } from '../components/common';
 import { PolaroidChatter } from '../components/PolaroidChatter';
 import { accentOf } from '../theme';
-import { moodOf } from '../mood';
+import { moodOf, targetEmotion } from '../mood';
 import { getClimate } from '../../engine/data/climates';
 import { useSettings } from '../settings';
 import { LiveOverlays, useLiveShared } from '../live/shared';
@@ -133,7 +133,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
           onSpinTap={popSpin}
         />
 
-        {gameState.hasPoppedFirstSpark && <PolaroidChatter target={target} ping={gameState.chatter} accent={accentOf(target)} />}
+        {gameState.hasPoppedFirstSpark && <PolaroidChatter target={target} ping={gameState.chatter} accent={accentOf(target)} emotion={targetEmotion(gameState)} />}
 
         {/* Phase 1 floating instruction badges */}
         {!gameState.hasPlantedSeed && (

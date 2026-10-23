@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SilhouetteKind, TargetArchetype } from '../../engine/data/targets';
+import { hashOf, lookFor } from '../../engine/data/looks';
+import { Emotion, Face } from './Face';
 
 interface SilhouetteProps {
   kind: SilhouetteKind;
@@ -59,13 +61,29 @@ export const Silhouette: React.FC<SilhouetteProps> = ({ kind, locked = false, cl
   );
 };
 
-// A Target's portrait: their uploaded image when they have one (falling back to the silhouette if it fails to load),
-// otherwise the silhouette. Locked Targets always show the silhouette so nothing is revealed.
-export const Avatar: React.FC<{ target: TargetArchetype; locked?: boolean; className?: string }> = ({ target, locked = false, className = '' }) => {
+// Commissioned portraits. If public/avatars/index.json lists a Target's id, its pictures are used instead of the drawn face:
+// public/avatars/<targetId>/<emotion>.png for neutral, confident, smug, angry, worried, panic, defeated and laugh (a missing
+// emotion falls back to neutral.png, and a missing file to the drawn face). See public/avatars/README.md.
+let artIds: Set<string> | null = null;
+let artLoad: Promise<void> | null = null;
+const loadArt = (): Promise<void> => (artLoad ??= fetch('./avatars/index.json', { cache: 'no-cache' })
+  .then(r => r.json()).then((j: { targets?: string[] }) => { artIds = new Set(j.targets ?? []); })
+  .catch(() => { artIds = new Set(); }));
+
+// A Target's portrait. Order of preference: their uploaded image (Studio / pack), commissioned art, then the drawn face,
+// which matches their gender, age and region and can show an emotion. Locked Targets always show the plain silhouette so
+// nothing is revealed.
+export const Avatar: React.FC<{ target: TargetArchetype; locked?: boolean; emotion?: Emotion; className?: string }> = ({ target, locked = false, emotion = 'NEUTRAL', className = '' }) => {
   const [failed, setFailed] = useState(false);
+  const [, bump] = useState(0);
+  useEffect(() => { if (!artIds) loadArt().then(() => bump(n => n + 1)); }, []);
   const url = target.avatar?.imageUrl;
-  if (url && !locked && !failed) {
+  if (locked) return <Silhouette kind={target.silhouette} locked className={className} />;
+  if (url && !failed) {
     return <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className={`object-cover ${className}`} />;
   }
-  return <Silhouette kind={target.silhouette} locked={locked} className={className} />;
+  if (artIds?.has(target.id)) {
+    return <img src={`./avatars/${target.id}/${emotion.toLowerCase()}.png`} alt="" loading="lazy" onError={e => { const img = e.currentTarget; if (!img.src.endsWith('/neutral.png')) img.src = `./avatars/${target.id}/neutral.png`; }} className={`object-cover ${className}`} />;
+  }
+  return <Face look={lookFor(target.id, target.silhouette)} emotion={emotion} accent={target.avatar?.accent} seed={hashOf(target.id)} className={className} />;
 };

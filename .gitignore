@@ -3,3 +3,5 @@ dist/
 dist-studio/
 private/
 .env.local
+dist-offline/
+scratch/

@@ -5,15 +5,16 @@ import { sfx } from '../audio';
 import { markHintSeen, shouldShowHint, useSettings } from '../settings';
 
 // The guided first case. Each step either explains something (a card; the clock is held) or waits for the player to do the
-// real thing (a coach-mark ring; the game runs normally). It teaches the essentials in short cards and points to the Field
-// Guide ("Learn more") for the rest, so it never drags. The player can take over at any moment ("Take over" keeps the case
-// running with the tutorial gone) or leave ("Skip"). Targets are found with data-tour="..." attributes.
+// real thing (a coach-mark ring; the game runs normally). It teaches only the loop (spread it, make it believable, stay
+// safe) in a few short cards, and leaves the details to the one-time hints that appear when they first matter, and to the
+// Field Guide ("Learn more"). The player can take over at any moment ("Take over" keeps the case running with the
+// tutorial gone) or leave ("Skip"). Targets are found with data-tour="..." attributes.
 interface Step {
   id: string;
-  part: number;                                 // 1-4, shown as "Part n of 4"
   target?: string;                              // data-tour value to spotlight
   title: string;
   body: string;
+  flow?: string[];                              // a row of chips shown under the title (the game in one line)
   modalBody?: string;                           // text to show instead while a desk is open
   action?: boolean;                             // waits for the player instead of a Next button
   done?: (gs: GameState) => boolean;            // action steps: when the step is complete
@@ -22,79 +23,49 @@ interface Step {
   learn?: string;                               // Field Guide entry to open from "Learn more"
 }
 
-export const PARTS = ['The basics', 'How it spreads', 'What fights back', 'Your plan'];
 const noOverlay = (gs: GameState) => gs.notificationQueue.length === 0 && gs.activeModal === 'NONE';
 
 export const TUTORIAL_STEPS: Step[] = [
   {
-    id: 'welcome', part: 1, title: 'You are the Gist',
-    body: 'Make 75% of Nigeria believe the story about your Target before the days run out, without getting raided or spun out of it. This practice case takes about 3 minutes and nothing in it counts. Tap “Take over” whenever you want to play on your own.',
+    id: 'welcome', title: 'You are the Gist',
+    body: 'Get 75% of Nigeria to believe your story about the Target before the days run out. This practice case takes about 2 minutes and nothing in it counts.',
+    flow: ['📣 Spread it', '🧾 Make them believe', '🛡️ Don’t get caught'],
     cta: "Let's go", learn: 'goal'
   },
   {
-    id: 'plant', part: 1, target: 'map', action: true, title: '1. Plant the rumour',
-    body: 'Tap any state on the map to start the rumour there. A big busy state in the middle gives you the most neighbours to spread to.',
+    id: 'plant', target: 'map', action: true, title: '1. Plant the rumour',
+    body: 'Tap any state to start the rumour there. Big central states have the most neighbours to spread to.',
     done: gs => gs.hasPlantedSeed
   },
   {
-    id: 'spark', part: 1, target: 'map', action: true, title: '2. Pop the spark',
-    body: 'Tap the glowing ⚡ bubble. Sparks are your money. The clock starts when you pop it.',
+    id: 'spark', target: 'map', action: true, title: '2. Pop the spark',
+    body: 'Tap the glowing ⚡ bubble. Sparks are your money, and the clock starts when you pop it.',
     done: gs => gs.hasPoppedFirstSpark, learn: 'sparks'
   },
   {
-    id: 'hud', part: 1, target: 'hud', title: 'Your dashboard', ready: noOverlay,
-    body: 'DAY is your clock. 👥 is the share of Nigeria that believes you: reach 75% to win. 🚨 is Heat: at 100% you are busted. ⚡ is your cash.',
+    id: 'hud', target: 'hud', title: 'Your dashboard', ready: noOverlay,
+    body: 'DAY is the clock. 👥 is how many believe you: 75% wins. 🚨 Heat is how close you are to a raid: 100% busts you. ⚡ is your cash.',
     learn: 'heat'
   },
   {
-    id: 'inspect', part: 2, target: 'inspect', title: 'Every state is different', ready: noOverlay,
-    body: 'Tap a state to inspect it. The bar splits its people into Unaware, Heard, Believers and bored (Jaded). The tag shows the type: Grassroots states love Street gossip, Hyper-online states love Social but want receipts, Elite hubs ignore gossip until you chain Press or Elite channels. Doubt is how sceptical they are.',
-    learn: 'tags'
-  },
-  {
-    id: 'stats', part: 2, title: 'Three stats drive everything', ready: noOverlay,
-    body: '⚡ Velocity: how fast people hear it. 🧾 Credibility: how many of them believe it, and how well you resist Doubt. 🔥 Notoriety: more sparks, but more Heat. Every channel adds some of each. Hearing is not believing, so you need Velocity first and Credibility after.',
-    learn: 'velocity'
-  },
-  {
-    id: 'channels', part: 2, target: 'dock-channels', action: true, title: '3. Spread it with Channels',
-    body: 'Open Channels and buy “Agbero & Motor Park Loudmouths”: it is cheap and fast.',
-    modalBody: 'Tap a pin to read it, then Acquire. Gold tags are Synergy: they match your scandal and count 35% more. Street is cheap and fast, Social is fastest but breeds Doubt, Press builds Credibility, Elite unlocks the big hubs. Buy the Agbero to continue.',
+    id: 'channels', target: 'dock-channels', action: true, title: '3. Buy a Channel',
+    body: 'Channels are how the story travels. Open Channels and buy “Agbero & Motor Park Loudmouths”: cheap and fast.',
+    modalBody: 'Tap a pin, then Acquire. Street is cheap and fast, Social is fastest but breeds Doubt, Press builds belief, Elite opens the big cities. Gold tags match your scandal for +35%. Buy the Agbero to go on.',
     done: gs => gs.unlockedChannels.length > 0, learn: 'synergy'
   },
   {
-    id: 'watch', part: 2, title: 'Now the days tick', ready: noOverlay,
-    body: 'Each day the rumour spreads by itself inside the state. It also hops across land borders (highways), and once a big city is well informed it can fly to the other airport cities: Lagos, Abuja, Kano, Port Harcourt and Enugu.',
-    learn: 'highways'
-  },
-  {
-    id: 'factors', part: 2, target: 'map', title: 'What speeds it up, what slows it down', ready: noOverlay,
-    body: 'Faster: more Velocity, channels that match your scandal, a fresh story, a smart seed state. Slower: Doubt (too much hype, no proof), Elite hubs before you have Press or Elite channels, a stale story, the Target’s moves, and the season’s climate.',
+    id: 'watch', target: 'map', title: 'Hearing is not believing', ready: noOverlay,
+    body: 'Each day it spreads on its own, over borders and by air between the big cities. Velocity gets people to hear it; Credibility gets them to believe it. Hype with no proof builds Doubt. Tap any state to see who has heard, believes or is bored.',
     learn: 'doubt'
   },
   {
-    id: 'bubbles', part: 2, target: 'map', title: 'Bubbles', ready: noOverlay,
-    body: 'Amber and gold ⚡ bubbles are cash: tap them before they vanish, and chain taps for a combo. A rare golden one is worth triple. Dark Spin bubbles are the Target’s PR team: pop them before they detonate or Doubt and Cover-Up jump.',
-    learn: 'spin'
-  },
-  {
-    id: 'events', part: 3, target: 'climate', title: 'Random events', ready: noOverlay,
-    body: 'Every few days a news card appears: a blackout, a strike, an informant’s tip. Read it and choose. There is always a free option, and the costly ones usually pay off. The chip here is this case’s climate, which tweaks spread, Heat and how fast the story goes stale.',
-    learn: 'events'
-  },
-  {
-    id: 'meters', part: 3, target: 'meters', title: 'The Target fights back', ready: noOverlay,
-    body: 'Cover-Up is their spin machine: at 100% they walk free. Freshness is how alive your story is. Each Target has their own moves (freeze a channel, distract the news, call in favours) and they get bolder as belief grows. Tap these bars to read their file.',
+    id: 'fights', target: 'meters', title: 'The Target fights back', ready: noOverlay,
+    body: 'At 100% Cover-Up they walk free. Evidence cuts Doubt and Cover-Up (a little Heat); Defence cools Heat. Pop the dark Spin bubbles before they go off. Random news cards will ask you to choose: there is always a free option.',
     learn: 'coverup'
   },
   {
-    id: 'desks', part: 3, target: 'dock', title: 'Evidence and Defence', ready: noOverlay,
-    body: 'Evidence turns gossip into belief and pushes Cover-Up back, but it costs some Heat, and forgeries can backfire. Defence cools Heat and blocks the Target’s tricks. Doubt high? Evidence. Heat high? Defence.',
-    learn: 'evidence'
-  },
-  {
-    id: 'finish', part: 4, title: 'Your game plan', ready: noOverlay,
-    body: '1. Seed a big central state. 2. Buy Street and Social for speed, then chain Press and Elite for belief. 3. Watch Doubt: leak evidence when it climbs. 4. Keep Heat under 70% and pop Spin bubbles. 5. Reach 75% Believers before the days end. The Field Guide in the pause menu explains every term.',
+    id: 'finish', title: 'Your game plan', ready: noOverlay,
+    body: 'Seed a big state. Buy Street and Social for speed, then Press and Elite for belief. Leak Evidence when Doubt climbs, keep Heat under 70%, and reach 75% before the days end. The Field Guide in the pause menu explains every term.',
     cta: 'Take over', learn: 'goal'
   }
 ];
@@ -176,11 +147,12 @@ export const Tutorial: React.FC<TutorialProps> = ({ gameState, rootRef, onHold, 
       <div className="absolute inset-x-3 flex justify-center" style={cardStyle}>
         <div className="pointer-events-auto relative w-full max-w-[350px] bg-[#FDE68A] border-[3px] border-[#1A1A1A] rounded-xl shadow-[5px_5px_0px_#1A1A1A] p-3.5 animate-pop-in">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-[#8B0000]">Part {step.part}/4 • {PARTS[step.part - 1]}</div>
-            <div className="text-[9px] font-black text-[#1A1A1A]/50">{idx + 1}/{TUTORIAL_STEPS.length}</div>
+            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-[#8B0000]">How to play</div>
+            <div className="text-[9px] font-black text-[#1A1A1A]/50">Step {idx + 1} of {TUTORIAL_STEPS.length}</div>
           </div>
           <div className="font-serif font-black text-base leading-tight">{step.title}</div>
-          <p className="font-sans text-[12px] leading-snug mt-1 text-[#1A1A1A]">{body}</p>
+          {step.flow && <div className="flex flex-wrap items-center gap-1 mt-1.5">{step.flow.map((f, i) => <React.Fragment key={f}>{i > 0 && <span aria-hidden className="text-[#1A1A1A]/50 text-[11px]">→</span>}<span className="text-[10px] font-black bg-white border-2 border-[#1A1A1A] rounded px-1.5 py-0.5">{f}</span></React.Fragment>)}</div>}
+          <p className="font-sans text-[12px] leading-snug mt-1.5 text-[#1A1A1A]">{body}</p>
           {step.action ? (
             <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-[#B45309]">Your turn — try it ↑</div>
           ) : (

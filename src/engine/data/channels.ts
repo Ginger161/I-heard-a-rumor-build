@@ -22,12 +22,14 @@ export interface ChannelUpgrade {
   };
 }
 
+// Flavour voice: adult, crude and expressive (the Targets are invented). Lines use {Target} and avoid gendered pronouns.
+// Story-only Targets use the matching pool in adult.ts; Targets that wink at real people use the comic pool in parody.ts.
 export const CHANNELS_DATA: ChannelUpgrade[] = [
   // ==========================================
   // STREET (Lane Center: Y=150)
   // agbero -> okada -> salons -> iyaloja -> viewing_center
   // ==========================================
-  { 
+  {
     id: 'street_agbero',
     name: 'Agbero & Motor Park Loudmouths',
     branch: 'STREET',
@@ -41,21 +43,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 150,
     flavorTexts: {
       DEFAULT: [
-        "Danfo conductors at Oshodi are shouting {Target}'s name while calling passengers.",
-        "A fight almost broke out at Jabi Park because two agberos were arguing about {Target}.",
-        "Passengers at Upper Iweka are refusing to enter buses until the driver turns up the radio discussing {Target}."
+        "From Berger to Jabi Park, conductors are screaming the {Target} gist through the bus window before the engine even starts. \"Abeg, who never hear am?\""
       ],
       FINANCIAL: [
-        "'Make {Target} bring our share!' conductors are chanting at the bus stops.",
-        "Agberos are joking that {Target} stole more money than they collect in union tickets all year."
+        "Conductors at Oshodi and Jabi are shouting that {Target} was caught hiding four bullion vans and bags of crisp pounds inside an unfinished building. \"Na so dem dey chop am, oga!\""
       ],
       AFFAIR: [
-        "Park chairmen are cracking dirty jokes about {Target} over their morning bitters.",
-        "Conductors are using {Target}'s name as a new slang for someone who got caught cheating."
+        "The motor parks are buzzing: {Target} bolted from a Maitama hotel room in nothing but a towel and bad intentions, after the love potion from a 21-year-old backfired mid-act. \"E no finish o!\""
+      ],
+      LEAKED_MEDIA: [
+        "Every danfo driver got the leaked audio by Bluetooth. Passengers are laughing so hard they forgot to collect their change, and one man missed his stop crying."
+      ],
+      FAKE_CREDENTIALS: [
+        "Even the ticket touts are mocking {Target}: a roadside carpenter in Oluwole printed that \"London degree\", and gave a discount if you brought a friend."
       ]
     }
   },
-  { 
+  {
     id: 'street_okada',
     name: 'Keke & Okada Union Mudflaps',
     branch: 'STREET',
@@ -69,21 +73,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 150,
     flavorTexts: {
       DEFAULT: [
-        "Okada riders just printed {Target}'s face on their mudflaps.",
-        "Keke drivers are pasting photocopies of the {Target} scandal on their windshields.",
-        "A union task force in Kano just stopped a rider to gossip about {Target}."
+        "Every keke in town now wears a sticker of the {Target} scandal across the back, right above \"God dey\", and the riders are very proud of the placement."
       ],
       FINANCIAL: [
-        "Keke drivers have a new sticker: 'FEAR WHO NO DEY STEAL... FEAR {Target}'.",
-        "'If {Target} can steal that amount, why are police disturbing us for 100 naira?' okada riders are grumbling."
+        "Tricycle riders have printed {Target}'s face on their mudflaps: \"THIEF OF THE FEDERATION. RETURN OUR BOREHOLE MONEY, YOU FRAUD!\" The mud makes it more honest."
       ],
       AFFAIR: [
-        "Okada unions are playing viral voice notes of {Target} from their Bluetooth speakers.",
-        "Riders are laughing at {Target}'s apology video while waiting at traffic lights."
+        "Okada riders are honking through major junctions, swearing {Target}'s side-chick fed pepper soup with a fetish obedience charm. \"Na why e dey beg her for sex inside church!\""
+      ],
+      LEAKED_MEDIA: [
+        "Keke Bluetooth speakers are blasting the leaked voice note at full bass from corner to corner. Pregnant women are asking the riders to turn it down. Nobody turns it down."
+      ],
+      FAKE_CREDENTIALS: [
+        "The union chairman joked on a megaphone that a learner's permit has more integrity than {Target}'s degree, and the whole junction clapped like a sermon."
       ]
     }
   },
-  { 
+  {
     id: 'street_salons',
     name: 'Barber Shop & Hair Salon Gist',
     branch: 'STREET',
@@ -97,21 +103,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 150,
     flavorTexts: {
       DEFAULT: [
-        "Every braiding salon in town has spent the last three hours dissecting {Target}'s life.",
-        "Clippers are pausing in barbershops nationwide as guys argue passionately about {Target}.",
-        "A manicurist in Yaba just lost a customer because they wouldn't stop arguing over {Target}'s innocence."
+        "Between the hair dryers and the clippers, a whole neighbourhood is dissecting every filthy detail of the {Target} gist. Someone's weave is halfway done and nobody cares."
       ],
-      FAKE_CREDENTIALS: [
-        "'I always knew {Target} was empty upstairs,' a barber in Surulere just declared while lining up a customer.",
-        "Salon owners are joking that {Target}'s certificate is as fake as cheap attachments."
+      FINANCIAL: [
+        "Stylists swear {Target}'s seven-year-old grandson just bought a waterfront villa in Dubai while civil servants queue for their salary. \"Shey you see why I no dey vote?\""
       ],
       AFFAIR: [
-        "Women under the hair dryers are tearing {Target}'s marriage apart detail by detail.",
-        "Barbershop debates about {Target}'s side-chick just reached screaming levels."
+        "Hairdressers confirm {Target}'s wife and mistress showed up at the same VIP lounge in the exact same ₦4.5 million wig, and tore each other's hair out on the floor. Both wigs are dead."
+      ],
+      LEAKED_MEDIA: [
+        "Nobody is looking in the mirror anymore. Every customer's phone is playing the leaked lobby footage on loop, and the barber has stopped cutting to watch the good part again."
+      ],
+      FAKE_CREDENTIALS: [
+        "The barbers are having a field day: \"Oxford? Na two-room computer centre for East London be that! I get cousin wey graduate from there, e dey sell shawarma!\""
       ]
     }
   },
-  { 
+  {
     id: 'street_iyaloja',
     name: 'Market Women Association (Iyaloja)',
     branch: 'STREET',
@@ -125,22 +133,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 150,
     flavorTexts: {
       DEFAULT: [
-        "Market leaders at Balogun are swearing curses on {Target}'s head.",
-        "Traders at Ariaria market closed their shops for an hour just to discuss the {Target} situation.",
-        "The Iyaloja of Alaba market just gave a street interview blasting {Target}."
+        "Once the market women lock their stalls to gossip about you, your family name is dead and buried, and the pepper sellers are doing the eulogy."
       ],
       FINANCIAL: [
-        "'Our children have no jobs but {Target} is looting billions!' market women are chanting.",
-        "Pepper sellers are using {Target}'s name to describe thieves in the market.",
-        "Women in the market are singing impromptu protest songs about {Target}'s offshore accounts."
+        "The market women are threatening to march half-naked after hearing {Target} tried to smuggle ₦4 billion in cash through the airport inside cartons of Indomie. \"Na so dem dey chop poor people money!\""
+      ],
+      AFFAIR: [
+        "The Iyaloja is furious: {Target} was caught on their knees begging a shrine priest after a pregnant mistress threatened to expose the pact. \"A man wey dey lead us! In the name of God!\""
+      ],
+      LEAKED_MEDIA: [
+        "The humiliating video of {Target} crying and begging a native doctor to restore their fortune has reached every stall in Balogun and Wuse. A woman is selling copies with the pepper."
       ],
       FAKE_CREDENTIALS: [
-        "The Iyaloja just banned anyone wearing {Target}'s campaign wrappers from her market.",
-        "'Even my apprentice has a better certificate than {Target}!' a fabric seller yelled."
+        "Market leaders issued a furious statement: \"Our children write JAMB four times and cry, yet this fraud walked into office with a dead man's NYSC certificate. We curse the printer!\""
       ]
     }
   },
-  { 
+  {
     id: 'street_viewing_center',
     name: 'Viewing Center Halftime Debates',
     branch: 'STREET',
@@ -154,17 +163,19 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 150,
     flavorTexts: {
       DEFAULT: [
-        "Halftime at viewing centers nationwide turned into a full-blown debate over {Target}.",
-        "Nobody is checking their bet slips; the whole shop is watching the news about {Target}.",
-        "Even over the noise of the generator, guys at the viewing center are shouting about {Target}."
+        "Two hundred men in jerseys are ignoring the match to scream about {Target} at full volume. A man in the back row just threw a plastic chair at an opinion."
       ],
       FINANCIAL: [
-        "'Even Chelsea's defense is tighter than {Target}'s accounting,' punters are joking at the BetShop.",
-        "'If I had {Target}'s looted money, I wouldn't be playing virtual sports,' a frustrated fan yelled."
+        "Nobody cares about the Champions League. Halftime is all about how {Target} used rural transformer money to import three bulletproof G-Wagons. \"And the village still dey use candle!\""
+      ],
+      AFFAIR: [
+        "The whole viewing centre exploded over claims {Target} collapsed in a VIP penthouse after three performance pills for a university student. \"Na the pills, not the girl, o!\""
       ],
       LEAKED_MEDIA: [
-        "The viewing center operator paused the Champions League match to play {Target}'s leaked video.",
-        "The whole BetShop erupted in laughter when {Target}'s tape was cast to the main screen."
+        "The operator paused the Premier League, plugged his phone into the projector, and played the leaked clip for two hundred angry youths. Nobody asked for the match back."
+      ],
+      FAKE_CREDENTIALS: [
+        "Fans on the front bench are roasting {Target}: \"Ghost graduate! The principal wey sign that certificate wasn't even born that year! The only thing he graduated from is lies!\""
       ]
     }
   },
@@ -173,7 +184,7 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
   // SOCIAL (Lane Center: Y=350)
   // whatsapp branches into deh_geh, baidasoj, and mazi_tunde
   // ==========================================
-  { 
+  {
     id: 'social_whatsapp',
     name: "WhatsApp 'Forwarded Many Times'",
     branch: 'SOCIAL',
@@ -187,24 +198,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 350,
     flavorTexts: {
       DEFAULT: [
-        "A 4-minute voice note starting with 'Good morning my people...' about {Target} just hit 50,000 family groups.",
-        "Messages tagged 'Forwarded many times' containing {Target}'s home address are spreading like wildfire.",
-        "Estate WhatsApp groups have abandoned security updates to argue about {Target}."
-      ],
-      LEAKED_MEDIA: [
-        "A blurry CCTV clip of {Target} is crashing older uncles' phones from too many forwards.",
-        "Your auntie just forwarded the {Target} video to the church prayer group by mistake."
-      ],
-      FAKE_CREDENTIALS: [
-        "A PDF titled 'THE TRUE IDENTITY OF {Target}' is spreading through church WhatsApp groups.",
-        "A terribly photoshopped image comparing {Target}'s face to a wanted poster is going viral on WhatsApp."
+        "Every auntie and uncle just forwarded the {Target} broadcast to fifteen family groups, with the caption \"May God save this country 🙏\" and a crying emoji for the wrong reason."
       ],
       FINANCIAL: [
-        "A broadcast message claiming {Target} is hiding stolen dollars in a septic tank just went viral."
+        "🚨 *FORWARDED MANY TIMES:* READ BEFORE THEY DELETE IT! How ₦18 billion was wired to {Target}'s driver's account at 2 AM, and what the driver bought with it: a church, a Range Rover and a girlfriend."
+      ],
+      AFFAIR: [
+        "🚨 *VOICE NOTE (4:12):* \"My sister, it is 100% true! My cousin who works at the hotel desk said paramedics carried {Target} out on a stretcher while the mistress ran through the kitchen holding her shoes!\""
+      ],
+      LEAKED_MEDIA: [
+        "🚨 Compressed clips and 14 explosive screenshots just dropped into every Family, Estate and Alumni group at once. Somebody's mother has left three groups already."
+      ],
+      FAKE_CREDENTIALS: [
+        "🚨 ZOOM INTO PAGE TWO! The discharge serial number on {Target}'s NYSC certificate belongs to a woman who graduated in 2004 and now sells ukwa in Nsukka."
       ]
     }
   },
-  { 
+  {
     id: 'social_deh_geh',
     name: 'Deh Geh — Financial Sense Live',
     branch: 'SOCIAL',
@@ -218,21 +228,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 270,
     flavorTexts: {
       DEFAULT: [
-        "Deh Geh just switched on his ring light to lecture his 'students' about {Target}'s foolishness.",
-        "Deh Geh is screaming at the camera: '{Target} is the reason why some of you will remain poor!'"
+        "The ring light is on, the whiteboard is out, and the receipts on {Target} are flying across the timeline in a very organised, very savage format."
       ],
       FINANCIAL: [
-        "'Mumu man!' Deh Geh is screaming on Live. '{Target} is throwing away generational wealth on fake contracts!'",
-        "'You stole billions and couldn't even invest it?!' Deh Geh is wiping sweat from his forehead.",
-        "Deh Geh is using a whiteboard to calculate exactly how {Target} wasted the looted funds."
+        "The whiteboard is out: \"Let's do the arithmetic! How does a salary of ₦1.5 million buy a ₦6 billion penthouse in Eko Atlantic?! Somebody is lying, and it's not the calculator!\""
       ],
       AFFAIR: [
-        "Deh Geh is ranting: 'Woman wrapper! {Target} ruined his whole career for a side-chick! Zero financial sense!'",
-        "'You are a billionaire but you are letting a 22-year-old ruin your life?!' Deh Geh is visibly disgusted with {Target}."
+        "It's a live tear-down: \"You owe contractors eight months of arrears, yet you chartered a jet to fly two Instagram models to Zanzibar for a weekend of what, exactly, {Target}?!\""
+      ],
+      LEAKED_MEDIA: [
+        "The leaked audio is paused sentence by sentence while the presenter calculates the black-market dollar value of every kickback. She is cursing in two languages and a spreadsheet."
+      ],
+      FAKE_CREDENTIALS: [
+        "The UK corporate registry is on screen: \"The college that supposedly gave {Target} a Master's was registered as a dry-cleaning shop in 2011. A Master's in stains, maybe.\""
       ]
     }
   },
-  { 
+  {
     id: 'social_baidasoj',
     name: 'BaidaSoj — TikTok Drag Session',
     branch: 'SOCIAL',
@@ -246,21 +258,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 350,
     flavorTexts: {
       DEFAULT: [
-        "BaidaSoj is screaming on TikTok Live: 'Make una drag {Target} abeg! Dirty fellow!'",
-        "BaidaSoj just dropped a 3-part TikTok series dragging {Target} to filth. The comments are brutal."
+        "The live comments scroll at 500 miles an hour and the dragging of {Target} is merciless, creative and unprintable, which is why it's trending."
+      ],
+      FINANCIAL: [
+        "The Live is pure chaos: \"Ordinary people queue for rice while {Target}'s son washes his hands in vintage champagne in a London club! Wash your hands with soap and shame!\""
       ],
       AFFAIR: [
-        "'You chop government money, you still dey transfer 50k give small girl?!' BaidaSoj is tearing {Target} apart.",
-        "'Stingy men like {Target} deserve everything happening to them!' BaidaSoj is rallying her followers.",
-        "BaidaSoj is mocking {Target}'s wife for staying in the marriage: 'God forbid bad thing!'"
+        "A two-hour Live hits 45,000 viewers. Three of {Target}'s alleged mistresses join the guest box, dropping wire receipts and room numbers. One brings a pillow with a stain."
       ],
       LEAKED_MEDIA: [
-        "BaidaSoj just reacted to {Target}'s tape: 'See how he is looking like a drowned rat! I can never!'",
-        "BaidaSoj paused {Target}'s leaked video on Live just to laugh at the background furniture."
+        "The leaked clip gets stitched with a megaphone filter and a rude sound effect. 1.2 million views in forty minutes. Somebody's child is already dancing to it at a wedding."
+      ],
+      FAKE_CREDENTIALS: [
+        "Gen-Z has turned {Target}'s misspelled, forged diploma into a transition sound. Over four hundred thousand people have lip-synced \"I am a graduate\" while falling down stairs."
       ]
     }
   },
-  { 
+  {
     id: 'social_mazi_tunde',
     name: 'Mazi Tunde — IG Blog Megaphone',
     branch: 'SOCIAL',
@@ -274,17 +288,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 430,
     flavorTexts: {
       DEFAULT: [
-        "Mazi Tunde just reposted the gist on IG: 'Wahala be like bicycle! See your role model {Target} o 😂😂😂'",
-        "Mazi Tunde's comment section is a warzone right now. Everyone is dragging {Target}."
+        "🚨 GIST LOVERS: A prominent heavyweight is sweating bullets in an air-conditioned mansion as {Target}'s dirty secrets spill across the internet! Swipe for all the explosive details 👉"
+      ],
+      FINANCIAL: [
+        "🚨 EFCC RADAR: An anonymous insider leaks raw bank statements showing how billions vanished into shell companies in Panama and Dubai, with {Target}'s fingerprints on every one! Swipe 👉"
+      ],
+      AFFAIR: [
+        "🚨 ENTANGLEMENT DRAMA: {Target}'s secret third wife fights Abuja's \"special friend\" in a private airport lounge. Security staff are holding wigs and shoes. Swipe for photos 👉"
       ],
       LEAKED_MEDIA: [
-        "The video is officially everywhere. Mazi Tunde just dropped it with the caption: 'Is this your GOAT? 🏃‍♂️🏃‍♂️'",
-        "Mazi Tunde pinned the leaked clip of {Target} to the top of his page. It has 2 million views already.",
-        "Memes of {Target}'s leaked video are flooding Mazi Tunde's page. The internet is undefeated."
+        "🚨 CAUGHT IN 4K: Uncensored audio and video hits the timeline despite a desperate ₦50 million hush offer to blog admins. The admins took the money and posted anyway! Swipe 👉"
+      ],
+      FAKE_CREDENTIALS: [
+        "🚨 FORGERY ALERT: The foreign registrar officially disowns {Target}'s diploma in a scathing public letter that ends with \"Please stop using our name.\" Swipe to read it 👉"
       ]
     }
   },
-  { 
+  {
     id: 'social_veedarkman',
     name: 'VeeDarkMan — Activist Callout',
     branch: 'SOCIAL',
@@ -298,20 +318,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 270,
     flavorTexts: {
       DEFAULT: [
-        "VeeDarkMan just posted a 10-minute video in an unbuttoned shirt calling out {Target}. 'Don't play!'",
-        "Pointing intensely at his ring light, VeeDarkMan just declared war on {Target} and his associates."
-      ],
-      FAKE_CREDENTIALS: [
-        "'I gave {Target} 24 hours to show his real certificate and he blocked me. Ratels, gather here!'",
-        "'You think you can forge documents in this country and I won't find out? Don't play with me {Target}!'"
+        "The activist callout video just went nuclear, tagging every agency and demanding {Target}'s prosecution in 24 hours. The comment section is a war zone and a prayer meeting."
       ],
       FINANCIAL: [
-        "VeeDarkMan is waving a printed spreadsheet on camera: '{Target}, explain this N4.2B discrepancy! Don't play!'",
-        "'I have submitted the petition to the EFCC myself. {Target} is going down. Ratels, we move!'"
+        "A furious ring-light rant hits 500k views: \"Don't play with us! You have 24 hours to publish the audit for that missing allocation, {Target}, or I'm marching to the anti-graft office myself!\""
+      ],
+      AFFAIR: [
+        "The callout is brutal: \"You preach morality on TV every week, {Target}, and you use state escorts to spirit mistresses in and out of presidential suites? Hypocrite! Hypocrite!\""
+      ],
+      LEAKED_MEDIA: [
+        "The raw leaked audio plays straight into the mic. \"Police, come and arrest {Target} before sunset or I will come for your own boss next!\""
+      ],
+      FAKE_CREDENTIALS: [
+        "The forged certificate is held up to the camera: \"Look at the font! Look at the signature! Who cleared this blatant fraud, who? Who?!\""
       ]
     }
   },
-  { 
+  {
     id: 'social_vawulence',
     name: 'VawulenceHQ — Meme War Room',
     branch: 'SOCIAL',
@@ -325,21 +348,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 310,
     flavorTexts: {
       DEFAULT: [
-        "VawulenceBlog just dropped 'EPISODE 1' about {Target} on Telegram. The comment section is on fire.",
-        "A cryptic blind item on VawulenceBlog just got updated with {Target}'s full picture."
-      ],
-      AFFAIR: [
-        "Hello tueh tueh! VawulenceBlog just posted {Target}'s hotel receipts and the side-chick's full name.",
-        "VawulenceBlog just went live on IG to play a recorded phone call of {Target} begging his mistress.",
-        "The wife of {Target} allegedly just DMed VawulenceBlog to leak even more dirty secrets."
+        "The meme syndicates on X have taken over the trending table: numbers 1 through 8 are brutal edits of {Target}, and number 9 is a prayer for {Target}'s mother."
       ],
       FINANCIAL: [
-        "VawulenceBlog just leaked {Target}'s BVN and offshore shell company documents on Telegram.",
-        "Hello tueh tueh! See the mansion {Target} bought for his dog while owing workers 6 months salary."
+        "Meme accounts photoshopped {Target}'s face onto heist-movie posters. 80,000 retweets in two hours. The best one has a goat in a getaway car."
+      ],
+      AFFAIR: [
+        "Every frame of the hotel scandal is now a high-definition reaction meme. \"Me leaving the room when my wife calls\" is {Target}'s face at 3 AM."
+      ],
+      LEAKED_MEDIA: [
+        "Trap remixes of {Target}'s leaked voice note are topping the viral charts. The hook is just the loudest, ugliest sob."
+      ],
+      FAKE_CREDENTIALS: [
+        "Users are generating hilarious certificates from Harvard, NASA and \"The University of Jollof\" with {Target}'s portrait, and flooding the replies with them."
       ]
     }
   },
-  { 
+  {
     id: 'social_pellaboy',
     name: 'Pellaboy — Campus TikTok Soundbyte',
     branch: 'SOCIAL',
@@ -353,17 +378,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 350,
     flavorTexts: {
       DEFAULT: [
-        "PellaBoy is violently mocking {Target} on TikTok Live in front of 65,000 viewers.",
-        "PellaBoy just entered a TikTok battle purely to freestyle insults about {Target}."
+        "University hostels from UNILAG to UNN have turned the {Target} scandal into a viral skit. Even the lecturers are laughing in class and pretending they aren't."
+      ],
+      FINANCIAL: [
+        "Campus creators are filming skits where they swallow billions of naira like {Target}'s \"accounting department\", complete with fake belching and a very real ₦200 note."
+      ],
+      AFFAIR: [
+        "Students recreated the hotel-room escape in a viral hostel skit, with a bedsheet toga and a roommate yelling \"Oga, your wife is downstairs!\" A lecturer shared it."
       ],
       LEAKED_MEDIA: [
-        "PellaBoy turned {Target}'s leaked voice note into a viral dance sound. Every university student is doing the challenge.",
-        "Gen Z TikTok is ruthless. PellaBoy is doing a skit reenacting {Target}'s exact movements in the leaked video.",
-        "The sound of {Target} crying in the leaked audio is now the background music for a million TikTok memes."
+        "The exact audio of {Target} pleading on the leaked tape is the #1 trending sound on every campus. Someone is using it as a ringtone, and the exam hall hates it."
+      ],
+      FAKE_CREDENTIALS: [
+        "Final-year students are posting sarcastic clips of themselves tearing up their textbooks: \"If forged certificates pay better, why am I paying school fees?\""
       ]
     }
   },
-  { 
+  {
     id: 'social_zazuu_king',
     name: 'Zazuu King — Street Wahala Live',
     branch: 'SOCIAL',
@@ -377,23 +408,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 390,
     flavorTexts: {
       DEFAULT: [
-        "Zazuu King just jumped on top of a Lexus in Sango-Ota screaming: 'Wahala Wahala Wahala! {Target} is a ripper!'",
-        "Zazuu King is live on IG shirtless, sweating profusely, shouting: 'O go collect! {Target} dey owe street boys!'",
-        "A 30-second video of Zazuu King threatening to storm {Target}'s house with boys is trending at #1 on TikTok.",
-        "Zazuu King just released an emergency track titled 'Rip Me I Rip You (Diss to {Target})'."
+        "A chaotic street livestream has drawn a thousand unruly youths chanting {Target}'s name and burning an effigy that looks suspiciously like their principal."
       ],
       FINANCIAL: [
-        "'You chop government money, you no give street boys?!' Zazuu King is shouting into his phone while running down an expressway.",
-        "'Wahala musician don wake up!' Zazuu King is demanding his 10% mobilization fee from {Target} on IG Live.",
-        "'No signature, no refund!' Zazuu King just declared {Target} an enemy of the trenches."
+        "Shirtless streamers stand in front of pothole-riddled roads and scream about the billions {Target} stashed offshore. One is standing in an actual pothole, on purpose."
+      ],
+      AFFAIR: [
+        "Street-pop hype men already dropped an explicit club freestyle about {Target}'s love triangle. It has a chorus. The chorus is a moan. The moan is trending."
       ],
       LEAKED_MEDIA: [
-        "Zazuu King is reenacting {Target}'s leaked clip on a dirt road while boys cheer him on in Yoruba.",
-        "'See {Target} face like who dem catch for shrine!' Zazuu King is playing the audio from a massive boombox."
+        "Loudspeakers on the back of pickup trucks replay the leaked audio outside {Target}'s estate gate, all night, at a volume that violates several treaties."
+      ],
+      FAKE_CREDENTIALS: [
+        "Street comedians are handing out fake cardboard diplomas to passers-by in mockery of {Target}. One boy got a first-class in Pure Nonsense and cried."
       ]
     }
   },
-  { 
+  {
     id: 'social_counselor_blee',
     name: 'Counselor Blee — Toxic Relationship Breakdowns',
     branch: 'SOCIAL',
@@ -407,23 +438,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 350,
     flavorTexts: {
       DEFAULT: [
-        "Counselor Blee just posted a 20-minute video: 'Why men like {Target} always project their insecurities on innocent women.'",
-        "Counselor Blee is on camera in heavy makeup: 'A real billionaire doesn't hide secrets like {Target}. This is pure village behavior.'",
-        "The comments on Counselor Blee's breakdown of {Target} are turning into an open gender war."
+        "The self-appointed relationship guru is hosting a three-hour X Space dissecting the psychological dysfunction around {Target}. Seventeen divorced people are crying in the listener tab."
+      ],
+      FINANCIAL: [
+        "The relationship panel is exposing how {Target} washed stolen millions through boutiques owned by secret lovers. \"Red flag! Red flag! The flag is on fire!\""
       ],
       AFFAIR: [
-        "'Listen to me, side-chicks are not the problem! Men like {Target} lack emotional discipline!' Counselor Blee declares.",
-        "'If your husband acts like {Target}, pack your bags and leave!' Counselor Blee's post just got 40,000 shares.",
-        "Counselor Blee is reading alleged leaked bedroom texts from {Target} with dramatic pauses and sighs.",
-        "'You left a virtuous woman at home to lodge in a guest house?' Counselor Blee is dragging {Target} without mercy."
+        "30,000 people tune in as insiders expose the bitter war between {Target}'s wife and the mistresses. One mistress calls in crying. Another calls in to say she's the real one."
+      ],
+      LEAKED_MEDIA: [
+        "Every toxic quote from the leaked recording is dissected by a panel of brutal relationship commentators. Verdict: {Target} is a walking red flag with a bad voice."
       ],
       FAKE_CREDENTIALS: [
-        "'People who fake degrees have narcissistic personality disorder,' Counselor Blee claims, diagnosing {Target} for free.",
-        "Counselor Blee just released a masterclass flyer: 'How to spot an impostor like {Target} before you marry them.'"
+        "Commentators reveal that {Target} even lied about age and academic history to the in-laws, who are now sharpening the family machete in the kitchen."
       ]
     }
   },
-  { 
+  {
     id: 'social_presido_akpi',
     name: 'Presido Akpi — Late Night IG Live',
     branch: 'SOCIAL',
@@ -437,18 +468,19 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 350,
     flavorTexts: {
       DEFAULT: [
-        "Presido Akpi is walking down a street in yellow shades pointing at his phone: '{Target} is a local boy! Check my level!'",
-        "Presido Akpi just challenged {Target} to a public bank account balance faceoff on IG Live.",
-        "'No competition! {Target} is a small boy in this game!' Presido Akpi laughs mockingly at his camera."
+        "From a flat abroad at 1 AM, the shock-jock is naming every accomplice in the {Target} scandal and laughing at Nigerian libel law in a robe and no slippers."
       ],
-      LEAKED_MEDIA: [
-        "Presido Akpi paused his music video shoot just to laugh at {Target}'s leaked tape for 12 straight minutes.",
-        "'Even my worst enemies have better camera quality!' Presido Akpi roasts {Target}'s leaked CCTV video.",
-        "Presido Akpi released a 15-second freestyle ridiculing {Target}'s leaked voice note: 'Bangdadadang! See finishing!'"
+      FINANCIAL: [
+        "Unredacted wire routing numbers appear on his late-night broadcast, and he dares {Target}'s lawyers to sue him abroad. \"I'm in a country where your friends can't reach me!\""
       ],
       AFFAIR: [
-        "'You have no ginger, no swagger, yet you are doing side-chick?!' Presido Akpi is disgusted with {Target}.",
-        "Presido Akpi is bragging that even with his pettiness, he would never get caught in {Target}'s messy situation."
+        "He names names, reads passport numbers and hotel receipts from {Target}'s secret trysts, and rates the room service. \"Two stars. Nice robes. Terrible taste in people.\""
+      ],
+      LEAKED_MEDIA: [
+        "He plays the uncut director's cut of the leaked tape that local blogs were too terrified to post, including the part after the part where {Target} thought the call had ended."
+      ],
+      FAKE_CREDENTIALS: [
+        "He calls the foreign registrar live: \"Hello? Yes. Does a {Target} exist in your records? No? Thank you, ma'am. Everyone, did you hear that? Nothing exists!\""
       ]
     }
   },
@@ -457,7 +489,7 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
   // PRESS (Lane Center: Y=550)
   // Cross-branch links!
   // ==========================================
-  { 
+  {
     id: 'press_dialect_fm',
     name: 'Local Dialect FM Radio Phone-In',
     branch: 'PRESS',
@@ -471,20 +503,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 550,
     flavorTexts: {
       DEFAULT: [
-        "Local FM callers have been jamming the studio lines since 6 AM demanding answers from {Target}.",
-        "A furious caller on a Pidgin radio show just dropped a heavy proverb predicting {Target}'s downfall.",
-        "The OAP had to cut the mic because callers were raining heavy curses on {Target}."
+        "The early-morning phone-in lines are jammed: retirees, taxi drivers and civil servants calling in non-stop to demand {Target}'s head, in three dialects and a lot of swear words."
       ],
       FINANCIAL: [
-        "A caller on Wazobia FM just broke down in tears asking how {Target} could steal that much.",
-        "Radio hosts are translating the breakdown of {Target}'s looted funds into local dialects for the grassroots."
+        "A retired headmaster sobs on air: \"I've not seen my pension in four years and {Target} just bought a fourth house! God will judge, but let the EFCC go first!\""
+      ],
+      AFFAIR: [
+        "A caller named \"Mama Chidera\" hijacks the line to describe, in detail, what she saw {Target} doing behind the church in 2017. The presenter cannot find the cut-off button."
+      ],
+      LEAKED_MEDIA: [
+        "The station plays the leaked clip in full, then the phone lines melt. A man in Ibadan calls to say he's sold his radio, his wife, and his respect for {Target}."
       ],
       FAKE_CREDENTIALS: [
-        "Callers are competing on live radio to see who can come up with the funniest fake degree name for {Target}."
+        "A caller announces he used to type certificates for a living: \"I know that font. That's my font. Ah! Oga {Target}, I am so sorry. I should have stuck to wedding invitations.\""
       ]
     }
   },
-  { 
+  {
     id: 'press_broda_dapo',
     name: 'Broda Dapo — X Fact-Check Quote',
     branch: 'PRESS',
@@ -498,21 +533,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 550,
     flavorTexts: {
       DEFAULT: [
-        "Broda Dapo just quoted {Target} on X: 'No offense, but this makes zero sense. Step down, thanks.'",
-        "'I said what I said. {Target} is a disgrace to public office, with all due respect.' - Broda Dapo.",
-        "Broda Dapo just ratioed {Target}'s official press release with a devastating 5-point thread."
+        "An 18-tweet thread with archived PDFs, timestamps and satellite imagery just dismantled every line of {Target}'s defence. The last tweet is just a skull."
+      ],
+      FINANCIAL: [
+        "Tweet 7 of 18 has the audit trail. Tweet 11 has the shell company. Tweet 18 has {Target}'s cousin's birthday photo, wearing the exact watch from the invoice."
       ],
       AFFAIR: [
-        "'No offense, crying to your wife doesn't delete the receipts. {Target} is a hypocrite, thanks.' - Broda Dapo.",
-        "'You can't be preaching family values while funding a secret life. Make it make sense, {Target}. No offense.'"
+        "Tweet 9: the hotel's own check-in logs. Tweet 10: the car's GPS. Tweet 12: a photograph of {Target}'s shoes outside a room that was not theirs."
+      ],
+      LEAKED_MEDIA: [
+        "The thread syncs the leaked audio to the wall clock in the background. The date doesn't lie. {Target}'s denial, posted six minutes later, does."
       ],
       FAKE_CREDENTIALS: [
-        "Broda Dapo just tweeted: '{Target} claiming to have a PhD from a school that closed in 1998 is wild. No offense.'",
-        "'If {Target} is a graduate, I am the Queen of England. I said what I said.' - Broda Dapo."
+        "The thread overlays {Target}'s certificate on the original template. The only difference is the name. And the quality. And the shame."
       ]
     }
   },
-  { 
+  {
     id: 'press_front_page',
     name: 'Newspaper Front-Page Lead',
     branch: 'PRESS',
@@ -526,20 +563,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 550,
     flavorTexts: {
       DEFAULT: [
-        "Vendor stands are crowded this morning as national dailies lead with {Target}'s scandal on page one.",
-        "Commuters are staring at the bold red headline on THISDAY: 'THE FALL OF {Target}'.",
-        "Newspaper vendors are making a killing today; everyone wants the edition with {Target}'s face on the cover."
+        "72-point crimson headlines across every national daily at the newsstand: \"THE ANATOMY OF A COVER-UP: INSIDE {Target}'S CRUMBLING EMPIRE.\" The vendors are fighting over copies."
       ],
       FINANCIAL: [
-        "The Punch headline reads: 'EFCC CLOSES IN ON {Target} OVER MISSING BILLIONS'.",
-        "Vanguard's front page is ruthless: '{Target} AND THE MULTI-BILLION NAIRA HEIST'."
+        "\"₦85 BILLION BLOWN\" screams the front page, over a photo of {Target} smiling at a ribbon-cutting. Under the photo, in small print: \"The ribbon was also stolen.\""
+      ],
+      AFFAIR: [
+        "The tabloid's centre spread is a blurred picture of {Target}'s hotel balcony with arrows. One arrow just says \"HERE\". It has been sold out since 7 AM."
+      ],
+      LEAKED_MEDIA: [
+        "The paper prints a full transcript of the leaked recording, bleeped by its lawyers, the bleeps visibly longer than the words."
       ],
       FAKE_CREDENTIALS: [
-        "Tribune leads with a massive exclusive: 'EXPOSED: {Target}'S DOCUMENTS FORGED'."
+        "The cover story is a side-by-side of {Target}'s \"degree\" and a real one. The editor's note reads: \"We are not saying it's fake. We are saying the paper is.\""
       ]
     }
   },
-  { 
+  {
     id: 'press_oga_rufai',
     name: 'Oga Rufai — Morning TV Grill',
     branch: 'PRESS',
@@ -553,20 +593,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 550,
     flavorTexts: {
       DEFAULT: [
-        "Oga Rufai just cornered {Target}'s spokesperson on live TV: 'Answer the simple question sir!'",
-        "'Let me land! You are pivoting!' Oga Rufai is currently roasting {Target}'s lawyer on morning television.",
-        "The morning TV segment about {Target} is trending at #1. Oga Rufai took no prisoners."
+        "The morning anchor just ambushed {Target}'s spokesperson live: \"Stop evading! Is that or is that not your principal's signature on this wire?! Look at the camera and say yes or no!\""
       ],
       FINANCIAL: [
-        "Oga Rufai is shouting on morning TV: 'Did {Target} sign that voucher or not?! Do not pivot!'",
-        "'Are you telling Nigerians that N4.2B vanished into thin air?' Oga Rufai asks {Target}'s media aide."
+        "The anchor slaps the table: \"Four hundred million in a car park, {Target}'s spokesman! Whose car? Whose park? Whose money? Don't give me 'no comment'!\""
+      ],
+      AFFAIR: [
+        "The anchor adjusts his tie: \"Your principal denies the hotel. Fine. Explain this receipt for two breakfasts and a champagne bucket the night the wife was abroad.\""
       ],
       LEAKED_MEDIA: [
-        "Oga Rufai played the leaked clip live on air, looked at the camera, and asked: 'How can {Target} defend this?'"
+        "The anchor plays the leaked clip on a studio monitor while the guest sweats through a $2,000 suit. \"Is that your boss's voice? Say 'no' and I'll play it again.\""
+      ],
+      FAKE_CREDENTIALS: [
+        "The anchor holds up the diploma: \"Page four has a typo in the university's own name. Was your principal absent that day?\" The producer is laughing in the control room."
       ]
     }
   },
-  { 
+  {
     id: 'press_dr_aproko',
     name: 'Dr. Aproko — Calm Thread Fact-Check',
     branch: 'PRESS',
@@ -580,22 +623,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 510,
     flavorTexts: {
       DEFAULT: [
-        "Dr. Aproko just posted a calm 45-second video: 'Before you believe {Target}, drink water first. Now let us look at the facts.'",
-        "Dr. Aproko is smiling gently on camera while thoroughly taking apart {Target}'s excuses.",
-        "'Your brain produces stress hormones when you lie as much as {Target},' Dr. Aproko tweets calmly."
+        "A calm, objective, devastatingly polite breakdown of the evidence has convinced even the most sceptical middle-class professionals that {Target} is, in the doctor's words, \"statistically not a good person\"."
       ],
-      FAKE_CREDENTIALS: [
-        "'A real medical doctor doesn't misspell 'Anatomy' on a certificate,' Dr. Aproko points out with a polite sip of water.",
-        "Dr. Aproko just pulled up the official medical council registry on video: '{Target}'s name does not exist here. Drink water.'",
-        "Dr. Aproko's forensic breakdown of {Target}'s claimed qualifications just hit 1 million views on X."
+      FINANCIAL: [
+        "Slide 3 shows how {Target}'s declared income and visible lifestyle don't overlap even in a Venn diagram. The doctor adds: \"I've seen healthier numbers on a corpse.\""
+      ],
+      AFFAIR: [
+        "The doctor doesn't gossip; he lists. \"Fact one: {Target} was seen. Fact two: {Target} lied. Fact three: the lie had a lipstick stain.\""
       ],
       LEAKED_MEDIA: [
-        "Dr. Aproko calmly explains the voice stress analysis of {Target}'s leaked audio: 'The vocal tremors indicate complete panic.'",
-        "Reacting to {Target} claiming sudden sickness in court, Dr. Aproko notes: 'Collapsing only when bail is denied is medically impossible.'"
+        "The doctor checks the audio's metadata and spectrogram, then types a single sentence: \"It is real. I'm sorry. I really wanted it to be fake.\""
+      ],
+      FAKE_CREDENTIALS: [
+        "The doctor calls the university and posts the transcript of the call. The registrar says, in a very tired voice, \"We have no such student. We have a goat, though.\""
       ]
     }
   },
-  { 
+  {
     id: 'press_aunty_kemi',
     name: 'Aunty Kemi — Investigative Substack',
     branch: 'PRESS',
@@ -609,22 +653,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 590,
     flavorTexts: {
       DEFAULT: [
-        "Aunty Kemi just tweeted in ALL CAPS: 'MY SOURCES AT INTERPOL AND THE DSS CONFIRM {Target} IS PANICKING. #KemiTalks'",
-        "'I INVESTIGATED THIS 6 MONTHS AGO!' Aunty Kemi is lecturing mainstream editors for being late to the {Target} story.",
-        "Aunty Kemi dropped a blurry photo of a black diplomatic bag allegedly belonging to {Target}."
+        "A 4,000-word exposé complete with whistle-blower testimony and registry filings sent shockwaves through the diplomatic community. Three embassies stopped taking {Target}'s calls."
       ],
       FINANCIAL: [
-        "'THE $4.2M WAS MOVED THROUGH A CANADIAN LAUNDRY COMPANY IN BRAMPTON!' Aunty Kemi tweets with 40 exclamation marks.",
-        "Aunty Kemi claims to have the exact routing numbers for {Target}'s Cayman Islands shell company.",
-        "'DON'T LET THEM FOOL YOU!' Aunty Kemi posts a thread detailing how {Target} allegedly bought houses in Atlanta with looted cash."
+        "Section 4 names the shell company, section 6 names the director, section 9 names the director's lover. Footnote 41 names {Target}'s dog as a signatory."
+      ],
+      AFFAIR: [
+        "The exposé includes two sources, three receipts and a former housekeeper who \"has seen things\". It quotes her: \"{Target} is not a good man. {Target} is also not a quiet one.\""
+      ],
+      LEAKED_MEDIA: [
+        "The newsletter publishes the full chain of custody for the leaked clip, signed by a notary. {Target}'s lawyer calls it \"unfair\". The notary calls it \"Tuesday\"."
       ],
       FAKE_CREDENTIALS: [
-        "'THE REGISTRAR OF THAT UNIVERSITY IN TORONTO CONFIRMED TO ME PERSONALLY THAT {Target} NEVER GRADUATED. CASE CLOSED. #KemiTalks'",
-        "Aunty Kemi is threatening to air an audio recording of the university clerk who allegedly printed {Target}'s fake transcript."
+        "The investigation traces {Target}'s degree to a print shop in Surulere that has produced eleven hundred \"alumni\" of one nonexistent college."
       ]
     }
   },
-  { 
+  {
     id: 'press_international',
     name: 'International Media Syndication',
     branch: 'PRESS',
@@ -638,16 +683,19 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 550,
     flavorTexts: {
       DEFAULT: [
-        "London and Accra correspondents just picked up {Target}'s scandal; foreign embassies are taking notes.",
-        "Al Jazeera English just ran a 5-minute segment outlining {Target}'s entire network.",
-        "BBC Africa's investigative unit just released a mini-doc about {Target}. It's over."
+        "London and Washington correspondents have picked up the dossier. Foreign embassies are reviewing {Target}'s visa and overseas assets, and a Swiss banker has gone to lunch for six years."
       ],
       FINANCIAL: [
-        "Bloomberg Africa just published a deep-dive on {Target}'s frozen offshore accounts.",
-        "Financial Times just cited {Target} as a prime example of institutional failure. Elite panic is setting in."
+        "A London paper's headline: \"NIGERIAN OFFICIAL'S £40M MAYFAIR PORTFOLIO BOUGHT WITH A SALARY OF £28,000.\" The comments section is mostly the word \"Wow\"."
+      ],
+      AFFAIR: [
+        "A global tabloid runs {Target}'s secret overseas romance on page three, with the headline \"AFRICAN SCANDAL: PASSPORT, PASSION AND A VERY LARGE BILL\"."
+      ],
+      LEAKED_MEDIA: [
+        "A major broadcaster airs the leaked tape with subtitles. Millions of foreigners learn a new Pidgin phrase, and it is not polite."
       ],
       FAKE_CREDENTIALS: [
-        "The foreign university in question just issued a global press release denying {Target} ever attended."
+        "A famous university issues a formal statement: \"We have never heard of this person. We do not teach the subject. We did not issue this certificate.\" It's the shortest statement in its history."
       ]
     }
   },
@@ -655,7 +703,7 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
   // ==========================================
   // ELITE (Lane Center: Y=750)
   // ==========================================
-  { 
+  {
     id: 'elite_secretariat',
     name: 'Civil Service Secretariat Tea',
     branch: 'ELITE',
@@ -669,20 +717,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 750,
     flavorTexts: {
       DEFAULT: [
-        "Directors at the Federal Secretariat are whispering about {Target} in the corridors.",
-        "The rumor is spreading through the civil service ghost-worker networks faster than a memo.",
-        "Even the tea girls at the ministry are giving {Target} dirty looks today."
-      ],
-      FAKE_CREDENTIALS: [
-        "Someone just pasted a copy of {Target}'s fake diploma on the Secretariat notice board.",
-        "Civil servants are quietly pulling {Target}'s old files from the dusty archives to leak them."
+        "Directors inside the ministries are quietly photocopying memos and distancing themselves from {Target} before the anti-graft raid begins. The photocopier has never worked this hard."
       ],
       FINANCIAL: [
-        "Accountants at the ministry are quietly downloading {Target}'s payment vouchers onto flash drives."
+        "A permanent secretary leaks the real budget to a trusted junior over lunch. The junior goes pale. \"But sir, this means {Target} approved the road twice and built none.\""
+      ],
+      AFFAIR: [
+        "The secretariat's canteen is buzzing: {Target}'s \"personal assistant\" has a salary, a flat and an office with a door that locks from inside."
+      ],
+      LEAKED_MEDIA: [
+        "A leaked internal memo ricochets between floors with the subject line \"URGENT: Please delete everything about {Target} (and delete this message too)\"."
+      ],
+      FAKE_CREDENTIALS: [
+        "An HR clerk quietly slides the real personnel file across the desk. The photo on the CV is {Target}. The face on the certificate is someone else's uncle."
       ]
     }
   },
-  { 
+  {
     id: 'elite_pulpit',
     name: "Juma'at & Sunday Altar Sub-Sermons",
     branch: 'ELITE',
@@ -696,20 +747,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 750,
     flavorTexts: {
       DEFAULT: [
-        "Clerics used their weekend sermons to warn about 'leaders like {Target}'.",
-        "A prominent Bishop just declared three days of fasting and prayer against corrupt men like {Target}.",
-        "During Juma'at prayers, the Imam made a very pointed reference to {Target}'s recent behavior."
-      ],
-      AFFAIR: [
-        "A prominent pastor just stated: 'If {Target} can betray his matrimonial vows, he will betray the masses.'",
-        "The choir stopped singing just so the pastor could deliver a 20-minute sub directed at {Target}."
+        "From Friday sermons to Sunday altars, preachers are delivering blistering, thinly veiled homilies about \"wicked leaders who stash stolen billions in septic tanks\". Everyone turns to look at {Target}'s pew."
       ],
       FINANCIAL: [
-        "'Blood money will never profit you!' a General Overseer screamed on Sunday, looking directly at {Target}'s reserved seat."
+        "A cleric thunders: \"You can steal from the poor, but you cannot bribe the Almighty! That sound you hear, {Target}, is your own offering plate crying!\""
+      ],
+      AFFAIR: [
+        "A bishop preaches on Potiphar's wife, Samson's hair and \"people who have been visiting a certain hotel on Tuesdays\". The congregation chants \"Amen\" at the wrong moments."
+      ],
+      LEAKED_MEDIA: [
+        "The imam says \"hear no evil\" then plays the leaked audio from a phone behind the pulpit, just for the evidence. The first row is crying with laughter and with shame."
+      ],
+      FAKE_CREDENTIALS: [
+        "The pastor holds up a Bible: \"This one is real. The certificate {Target} showed the committee? Real fake. Amen? Amen!\""
       ]
     }
   },
-  { 
+  {
     id: 'elite_country_club',
     name: 'Ikoyi & Maitama Golf Lounge Leaks',
     branch: 'ELITE',
@@ -723,20 +777,23 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 750,
     flavorTexts: {
       DEFAULT: [
-        "Even {Target}'s billionaire golf partners at the country club are ignoring his calls today.",
-        "Transcorp Hilton's private lounges are buzzing; everyone is distancing themselves from {Target}.",
-        "The board of {Target}'s exclusive club just held an emergency meeting to suspend his membership."
+        "Over single malt at the Ikoyi and IBB clubs, the power brokers have quietly agreed that {Target} is a liability and must be cut loose, preferably before dessert."
       ],
       FINANCIAL: [
-        "Whispers in the VIP lounge say {Target}'s accounts are about to be frozen by Monday.",
-        "A CEO at the Polo Club was overheard saying {Target} got greedy and sloppy."
+        "At the 19th hole, a banker whispers: \"His accounts are in more countries than my ex-wife's lawyers.\" The other men nod and order a second round of regret."
       ],
       AFFAIR: [
-        "Wives of the elite at the Ikoyi boat club are openly shunning {Target}'s spouse."
+        "The club's concierge, who has seen everything, quietly tells a member that {Target}'s room has been paid by the hour for the last three years. He didn't even say which hour."
+      ],
+      LEAKED_MEDIA: [
+        "A waiter discreetly forwards a recording from the members' lounge. {Target}'s own best friend is heard saying, \"Honestly, he deserves it.\""
+      ],
+      FAKE_CREDENTIALS: [
+        "A retired professor at the club peers over his glasses: \"I taught at that university for thirty years. I have never met {Target}. I would remember. I'd have failed them.\""
       ]
     }
   },
-  { 
+  {
     id: 'elite_campus_protest',
     name: 'ASUU & Campus Union Ultimatum',
     branch: 'ELITE',
@@ -750,16 +807,19 @@ export const CHANNELS_DATA: ChannelUpgrade[] = [
     gridY: 750,
     flavorTexts: {
       DEFAULT: [
-        "University students have blocked campus gates chanting songs with {Target}'s full name.",
-        "Aluta Continua! The SUG President just gave a fiery press conference demanding {Target}'s arrest.",
-        "Federal roads are on lockdown as thousands of youths march carrying effigies of {Target}."
+        "Lecturers' unions and student coalitions issue a joint 48-hour ultimatum: prosecute {Target} immediately or they will block every highway in the country with bodies and banners."
       ],
       FINANCIAL: [
-        "Students are carrying placards reading: 'GIVE US OUR FUTURE, LOCK {Target} UP!'",
-        "'You loot our schools, we loot your peace!' students are chanting outside {Target}'s estate."
+        "The students' union president thunders through a megaphone: \"You owe our lecturers eight months! You owe our hostels water! You owe us an apology, and a bucket!\""
+      ],
+      AFFAIR: [
+        "A student-led \"Nobody Is Above the Law\" march carries a ten-foot cardboard bed with {Target}'s face on the pillow. The police are not arresting anyone because they are laughing."
+      ],
+      LEAKED_MEDIA: [
+        "The students blast the leaked clip through the campus PA system between lectures. The Dean demands it be stopped, then asks for a copy."
       ],
       FAKE_CREDENTIALS: [
-        "Undergraduates are burning {Target}'s fake certificates in a massive bonfire at the university gate."
+        "A final-year student's placard reads: \"I STUDIED FOR 5 YEARS. {Target} PRINTED FOR 5 MINUTES.\" It goes viral by lunch and sells as a T-shirt by dinner."
       ]
     }
   }

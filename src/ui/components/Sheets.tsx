@@ -7,6 +7,8 @@ import { BALANCE } from '../../engine/balance';
 import { DEFENSE_DATA } from '../../engine/data/defense';
 import { WIN_BELIEVER_PCT } from '../../engine/simulation';
 import { BrutalButton, PaperGrain } from './common';
+import { Avatar } from './Silhouette';
+import { targetEmotion } from '../mood';
 import { describeClimate, getClimate } from '../../engine/data/climates';
 import { pickTip } from '../../engine/data/copyUi';
 import { PARODY_DISCLAIMER, SHOW_DISCLAIMER } from '../../engine/data/parody';
@@ -229,9 +231,12 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
   const effects = gameState.timedEffects.filter(e => e.until >= gameState.currentDay);
   return (
     <SheetShell title="Case File" stamp={`Tier ${target.tier} // ${target.title}`} onClose={onClose}>
-      <div>
-        <div className="font-serif font-black text-base leading-tight">{target.fullName}</div>
-        <div className="text-[11px] font-sans italic text-slate-700 mt-1 leading-snug">"{gameState.scandalTitle}"</div>
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 w-16 h-20 bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden"><Avatar target={target} emotion={targetEmotion(gameState)} className="w-full h-full" /></div>
+        <div className="min-w-0">
+          <div className="font-serif font-black text-base leading-tight">{target.fullName}</div>
+          <div className="text-[11px] font-sans italic text-slate-700 mt-1 leading-snug">"{gameState.scandalTitle}"</div>
+        </div>
       </div>
 
       <div>

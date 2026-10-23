@@ -12,7 +12,7 @@ import { DefenseDesk } from '../components/DefenseDesk';
 import { Avatar } from '../components/Silhouette';
 import { PaperGrain, SparkCounter } from '../components/common';
 import { accentOf } from '../theme';
-import { moodOf } from '../mood';
+import { moodOf, targetEmotion } from '../mood';
 import { sfx, useSfxMuted } from '../audio';
 import { useSettings } from '../settings';
 import { LiveOverlays, useLiveShared } from '../live/shared';
@@ -163,7 +163,7 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
           <PaperGrain />
           <div className="relative flex gap-3 items-start">
             <div className="flex-shrink-0 w-[92px] bg-[#FDFCF8] p-1.5 pb-5 border border-[#1A1A1A] shadow-[3px_3px_0px_rgba(0,0,0,0.35)] -rotate-2" style={{ boxShadow: `0 0 0 2px ${accent}, 3px 3px 0 rgba(0,0,0,0.35)` }}>
-              <div className="bg-[#D9CBB0] h-[104px] flex items-end justify-center overflow-hidden"><Avatar target={target} className="w-full h-full" /></div>
+              <div className="bg-[#D9CBB0] h-[104px] flex items-end justify-center overflow-hidden"><Avatar target={target} emotion={targetEmotion(gameState)} className="w-full h-full" /></div>
               <div className="absolute bottom-1 left-0 right-0 text-center font-serif text-[9px] font-black truncate px-1">{target.shortName}</div>
             </div>
             <div className="min-w-0">

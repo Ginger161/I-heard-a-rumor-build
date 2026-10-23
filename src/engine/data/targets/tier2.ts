@@ -1,6 +1,8 @@
 import { TargetBase, ab, sc } from '../targetTypes';
 
 // TIER 2: STATE PLAYERS. Governors, megastars and money. Real counter-moves begin here.
+// Voice: adult and unfiltered (these are invented characters). Entries re-skinned by data/parody.ts
+// (nollywood_queen, afrobeats_star, afro_bad_boy, mavin_mogul, queen_afropop) keep their original text, because those stay comic.
 export const TIER_2: TargetBase[] = [
   {
     id: 'cryptoking',
@@ -8,19 +10,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Tobi "CryptoKing" Adeyemi',
     shortName: 'CryptoKing',
     title: 'Web3 / FinTech Ponzi Founder',
-    personality: 'A zero-risk "yield platform" that froze withdrawals overnight, run by a man who still posts from his penthouse.',
+    personality: 'A zero-risk "yield platform" that froze withdrawals overnight, run by a man who still posts from his penthouse, with a girl on each arm and a lawyer on each ankle.',
     silhouette: 'hoodie',
     scandals: [
-      sc('LEAKED_MEDIA', 'A Leaked Voice Note Laughing at Wiped-Out Retail Investors'),
-      sc('FINANCIAL', 'Frozen Withdrawals While He Bought a Penthouse'),
-      sc('FAKE_CREDENTIALS', 'A Fabricated "Harvard Blockchain" Certificate')
+      sc('LEAKED_MEDIA', 'A Leaked Voice Note Laughing at Wiped-Out Retail Investors: "Let Them Cry Into Their Pensions"'),
+      sc('FINANCIAL', 'Frozen Withdrawals While He Bought a Penthouse, a Rolex and a Very Embarrassing Tattoo'),
+      sc('FAKE_CREDENTIALS', 'A Fabricated "Harvard Blockchain" Certificate Printed at a Cyber Café in Yaba')
     ],
     passiveName: 'Bot Farm War Chest',
-    passiveFlavor: 'A bot army fights for him, especially in the big online cities.',
+    passiveFlavor: 'A bot army fights for him, especially in the big online cities, mostly in all caps.',
     mods: { spinHubs: true },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'BOT FARM ACTIVATED', 'Ten Thousand Fake Accounts Wake Up',
-        'A bot farm paid by {Target} is replying to every post with "this is FUD". The spin is spreading.')
+        'A bot farm paid by {Target} is replying to every post with "this is FUD, stay calm, wen moon". The spin is spreading.')
     ]
   },
   {
@@ -29,19 +31,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Barr. Femi "Pothole Digital" Bello',
     shortName: 'Barr. Bello',
     title: 'State Commissioner for Works',
-    personality: 'Has commissioned the same road six times. Every flood is "an act of God".',
+    personality: 'Has commissioned the same road six times. Every flood is "an act of God" and every pothole is "a feature".',
     silhouette: 'suit',
     scandals: [
-      sc('FINANCIAL', 'A Road Contract Paid in Full Before the First Bag of Cement'),
-      sc('FAKE_CREDENTIALS', 'A Call-to-Bar Certificate From a Law School With a Misspelled Name'),
-      sc('LEAKED_MEDIA', 'A Video Mocking Residents Stuck in Flood')
+      sc('FINANCIAL', 'A Road Contract Paid in Full Before the First Bag of Cement, and Spent Before the Second'),
+      sc('FAKE_CREDENTIALS', 'A Call-to-Bar Certificate From a Law School With a Misspelled Name and a Smudged Stamp'),
+      sc('LEAKED_MEDIA', 'A Video Laughing at Residents Stuck in Flood: "Una Wan Swim? Swim!"')
     ],
     passiveName: 'Contractor Network',
-    passiveFlavor: 'Every contractor in the state owes him a favour, and a billboard.',
+    passiveFlavor: 'Every contractor in the state owes him a favour, a billboard and a kickback with interest.',
     mods: {},
     abilities: [
       ab('INJUNCTION', 8, 9, 3, 'ADVERTS PLACED', 'Newspaper Pages Suddenly Fill With Road Adverts',
-        '{Target}\'s contractors bought every available front-page slot to "celebrate infrastructure".', 'PRESS')
+        '{Target}’s contractors bought every front-page slot to "celebrate infrastructure". The road in the photo is in Dubai.', 'PRESS')
     ]
   },
   {
@@ -92,19 +94,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Prof. Samuel "Result Pending" Okonkwo',
     shortName: 'Prof. Okonkwo',
     title: 'State University Vice-Chancellor',
-    personality: 'Graduates students in six years and publishes in journals that charge by the page.',
+    personality: 'Graduates students in six years, publishes in journals that charge by the page, and treats the hostel fee like a personal pension.',
     silhouette: 'glasses',
     scandals: [
-      sc('FAKE_CREDENTIALS', 'A PhD Thesis Plagiarised From a 1983 Textbook'),
-      sc('FINANCIAL', 'Hostel Fees Funding a Private Hotel'),
-      sc('LEAKED_MEDIA', 'A Leaked Senate Memo Admitting Results Were Altered')
+      sc('FAKE_CREDENTIALS', 'A PhD Thesis Plagiarised From a 1983 Textbook, Including the Coffee Stain'),
+      sc('FINANCIAL', 'Hostel Fees Funding a Private Hotel, Where the Beds Are Better Than Yours'),
+      sc('LEAKED_MEDIA', 'A Leaked Senate Memo Admitting Results Were Altered: "₦50k a Course, ₦200k for a First"')
     ],
     passiveName: 'Senate Loyalty',
-    passiveFlavor: 'Professors sign whatever he puts in front of them.',
+    passiveFlavor: 'Professors sign whatever he puts in front of them, usually without reading, usually with a smile.',
     mods: { eliteFriction: 0.3 },
     abilities: [
       ab('COUNTER_STORY', 8, 9, 7, 'SENATE RESOLUTION', 'Academic Senate Issues a Defence',
-        'The University Senate released a 14-page resolution praising {Target}\'s "integrity and scholarship".')
+        'The University Senate released a 14-page resolution praising {Target}’s "integrity and scholarship". Eleven of the signatories failed their own courses.')
     ]
   },
   {
@@ -113,19 +115,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Mr. Ikenna "Hidden Charges" Eze',
     shortName: 'Mr. Eze',
     title: 'Commercial Bank MD',
-    personality: 'Charges you to open your account, to close it, and for the SMS telling you about both.',
+    personality: 'Charges you to open your account, to close it, and for the SMS telling you about both. Has never once said "sorry" in a meeting.',
     silhouette: 'suit',
     scandals: [
-      sc('FINANCIAL', 'Customers Charged for Checking Their Own Balance'),
-      sc('LEAKED_MEDIA', 'A Board Recording Plotting New Fees'),
-      sc('FAKE_CREDENTIALS', 'An MBA From a Business School With No Campus')
+      sc('FINANCIAL', 'Customers Charged ₦50 for Checking Their Own Balance, Then ₦50 to Be Told They Were Charged'),
+      sc('LEAKED_MEDIA', 'A Board Recording Plotting New Fees: "If They Complain, Charge a Complaint Fee"'),
+      sc('FAKE_CREDENTIALS', 'An MBA From a Business School With No Campus, No Faculty and One WhatsApp Group')
     ],
     passiveName: 'Deep Pockets',
-    passiveFlavor: 'His legal team is always one step ahead, and watches for fake receipts.',
+    passiveFlavor: 'His legal team is always one step ahead, and watches for fake receipts like a man watching a woman.',
     mods: { eliteFriction: 0.3, forgeryRisk: 0.05 },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'ADVERTISING BUDGET', 'Bank Adverts Appear Across the Press',
-        '{Target}\'s bank pulled its advertising from any outlet that covers the story, and bought double elsewhere.', 'PRESS')
+        '{Target}’s bank pulled its advertising from any outlet that covers the story, and bought double elsewhere. The editors suddenly love banking.', 'PRESS')
     ]
   },
   {
@@ -134,19 +136,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Engr. Haruna "Super Eagles Contract" Yusuf',
     shortName: 'Engr. Yusuf',
     title: 'Football Federation Chairman',
-    personality: 'The national team has not won a trophy in a decade. His mansion has won several.',
+    personality: 'The national team has not won a trophy in a decade. His mansion has won several, and his side chicks have won the rest.',
     silhouette: 'suit',
     scandals: [
-      sc('FINANCIAL', 'World Cup Bonuses That Never Reached the Players'),
-      sc('LEAKED_MEDIA', 'A Recording of Him Selling Squad Spots'),
-      sc('FAKE_CREDENTIALS', 'A Referee Certificate for a Coach Who Never Refereed')
+      sc('FINANCIAL', 'World Cup Bonuses That Never Reached the Players, Now Parked in Dubai'),
+      sc('LEAKED_MEDIA', 'A Recording of Him Selling Squad Spots: "Ten Million, Not a Kobo Less"'),
+      sc('FAKE_CREDENTIALS', 'A Referee Certificate for a Coach Who Has Never Seen a Whistle')
     ],
     passiveName: 'Stadium Crowd',
-    passiveFlavor: 'A beloved national team shields him from the street.',
+    passiveFlavor: 'A beloved national team shields him from the street, even when the street wants to throw something.',
     mods: { tagDoubt: { GRASSROOTS: 5 } },
     abilities: [
       ab('DISTRACTION', 10, 10, 15, 'SUPER EAGLES WIN', 'Super Eagles Win Their Qualifier!',
-        'A last-minute goal gave the nation a reason to celebrate. {Target} is suddenly everyone\'s hero.')
+        'A last-minute goal gave the nation a reason to scream. {Target} is suddenly everyone’s hero, and everyone’s wife is crying with joy.')
     ]
   },
   {
@@ -155,19 +157,19 @@ export const TIER_2: TargetBase[] = [
     fullName: 'HRH Eze Nnamdi "Staff of Office" III',
     shortName: 'Eze Nnamdi',
     title: 'Traditional Ruler',
-    personality: 'Presides over a kingdom of three villages and a very busy land registry.',
+    personality: 'Presides over a kingdom of three villages and a very busy land registry. Believes "tradition" is a legal defence.',
     silhouette: 'crown',
     scandals: [
-      sc('FINANCIAL', 'Community Land Quietly Sold to Developers'),
-      sc('AFFAIR', 'Seventeen Wives and Counting'),
-      sc('FAKE_CREDENTIALS', 'A Chieftaincy Title Older Than the Kingdom Itself')
+      sc('FINANCIAL', 'Community Land Quietly Sold to Developers; the Villagers Learned From a Billboard'),
+      sc('AFFAIR', 'Seventeen Wives and Counting, Several Younger Than His Throne'),
+      sc('FAKE_CREDENTIALS', 'A Chieftaincy Title Older Than the Kingdom Itself, Which Is Impressive')
     ],
     passiveName: 'Palace Loyalty',
-    passiveFlavor: 'The Eastern states revere the throne and refuse to repeat gossip about it.',
+    passiveFlavor: 'The Eastern states revere the throne and refuse to repeat gossip about it, out of fear and fruit.',
     mods: { zoneDoubt: { SE: 10, SS: 6 } },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'PALACE DECREE', 'Palace Spokesmen Forbid Market Gossip',
-        'A palace decree warned the market women and motor parks against "spreading rumour about the throne".', 'STREET')
+        'A palace decree warned the market women and motor parks against "spreading rumour about the throne" on pain of a very public kolanut.', 'STREET')
     ]
   },
   {
@@ -199,21 +201,21 @@ export const TIER_2: TargetBase[] = [
     fullName: 'Madam Charity "NGO Queen" Abiodun',
     shortName: 'Madam Abiodun',
     title: 'Foundation Founder',
-    personality: 'Runs a foundation that has held more galas than it has built classrooms.',
+    personality: 'Runs a foundation that has held more galas than it has built classrooms, and more selfies than it has fed orphans.',
     silhouette: 'gele',
     scandals: [
-      sc('FINANCIAL', 'Donations Spent on a Private Jet "for Aid Delivery"'),
-      sc('FAKE_CREDENTIALS', 'A UN "Ambassador" Title Issued by a Fan Club'),
-      sc('LEAKED_MEDIA', 'A Photo Shoot Staged at a Camp She Never Visited')
+      sc('FINANCIAL', 'Donations Spent on a Private Jet "for Aid Delivery"; the Only Aid Was Champagne'),
+      sc('FAKE_CREDENTIALS', 'A UN "Ambassador" Title Issued by a Fan Club and a Laminator'),
+      sc('LEAKED_MEDIA', 'A Photo Shoot Staged at a Camp She Never Visited, With Borrowed Children and a Smoke Machine')
     ],
     passiveName: 'Photo-Op Machine',
-    passiveFlavor: 'Elite donors are happy to be seen with her, and happy to defend her.',
+    passiveFlavor: 'Elite donors are happy to be seen with her, and happy to defend her, as long as the lighting is good.',
     mods: { eliteFriction: 0.3 },
     abilities: [
       ab('COUNTER_STORY', 8, 9, 7, 'ORPHAN PHOTO-OP', 'A Photo-Op With Orphans Floods the Feeds',
-        '{Target} was photographed hugging fourteen children in matching T-shirts. The story is shifting.'),
+        '{Target} was photographed hugging fourteen children in matching T-shirts. Eleven of them were hired, and two of them are crying.'),
       ab('DISTRACTION', 11, 12, 12, 'CHARITY GALA', 'A Charity Gala Takes Over the Society Pages',
-        '{Target} hosted a gala with three governors. The society pages have nothing else to print.')
+        '{Target} hosted a gala with three governors. The society pages have nothing else to print, and the aso-ebi is fire.')
     ]
   },
   {
