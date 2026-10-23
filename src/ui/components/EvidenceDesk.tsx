@@ -9,6 +9,7 @@ import { BrutalButton, PaperGrain, SparkCounter } from './common';
 interface EvidenceDeskProps {
   gameState: GameState;
   onClose: () => void;
+  docked?: boolean;   // desktop: fills its panel instead of sliding up over the map
   onLeak: (evidenceId: string) => void;
 }
 
@@ -20,24 +21,25 @@ const effectChips = (e: EvidenceItem): string[] => {
   else if (e.jadedToHeard > 0) chips.push(`${Math.round(e.jadedToHeard * 100)}% Jaded → Heard`);
   if (e.jadedToBelievers > 0) chips.push(`${Math.round(e.jadedToBelievers * 100)}% Jaded → Believers`);
   if (e.heardToBelievers > 0) chips.push(`${Math.round(e.heardToBelievers * 100)}% of all Heard → Believers`);
+  chips.push(`-${e.coverUpReduction}% Cover-Up`, `+${e.freshnessBoost} Freshness`);
   return chips;
 };
 
-export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, onLeak }) => {
+export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, onLeak, docked = false }) => {
   const [tab, setTab] = useState<Tab>('VERIFIED');
   const target = getTarget(gameState.activeTargetId);
   const category = gameState.scandalCategory;
   const progress = gameState.investigationProgress;
   const avgDoubt = nationalAverageDoubt(gameState.states);
-  const backfireRisk = Math.round((FORGERY_BASE_BACKFIRE + (avgDoubt > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0)) * 100);
+  const backfireRisk = Math.round((FORGERY_BASE_BACKFIRE + (avgDoubt > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0) + (target.mods.forgeryRisk ?? 0)) * 100);
   const totalJaded = Object.values(gameState.states).reduce((a, s) => a + s.jaded, 0);
   const items = tab === 'VERIFIED' ? VERIFIED_EVIDENCE : FORGERY_EVIDENCE;
 
   return (
     <>
-      <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />
+      {!docked && <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />}
 
-      <div className="absolute inset-x-0 bottom-0 h-[72%] bg-[#EADCC8] z-50 flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden">
+      <div className={docked ? 'relative h-full bg-[#EADCC8] flex flex-col overflow-hidden' : 'absolute inset-x-0 bottom-0 h-[72%] bg-[#EADCC8] z-50 flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden'}>
         <PaperGrain />
 
         {/* HEADER */}
@@ -46,13 +48,13 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
             <span className="text-base font-black tracking-widest uppercase font-serif">Evidence Locker</span>
             <div className="flex items-center gap-3">
               <SparkCounter value={gameState.sparks} className="text-xs" />
-              <button
+              {!docked && <button
                 onClick={onClose}
                 aria-label="Close evidence locker"
                 className="w-8 h-8 bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md font-bold text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] cursor-pointer"
               >
                 ✕
-              </button>
+              </button>}
             </div>
           </div>
           <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
@@ -89,12 +91,12 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
           )}
           {tab === 'FORGERY' && (
             <div className="text-[10px] font-bold uppercase tracking-wider text-[#8B0000] bg-[#FEE2E2] border-2 border-[#8B0000] rounded-lg px-3 py-2">
-              ⚠ Forgery backfire risk right now: {backfireRisk}%{avgDoubt > 55 ? ' (skeptical streets: +35%)' : ''}. If exposed: +20% Doubt, +25% Heat.
+              ⚠ Forgery backfire risk right now: {backfireRisk}%{avgDoubt > 55 ? ' (skeptical streets: +35%)' : ''}. If exposed: +20% Doubt, +25% Heat, +15% Cover-Up.
             </div>
           )}
 
           {items.map(item => {
-            const variant = getEvidenceVariant(item, category);
+            const variant = getEvidenceVariant(item, category, target.parody);
             const dropped = gameState.droppedEvidence.includes(item.id);
             const unlocked = progress >= item.requiredInvestigation;
             const canAfford = gameState.sparks >= item.cost;
@@ -130,7 +132,7 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
                     </p>
                     <div className="flex gap-1.5 flex-wrap">
                       {effectChips(item).map(chip => (
-                        <span key={chip} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm border ${chip.includes('Heat') ? 'text-[#8B0000] border-[#8B0000]' : 'text-[#065F46] border-[#065F46]'}`}>
+                        <span key={chip} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm border ${chip.includes('Heat') && !chip.includes('Cover') ? 'text-[#8B0000] border-[#8B0000]' : 'text-[#065F46] border-[#065F46]'}`}>
                           {chip}
                         </span>
                       ))}

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { GameState } from '../../engine/types';
-import { computeMasterVariables, defenseUses, nationalBelieverPct, nationalHeardPct, nationalAverageDoubt } from '../../engine/selectors';
+import { computeMasterVariables, defenseUses, getChannel, heatMultiplier, isFrozen, nationalBelieverPct, nationalHeardPct, nationalAverageDoubt } from '../../engine/selectors';
 import { ZONE_IDS, ZONE_NAMES, ZONE_STATE_IDS } from '../../engine/data/zones';
-import { getTarget } from '../../engine/data/targets';
+import { describeTarget, getTarget } from '../../engine/data/targets';
+import { BALANCE } from '../../engine/balance';
 import { DEFENSE_DATA } from '../../engine/data/defense';
 import { WIN_BELIEVER_PCT } from '../../engine/simulation';
 import { BrutalButton, PaperGrain } from './common';
+import { describeClimate, getClimate } from '../../engine/data/climates';
+import { pickTip } from '../../engine/data/copyUi';
+import { PARODY_DISCLAIMER, SHOW_DISCLAIMER } from '../../engine/data/parody';
+import { sfx, useSfxMuted } from '../audio';
 
 interface ShellProps {
   title: string;
@@ -16,8 +21,8 @@ interface ShellProps {
 
 const SheetShell: React.FC<ShellProps> = ({ title, stamp, onClose, children }) => (
   <>
-    <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />
-    <div className="absolute inset-x-0 bottom-0 max-h-[75%] bg-[#EADCC8] z-50 flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden">
+    <div className="absolute inset-0 z-40 bg-[#1A1A1A]/50 backdrop-blur-[2px] flex items-end justify-center animate-fade-in desk-wrap" onClick={onClose}>
+    <div className="relative w-full max-h-[75%] bg-[#EADCC8] flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden desk-sheet" onClick={e => e.stopPropagation()}>
       <PaperGrain />
       <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex-shrink-0 flex items-center justify-between border-b-4 border-[#8B0000]">
         <div>
@@ -33,6 +38,7 @@ const SheetShell: React.FC<ShellProps> = ({ title, stamp, onClose, children }) =
         </button>
       </div>
       <div className="relative flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-3">{children}</div>
+    </div>
     </div>
   </>
 );
@@ -120,8 +126,8 @@ export const HeatSheet: React.FC<{ gameState: GameState; onClose: () => void }> 
   const vars = computeMasterVariables(gameState);
   const target = getTarget(gameState.activeTargetId);
   const proxy = defenseUses(gameState, 'proxy_relay') > 0 ? 0.75 : 1;
-  const targetMult = gameState.activeTargetId === 'godfather' ? 1.15 : 1;
-  const daily = Math.max(1.5, vars.notoriety * 7.5 * proxy) * targetMult;
+  const targetMult = heatMultiplier(gameState);
+  const daily = Math.max(BALANCE.heatFloor, vars.notoriety * BALANCE.heatPerNotoriety * proxy) * targetMult;
   return (
     <SheetShell title="State Security Heat" stamp="DSS // Confidential" onClose={onClose}>
       <div>
@@ -133,7 +139,7 @@ export const HeatSheet: React.FC<{ gameState: GameState; onClose: () => void }> 
       </div>
       <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-3 text-[11px] font-bold leading-relaxed">
         <div>Daily Heat gain: <span className="text-[#8B0000]">+{daily.toFixed(1)}%</span></div>
-        <div className="text-slate-600">Notoriety {vars.notoriety.toFixed(2)} × 7.5{proxy < 1 ? ' × 0.75 (Darknet Relay)' : ''}{targetMult > 1 ? ` × 1.15 (${target.passiveName})` : ''}, minimum 1.5.</div>
+        <div className="text-slate-600">Notoriety {vars.notoriety.toFixed(2)} × {BALANCE.heatPerNotoriety}{proxy < 1 ? ' × 0.75 (Darknet Relay)' : ''}{Math.abs(targetMult - 1) > 0.005 ? ` × ${targetMult.toFixed(2)} (tier, Target style and perk)` : ''}, minimum {BALANCE.heatFloor}.</div>
       </div>
       <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/60">Escalation</div>
       {[
@@ -160,36 +166,134 @@ export const HeatSheet: React.FC<{ gameState: GameState; onClose: () => void }> 
 
 // ---------------------------------------------------------------------------
 interface PauseProps {
+  copySeed: number;
   onResume: () => void;
   onHistory: () => void;
+  onSettings: () => void;
+  onGuide: () => void;
+  onHowTo: () => void;
   onReset: () => void;
 }
 
-export const PauseMenu: React.FC<PauseProps> = ({ onResume, onHistory, onReset }) => {
+export const PauseMenu: React.FC<PauseProps> = ({ copySeed, onResume, onHistory, onSettings, onGuide, onHowTo, onReset }) => {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmTour, setConfirmTour] = useState(false);
+  const [muted, setMuted] = useSfxMuted();
   return (
     <div className="absolute inset-0 z-50 bg-[#1A1A1A]/70 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
-      <div className="relative w-full max-w-[320px] bg-[#F4F1EA] border-4 border-[#1A1A1A] rounded-2xl shadow-[8px_8px_0px_#1A1A1A] p-5 animate-slide-up overflow-hidden">
+      <div className="relative w-full max-w-[320px] pause-card bg-[#F4F1EA] border-4 border-[#1A1A1A] rounded-2xl shadow-[8px_8px_0px_#1A1A1A] p-5 animate-slide-up overflow-hidden">
         <PaperGrain />
         <div className="relative">
           <div className="inline-block -rotate-2 border-4 border-[#1A1A1A] bg-white px-4 py-1 font-black text-2xl tracking-widest mb-4 shadow-[3px_3px_0px_#1A1A1A]">PAUSED</div>
           <div className="flex flex-col gap-2.5">
             <BrutalButton tone="ink" onClick={onResume}>▶ Resume Investigation</BrutalButton>
             <BrutalButton tone="paper" onClick={onHistory}>Case Log</BrutalButton>
+            <BrutalButton tone="paper" onClick={onSettings}>⚙ Settings</BrutalButton>
+            <BrutalButton tone="paper" onClick={onGuide}>📖 Field Guide</BrutalButton>
+            {!confirmTour ? (
+              <BrutalButton tone="paper" onClick={() => setConfirmTour(true)}>? Replay the tutorial</BrutalButton>
+            ) : (
+              <div className="border-2 border-dashed border-[#B45309] rounded-lg p-3 bg-[#FEF3C7]">
+                <div className="text-[11px] font-bold text-[#B45309] mb-2">The tutorial is a practice case. This case will be abandoned. Go?</div>
+                <div className="flex gap-2">
+                  <BrutalButton tone="ink" className="flex-1 py-2" onClick={onHowTo}>Start tutorial</BrutalButton>
+                  <BrutalButton tone="paper" className="flex-1 py-2" onClick={() => setConfirmTour(false)}>Stay</BrutalButton>
+                </div>
+              </div>
+            )}
+            <BrutalButton tone="paper" onClick={() => { setMuted(!muted); if (muted) sfx.play('click'); }}>{muted ? '🔇 Sound: Off' : '🔊 Sound: On'}</BrutalButton>
             {!confirmReset ? (
-              <BrutalButton tone="paper" onClick={() => setConfirmReset(true)}>New Investigation / Reset</BrutalButton>
+              <BrutalButton tone="paper" onClick={() => setConfirmReset(true)}>Abandon case</BrutalButton>
             ) : (
               <div className="border-2 border-dashed border-[#8B0000] rounded-lg p-3 bg-[#FEE2E2]">
-                <div className="text-[11px] font-bold text-[#8B0000] mb-2">This burns the current case file. Start over?</div>
+                <div className="text-[11px] font-bold text-[#8B0000] mb-2">Abandoning burns this case file (stars and envelopes are safe). Walk away?</div>
                 <div className="flex gap-2">
-                  <BrutalButton tone="crimson" className="flex-1 py-2" onClick={onReset}>Burn it</BrutalButton>
+                  <BrutalButton tone="crimson" className="flex-1 py-2" onClick={onReset}>Abandon</BrutalButton>
                   <BrutalButton tone="paper" className="flex-1 py-2" onClick={() => setConfirmReset(false)}>Cancel</BrutalButton>
                 </div>
               </div>
             )}
           </div>
+          <div className="text-[10px] font-sans italic text-slate-600 leading-snug mt-3">Tip: {pickTip(copySeed, 'pause')}</div>
+          {SHOW_DISCLAIMER && <div className="text-[8px] font-sans italic text-slate-500 leading-tight mt-2">{PARODY_DISCLAIMER}</div>}
         </div>
       </div>
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => void }> = ({ gameState, onClose }) => {
+  const target = getTarget(gameState.activeTargetId);
+  const frozen = Object.entries(gameState.frozenChannels).filter(([, until]) => until >= gameState.currentDay);
+  const effects = gameState.timedEffects.filter(e => e.until >= gameState.currentDay);
+  return (
+    <SheetShell title="Case File" stamp={`Tier ${target.tier} // ${target.title}`} onClose={onClose}>
+      <div>
+        <div className="font-serif font-black text-base leading-tight">{target.fullName}</div>
+        <div className="text-[11px] font-sans italic text-slate-700 mt-1 leading-snug">"{gameState.scandalTitle}"</div>
+      </div>
+
+      <div>
+        <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
+          <span>Cover-Up</span>
+          <span className="text-[#8B0000]">{Math.round(gameState.coverUp)}% / 100%</span>
+        </div>
+        <Bar value={gameState.coverUp} color="#B91C1C" markers={[30, 55, 80]} />
+        <p className="text-[10px] font-sans text-slate-700 leading-snug mt-1.5">
+          The Target's counter-narrative. At 100% the story is dead and you lose. It grows every day, faster as more people believe,
+          slower with high Credibility. Verified evidence pushes it back; Spin bubbles that detonate and Target moves push it forward.
+        </p>
+      </div>
+
+      <div>
+        <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
+          <span>Story Freshness</span>
+          <span className="text-[#B45309]">{Math.round(gameState.freshness)}%</span>
+        </div>
+        <Bar value={gameState.freshness} color="#D97706" />
+        <p className="text-[10px] font-sans text-slate-700 leading-snug mt-1.5">
+          How alive the story is in the news cycle. A stale story makes your channels up to 45% weaker. New evidence, new channels,
+          milestones and events refresh it; distractions and time drain it.
+        </p>
+      </div>
+
+      <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-3 py-2">
+        <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60">News climate</div>
+        <div className="text-[12px] font-bold">{getClimate(gameState.climateId).icon} {getClimate(gameState.climateId).name}</div>
+        <div className="text-[10px] font-sans text-slate-600 leading-snug">{getClimate(gameState.climateId).blurb}</div>
+        {describeClimate(getClimate(gameState.climateId)).length > 0 && (
+          <div className="text-[10px] font-sans font-bold mt-1">{describeClimate(getClimate(gameState.climateId)).join(' • ')}</div>
+        )}
+      </div>
+
+      <div className="bg-[#1A1A1A] text-[#F4F1EA] rounded-lg px-3 py-2.5">
+        <div className="text-[9px] font-black uppercase tracking-widest text-[#FDE68A]">Passive: {target.passiveName}</div>
+        <div className="text-[10px] font-sans italic text-slate-300 mt-0.5">{target.passiveFlavor}</div>
+        <ul className="mt-1.5 flex flex-col gap-0.5">
+          {describeTarget(target).map(line => <li key={line} className="text-[10px] font-sans leading-snug">• {line}</li>)}
+        </ul>
+      </div>
+
+      {frozen.length > 0 && (
+        <div className="bg-[#DBEAFE] border-2 border-[#1E3A5F] rounded-lg px-3 py-2">
+          <div className="text-[9px] font-black uppercase tracking-widest text-[#1E3A5F] mb-1">Frozen channels</div>
+          {frozen.map(([id, until]) => (
+            <div key={id} className="text-[11px] font-bold text-[#1E3A5F]">❄ {getChannel(id)?.name ?? id} (thaws after Day {until})</div>
+          ))}
+          {defenseUses(gameState, 'san_injunction') === 0 && <div className="text-[9px] font-sans text-[#1E3A5F]/80 mt-1">A SAN Counter-Injunction thaws every frozen channel.</div>}
+        </div>
+      )}
+
+      {effects.length > 0 && (
+        <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-3 py-2">
+          <div className="text-[9px] font-black uppercase tracking-widest mb-1">Active effects</div>
+          {effects.map(e => (
+            <div key={e.id} className="text-[11px] font-bold">{e.label} ×{e.mult} • {e.until - gameState.currentDay + 1} day(s) left</div>
+          ))}
+        </div>
+      )}
+
+    </SheetShell>
   );
 };

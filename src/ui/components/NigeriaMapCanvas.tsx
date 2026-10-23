@@ -9,6 +9,7 @@ import { seedSparkId } from '../../engine/actions';
 import { SparkBubble } from './SparkBubble';
 import { SpinBubble } from './SpinBubble';
 import { ShatterBurst } from './common';
+import { haptic, sfx } from '../audio';
 
 interface MapCanvasProps {
   gameState: GameState;
@@ -36,7 +37,7 @@ const lerpColor = (a: string, b: string, t: number): string => {
 };
 
 // Spec §4A choropleth: heard tints pale amber -> warm orange, believers tint light crimson -> blood red at 60%.
-export const stateFill = (s: StateNode | undefined): string => {
+const stateFill = (s: StateNode | undefined): string => {
   if (!s || (s.heard === 0 && s.believers === 0)) return '#F4F1EA';
   const heardPct = s.heard / s.population;
   const believerPct = s.believers / s.population;
@@ -75,7 +76,10 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
 
   // Bubbles mid-shatter: the seed spark (deferred collect) and ghosts for already-collected sparks.
   const [seedShattering, setSeedShattering] = useState(false);
-  const [ghosts, setGhosts] = useState<{ key: string; x: number; y: number; animating: boolean }[]>([]);
+  const [ghosts, setGhosts] = useState<{ key: string; x: number; y: number; animating: boolean; label: string; gold: boolean }[]>([]);
+  // Rapid collects build a combo streak (cosmetic: sound, haptics and a badge).
+  const comboRef = useRef({ n: 0, last: 0 });
+  const [combo, setCombo] = useState<{ n: number; key: number } | null>(null);
 
   // Flight arcs and border pulses are driven by transient events from the last tick.
   const seenFlights = useRef<Set<string>>(new Set());
@@ -124,16 +128,29 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
 
   const tapSpark = (sparkId: string, x: number, y: number) => {
     const isSeed = !gameState.hasPoppedFirstSpark && gameState.startingStateId !== null && sparkId === seedSparkId(gameState.startingStateId);
+    const spark = gameState.activeSparks.find(sp => sp.id === sparkId);
+    const golden = spark?.kind === 'GOLDEN';
+    sfx.play(golden ? 'golden' : 'pop');
+    haptic(golden ? [18, 40, 18] : 12);
     if (isSeed) {
-      // Spec §3.5: 400ms shatter first, then bank +15 and pop the Ground Zero alert.
+      // Spec §3.5: 400ms shatter first, then bank the first spark and pop the Ground Zero alert.
       setSeedShattering(true);
       setTimeout(() => onSparkTap(sparkId), SHATTER_MS);
       return;
     }
-    const key = `${sparkId}_${Date.now()}`;
-    setGhosts(g => [...g, { key, x, y, animating: false }]);
+    // Combo: taps within 2.2s of each other stack.
+    const now = Date.now();
+    const streak = now - comboRef.current.last < 2200 ? comboRef.current.n + 1 : 1;
+    comboRef.current = { n: streak, last: now };
+    if (streak >= 3) {
+      sfx.play('combo', streak);
+      setCombo({ n: streak, key: now });
+      setTimeout(() => setCombo(c => (c && c.key === now ? null : c)), 1300);
+    }
+    const key = `${sparkId}_${now}`;
+    setGhosts(g => [...g, { key, x, y, animating: false, label: `+${spark?.amount ?? ''}`, gold: golden }]);
     requestAnimationFrame(() => setGhosts(g => g.map(gh => (gh.key === key ? { ...gh, animating: true } : gh))));
-    setTimeout(() => setGhosts(g => g.filter(gh => gh.key !== key)), SHATTER_MS);
+    setTimeout(() => setGhosts(g => g.filter(gh => gh.key !== key)), 900);
     onSparkTap(sparkId);
   };
 
@@ -152,7 +169,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
 
   return (
     <div
-      className="w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center bg-[#EADCC8] touch-none"
+      className="w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center bg-transparent touch-none"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -244,9 +261,10 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
             const isSeed = gameState.startingStateId !== null && spark.id === seedSparkId(gameState.startingStateId) && !gameState.hasPoppedFirstSpark;
             return (
               <foreignObject key={spark.id} x={x - 20} y={y - 20} width={40} height={40} style={{ overflow: 'visible' }}>
-                <div onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-10 flex items-center justify-center" onClick={e => e.stopPropagation()}>
                   <SparkBubble
                     amount={spark.amount}
+                    kind={spark.kind}
                     urgent={spark.ticksRemaining <= 1}
                     shattering={isSeed && seedShattering}
                     onTap={() => tapSpark(spark.id, x, y)}
@@ -277,12 +295,23 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
           {ghosts.map(g => (
             <foreignObject key={g.key} x={g.x - 20} y={g.y - 20} width={40} height={40} style={{ overflow: 'visible' }} pointerEvents="none">
               <div className="relative w-10 h-10">
-                <ShatterBurst animating={g.animating} />
+                <ShatterBurst animating={g.animating} color={g.gold ? '#F59E0B' : '#B45309'} />
+                <div className={`absolute left-1/2 -top-1 -translate-x-1/2 whitespace-nowrap text-[13px] font-black animate-float-up ${g.gold ? 'text-[#B45309] drop-shadow-[0_0_4px_rgba(250,204,21,0.9)]' : 'text-[#92400E]'}`}>
+                  {g.label} ⚡
+                </div>
               </div>
             </foreignObject>
           ))}
         </svg>
       </div>
+
+      {combo && (
+        <div key={combo.key} className="absolute top-10 inset-x-0 flex justify-center pointer-events-none z-30">
+          <div className="animate-combo-pop bg-[#1A1A1A] text-[#FDE68A] border-2 border-[#FDE68A] px-3 py-1 rounded-full font-black text-xs tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,0.35)]">
+            COMBO ×{combo.n}!
+          </div>
+        </div>
+      )}
 
       {/* ZOOM & RESET CONTROLS */}
       <div className="absolute top-3 right-3 flex flex-col gap-2 z-20" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>

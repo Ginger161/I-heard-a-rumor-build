@@ -7,19 +7,20 @@ import { BrutalButton, PaperGrain, SparkCounter } from './common';
 interface DefenseDeskProps {
   gameState: GameState;
   onClose: () => void;
+  docked?: boolean;   // desktop: fills its panel instead of sliding up over the map
   onBuy: (defenseId: string) => void;
 }
 
-export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, onBuy }) => {
+export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, onBuy, docked = false }) => {
   const heat = gameState.heat;
   const critical = heat >= 90;
   const activeSpin = gameState.activeSpinBubbles.length;
 
   return (
     <>
-      <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />
+      {!docked && <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />}
 
-      <div className="absolute inset-x-0 bottom-0 h-[72%] bg-[#EADCC8] z-50 flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden">
+      <div className={docked ? 'relative h-full bg-[#EADCC8] flex flex-col overflow-hidden' : 'absolute inset-x-0 bottom-0 h-[72%] bg-[#EADCC8] z-50 flex flex-col border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up overflow-hidden'}>
         <PaperGrain />
 
         <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex-shrink-0 border-b-4 border-[#8B0000]">
@@ -27,13 +28,13 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
             <span className="text-base font-black tracking-widest uppercase font-serif">Defense Desk</span>
             <div className="flex items-center gap-3">
               <SparkCounter value={gameState.sparks} className="text-xs" />
-              <button
+              {!docked && <button
                 onClick={onClose}
                 aria-label="Close defense desk"
                 className="w-8 h-8 bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md font-bold text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] cursor-pointer"
               >
                 ✕
-              </button>
+              </button>}
             </div>
           </div>
           <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-1">

@@ -1,14 +1,16 @@
 import React, { useRef, useState } from 'react';
 import { GameState } from '../../engine/types';
 import { CHANNELS_DATA, ChannelUpgrade } from '../../engine/data/channels';
-import { fillTarget, getTarget } from '../../engine/data/targets';
-import { channelAvailable } from '../../engine/selectors';
+import { getTarget } from '../../engine/data/targets';
+import { channelFlavorLine } from '../../engine/data/flavor';
+import { channelAvailable, isFrozen } from '../../engine/selectors';
 import { BrutalButton, PaperGrain, SparkCounter, TapeStrip } from './common';
 
 interface BoardProps {
   gameState: GameState;
   onClose: () => void;
   onBuy: (channelId: string) => void;
+  docked?: boolean;   // desktop: fills its panel instead of covering the screen
 }
 
 const CANVAS_W = 2000;
@@ -92,7 +94,8 @@ const StatBar: React.FC<{ label: string; value: number; max: number; color: stri
   </div>
 );
 
-export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBuy }) => {
+export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBuy, docked = false }) => {
+  const viewRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const dragging = useRef(false);
@@ -101,10 +104,13 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
   const target = getTarget(gameState.activeTargetId);
   const category = gameState.scandalCategory;
 
-  const clampPan = (x: number, y: number) => ({
-    x: Math.max(PAN_MIN.x, Math.min(PAN_MAX.x, x)),
-    y: Math.max(PAN_MIN.y, Math.min(PAN_MAX.y, y))
-  });
+  // Pan limits follow the real size of the viewport, so a wide desktop panel never shows empty space past the board.
+  const clampPan = (x: number, y: number) => {
+    const w = viewRef.current?.clientWidth, h = viewRef.current?.clientHeight;
+    const minX = w ? Math.min(PAN_MAX.x, w - CANVAS_W - 100) : PAN_MIN.x;
+    const minY = h ? Math.min(PAN_MAX.y, h - CANVAS_H - 100) : PAN_MIN.y;
+    return { x: Math.max(minX, Math.min(PAN_MAX.x, x)), y: Math.max(minY, Math.min(PAN_MAX.y, y)) };
+  };
 
   const onPointerDown = (e: React.PointerEvent) => {
     dragging.current = true;
@@ -124,7 +130,7 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
   const selected: ChannelUpgrade | undefined = CHANNELS_DATA.find(c => c.id === selectedNode);
 
   return (
-    <div className="absolute inset-0 z-50 bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden animate-slide-up">
+    <div className={docked ? 'relative h-full w-full bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden' : 'absolute inset-0 z-50 bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden animate-slide-up'}>
       {/* HEADER */}
       <div className="relative z-20 border-b-2 border-[#1A1A1A] p-4 flex justify-between items-start bg-[#EFEBE0] shadow-sm">
         <PaperGrain />
@@ -138,18 +144,19 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
         </div>
         <div className="flex items-center gap-3 relative">
           <SparkCounter value={gameState.sparks} className="text-lg px-4 py-2" />
-          <button
+          {!docked && <button
             onClick={onClose}
             aria-label="Close board"
             className="w-10 h-10 bg-white text-[#1A1A1A] border-2 border-[#1A1A1A] rounded font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] cursor-pointer"
           >
             ✕
-          </button>
+          </button>}
         </div>
       </div>
 
       {/* PANNING CANVAS */}
       <div
+        ref={viewRef}
         className="flex-1 relative cursor-grab active:cursor-grabbing bg-[#EFEBE0] touch-none overflow-hidden"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -175,6 +182,12 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
                 <TapeStrip className="-top-2.5 left-1/2 -translate-x-1/2 rotate-[-3deg]" />
                 {branch.name}
               </div>
+              {branch.name === target.ai.weaknessBranch && (
+                <div className="mt-1 text-[8px] font-black tracking-wider uppercase bg-[#065F46] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[1deg]">▲ Weak spot ×1.25</div>
+              )}
+              {branch.name === target.ai.resistanceBranch && (
+                <div className="mt-1 text-[8px] font-black tracking-wider uppercase bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[-1deg]">▼ Resists ×0.75</div>
+              )}
             </div>
           ))}
 
@@ -216,12 +229,17 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
             const available = channelAvailable(gameState, node);
             const canAfford = gameState.sparks >= node.cost;
             const locked = !owned && !available;
+            const frozen = owned && isFrozen(gameState, node.id);
             const ready = !owned && available && canAfford;
 
             let circle = 'bg-[#EFEBE0] border-2 border-dashed border-slate-400 opacity-60';
             let pin = 'bg-slate-400';
             let icon = 'text-slate-400';
-            if (owned) {
+            if (owned && frozen) {
+              circle = 'bg-[#E5E7EB] border-4 border-[#1E3A5F] shadow-[4px_4px_0px_#1E3A5F] opacity-80';
+              pin = 'bg-[#1E3A5F]';
+              icon = 'text-slate-500';
+            } else if (owned) {
               circle = 'bg-white border-4 border-[#1A1A1A] shadow-[4px_4px_0px_#B91C1C] hover:scale-105';
               pin = 'bg-[#B91C1C]';
               icon = 'text-[#1A1A1A]';
@@ -252,9 +270,15 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
                   <div className={icon}>
                     <BranchIcon branch={node.branch} isLocked={locked} />
                   </div>
+                  {frozen && (
+                    <>
+                      <div className="absolute w-[68px] h-2.5 bg-[#B91C1C]/90 border border-[#1A1A1A] rotate-45 z-20" />
+                      <div className="absolute w-[68px] h-2.5 bg-[#B91C1C]/90 border border-[#1A1A1A] -rotate-45 z-20" />
+                    </>
+                  )}
                 </div>
                 <div className={`mt-1.5 bg-[#1A1A1A] text-[#F4F1EA] font-mono text-[9px] px-1.5 py-0.5 shadow-sm tracking-tighter uppercase whitespace-nowrap z-20 ${tilt} ${locked ? 'opacity-50' : ''}`}>
-                  {dymoName(node.name)} {owned ? '✓' : `${node.cost} ⚡`}
+                  {dymoName(node.name)} {frozen ? '❄ FROZEN' : owned ? '✓' : `${node.cost} ⚡`}
                 </div>
               </div>
             );
@@ -265,11 +289,11 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
       {/* SLIDE-UP MANILA FOLDER INSPECTOR */}
       {selected && (() => {
         const owned = gameState.unlockedChannels.includes(selected.id);
+        const frozenNow = owned && isFrozen(gameState, selected.id);
         const available = channelAvailable(gameState, selected);
         const canAfford = gameState.sparks >= selected.cost;
         const matched = selected.synergy.includes(category);
         const boost = matched ? 1.35 : 1;
-        const lines = selected.flavorTexts[category]?.[0] || selected.flavorTexts.DEFAULT[0];
         const missing = selected.requires.filter(r => !gameState.unlockedChannels.includes(r)).map(r => CHANNELS_DATA.find(c => c.id === r)?.name ?? r);
 
         return (
@@ -302,8 +326,13 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
               <StatBar label="Notoriety" value={selected.notoriety} max={STAT_MAX.notoriety} color="#B91C1C" />
             </div>
 
-            <p className="text-xs font-sans text-slate-700 italic mb-3 leading-relaxed border-l-4 border-slate-400 pl-3">"{fillTarget(lines, target)}"</p>
+            <p className="text-xs font-sans text-slate-700 italic mb-3 leading-relaxed border-l-4 border-slate-400 pl-3">"{channelFlavorLine(selected, category, target)}"</p>
 
+            {frozenNow && (
+              <div className="mb-2 py-1.5 px-2 text-center border-2 border-[#1E3A5F] bg-[#DBEAFE] text-[#1E3A5F] font-black uppercase tracking-wider text-[9px] rounded-md">
+                ❄ Frozen until the end of Day {gameState.frozenChannels[selected.id]}. It contributes nothing. A SAN Counter-Injunction thaws it.
+              </div>
+            )}
             {owned ? (
               <div className="py-2 text-center border-2 border-[#8B0000] text-[#8B0000] font-black uppercase tracking-widest bg-red-50 rounded-lg text-xs">Channel Acquired</div>
             ) : !available ? (

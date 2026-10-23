@@ -1,16 +1,19 @@
 import { GameState, ModalState } from './types';
 import { ScandalCategory } from './data/channels';
-import { TargetId, getTarget } from './data/targets';
+import { TargetId, getTarget, temperamentMods } from './data/targets';
 import { getEvidence } from './data/evidence';
 import { getDefense } from './data/defense';
 import { AlertFactory, pushAlert } from './alerts';
-import { createMatchState } from './newGame';
+import { createMatchState, MatchOptions } from './newGame';
 import { alertToHistory, appendHistory, evaluateEndgame, Rng } from './simulation';
-import { channelAvailable, getChannel, nationalAverageDoubt } from './selectors';
+import { applyEffects } from './effects';
+import { findChoice } from './events';
+import { BALANCE } from './balance';
+import { perkEffects } from './data/perks';
+import { chatterPing } from './chatter';
+import { channelAvailable, clamp, getChannel, nationalAverageDoubt } from './selectors';
 
-const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
-
-export const FIRST_SPARK_AMOUNT = 15;
+export const FIRST_SPARK_AMOUNT = BALANCE.seedSpark;
 export const FORGERY_BASE_BACKFIRE = 0.3;
 export const FORGERY_HIGH_DOUBT_BACKFIRE = 0.35;
 
@@ -27,7 +30,8 @@ const finalize = (s: GameState): GameState => {
 };
 
 export const Actions = {
-  startMatch: (targetId: TargetId, category: ScandalCategory): GameState => createMatchState(targetId, category),
+  startMatch: (targetId: TargetId, category: ScandalCategory, perkId: string | null = null, climateId?: string, opts?: MatchOptions): GameState =>
+    createMatchState(targetId, category, perkId, climateId, opts),
 
   // Phase 1, step 1: plant the seed and drop the deterministic 15 spark.
   plantSeed: (s: GameState, stateId: string): GameState => {
@@ -49,8 +53,9 @@ export const Actions = {
       },
       activeSparks: [{
         id: seedSparkId(stateId),
+        kind: 'WHISPER' as const,
         stateId,
-        amount: FIRST_SPARK_AMOUNT,
+        amount: perkEffects(s.perkId).seedSpark ?? FIRST_SPARK_AMOUNT,
         offsetX: 0,
         offsetY: -14,
         ticksRemaining: 9999
@@ -70,7 +75,7 @@ export const Actions = {
     };
     if (isSeed) {
       const stateName = s.states[s.startingStateId!]?.name ?? 'Nigeria';
-      const alert = AlertFactory.createSeedAlert(stateName, getTarget(s.activeTargetId));
+      const alert = AlertFactory.createSeedAlert(stateName, getTarget(s.activeTargetId), s.climateId, s.copySeed);
       next = {
         ...next,
         hasPoppedFirstSpark: true,
@@ -105,17 +110,44 @@ export const Actions = {
 
   resume: (s: GameState): GameState => ({ ...s, isPaused: false, activeModal: 'NONE' }),
 
-  dismissTopAlert: (s: GameState): GameState =>
-    s.notificationQueue.length === 0 ? s : { ...s, notificationQueue: s.notificationQueue.slice(1) },
+  dismissTopAlert: (s: GameState): GameState => {
+    const top = s.notificationQueue[0];
+    if (!top || (top.choices && top.choices.length > 0)) return s; // Decision cards must be answered
+    // The clock starts when the Ground Zero card is dismissed: the Target reacts.
+    const chatter = top.id.startsWith('seed_') ? chatterPing(s.activeTargetId, 'onStart') : s.chatter;
+    return { ...s, notificationQueue: s.notificationQueue.slice(1), chatter };
+  },
+
+  // Answer an event / informant decision card.
+  chooseOption: (s: GameState, choiceId: string, rng: Rng = Math.random): GameState => {
+    const top = s.notificationQueue[0];
+    if (!top || !top.eventId || !top.choices) return s;
+    const choice = findChoice(top.eventId, choiceId);
+    if (!choice) {
+      // Unknown choice: if the card itself is unanswerable (e.g. content changed), drop it so the game can never get stuck.
+      const answerable = top.choices.some(c => !!findChoice(top.eventId!, c.id));
+      return answerable ? s : { ...s, notificationQueue: s.notificationQueue.slice(1) };
+    }
+    if (choice.cost && s.sparks < choice.cost) return s;
+    let next: GameState = { ...s, sparks: s.sparks - (choice.cost ?? 0), notificationQueue: s.notificationQueue.slice(1) };
+    next = applyEffects(next, choice.effects, rng, `${s.currentDay}c${choiceId}`).state;
+    next = {
+      ...next,
+      historyLog: appendHistory(next.historyLog, { day: Math.min(s.currentDay, s.dayBudget), headline: top.headline, impact: choice.label })
+    };
+    return finalize(next);
+  },
 
   buyChannel: (s: GameState, channelId: string): GameState => {
     const channel = getChannel(channelId);
     if (!channel || s.status !== 'PLAYING') return s;
     if (s.unlockedChannels.includes(channelId) || s.sparks < channel.cost || !channelAvailable(s, channel)) return s;
-    const alert = AlertFactory.createChannelAlert(channelId, s.scandalCategory, getTarget(s.activeTargetId));
+    const alert = AlertFactory.createChannelAlert(channelId, s.scandalCategory, getTarget(s.activeTargetId), s.copySeed);
     return {
       ...s,
       sparks: s.sparks - channel.cost,
+      freshness: clamp(s.freshness + BALANCE.freshnessOnChannelBuy, 0, 100),
+      chatter: chatterPing(s.activeTargetId, 'onChannelBought'),
       unlockedChannels: [...s.unlockedChannels, channelId],
       notificationQueue: pushAlert(s.notificationQueue, alert),
       historyLog: alert ? appendHistory(s.historyLog, alertToHistory(alert, s.currentDay)) : s.historyLog
@@ -128,13 +160,19 @@ export const Actions = {
     if (s.droppedEvidence.includes(evidenceId) || s.sparks < item.cost) return s;
     if (s.investigationProgress < item.requiredInvestigation) return s;
 
-    const backfireRisk = FORGERY_BASE_BACKFIRE + (nationalAverageDoubt(s.states) > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0);
+    const backfireRisk = (FORGERY_BASE_BACKFIRE
+      + (nationalAverageDoubt(s.states) > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0)
+      + (getTarget(s.activeTargetId).mods.forgeryRisk ?? 0)) * (perkEffects(s.perkId).forgeryRiskMult ?? 1);
     const backfired = item.isFabricated && rng() < backfireRisk;
 
     const states = { ...s.states };
     let heat = s.heat;
+    let coverUp = s.coverUp;
+    let freshness = s.freshness;
 
     if (backfired) {
+      coverUp += 15;
+      freshness -= 10;
       Object.keys(states).forEach(id => {
         states[id] = { ...states[id], doubt: clamp(states[id].doubt + 20, 0, 100) };
       });
@@ -162,15 +200,22 @@ export const Actions = {
           highDoubtTicks: doubt >= 70 ? st.highDoubtTicks : 0
         };
       });
-      heat += item.heatIncrease;
+      heat += item.heatIncrease * temperamentMods(getTarget(s.activeTargetId)).evidenceHeat;
+      coverUp -= item.coverUpReduction;
+      freshness += item.freshnessBoost;
     }
 
-    const alert = AlertFactory.createEvidenceAlert(item, backfired, s.scandalCategory, getTarget(s.activeTargetId));
+    const alert = AlertFactory.createEvidenceAlert(item, backfired, s.scandalCategory, getTarget(s.activeTargetId), s.copySeed);
     return finalize({
       ...s,
       states,
       sparks: s.sparks - item.cost,
       heat: clamp(heat, 0, 100),
+      coverUp: clamp(coverUp, 0, 100),
+      peakCoverUp: Math.max(s.peakCoverUp, clamp(coverUp, 0, 100)),
+      freshness: clamp(freshness, 0, 100),
+      backfires: s.backfires + (backfired ? 1 : 0),
+      chatter: chatterPing(s.activeTargetId, backfired ? 'onBackfire' : 'onEvidenceDropped'),
       droppedEvidence: [...s.droppedEvidence, evidenceId],
       notificationQueue: pushAlert(s.notificationQueue, alert),
       historyLog: appendHistory(s.historyLog, alertToHistory(alert, s.currentDay))
@@ -182,13 +227,15 @@ export const Actions = {
     if (!item || s.status !== 'PLAYING') return s;
     const uses = s.defensePurchases[defenseId] ?? 0;
     if (uses >= item.maxUses || s.sparks < item.cost) return s;
-    const alert = AlertFactory.createDefenseAlert(item);
+    const alert = AlertFactory.createDefenseAlert(item, s.copySeed);
     return finalize({
       ...s,
       sparks: s.sparks - item.cost,
       heat: clamp(s.heat - item.heatReduction, 0, 100),
       defensePurchases: { ...s.defensePurchases, [defenseId]: uses + 1 },
       activeSpinBubbles: defenseId === 'san_injunction' ? [] : s.activeSpinBubbles,
+      frozenChannels: defenseId === 'san_injunction' ? {} : s.frozenChannels,
+      injunctionShield: defenseId === 'san_injunction' ? s.injunctionShield + 2 : s.injunctionShield,
       notificationQueue: pushAlert(s.notificationQueue, alert),
       historyLog: appendHistory(s.historyLog, alertToHistory(alert, s.currentDay))
     });

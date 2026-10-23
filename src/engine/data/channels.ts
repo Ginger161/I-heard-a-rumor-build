@@ -1,9 +1,10 @@
 export type ScandalCategory = 'FINANCIAL' | 'AFFAIR' | 'LEAKED_MEDIA' | 'FAKE_CREDENTIALS';
+export type Branch = 'STREET' | 'SOCIAL' | 'PRESS' | 'ELITE';
 
 export interface ChannelUpgrade {
   id: string;
   name: string;
-  branch: 'STREET' | 'SOCIAL' | 'PRESS' | 'ELITE';
+  branch: Branch;
   cost: number;
   synergy: ScandalCategory[];
   velocity: number;    // Boosts Unaware -> Heard & Cross-border jump chance

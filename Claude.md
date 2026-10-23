@@ -362,3 +362,259 @@ Evaluate at the end of every tick:
    - Displays campaign summary + tip on using the Defense Desk earlier.
 3. **DEFEAT — FIZZLED OUT (`currentDay > 20` with `Believers < 75%`):**
    - Full-screen Tabloid Front
+
+
+---
+
+## 10. v2 REVISIONS (supersede the numbers above where they conflict)
+
+These changes were made after bot-play showed the original formulas produced a trivially easy, ~2-minute game
+where Doubt, Jaded, Spin bubbles, Evidence tiers 3-4 and Notoriety never mattered. Target session length is
+**about 5 minutes**. Every tunable number now lives in `src/engine/balance.ts`.
+
+### A. §9.3 completed: the third defeat screen
+**DEFEAT - FIZZLED OUT** (`LOST_TIME`, `currentDay > dayBudget`): full-screen tabloid front page, "RUMOR FIZZLES OUT! {TARGET} SURVIVES THE NEWS CYCLE",
+with the standard campaign summary and an editor's note about chaining Press/Elite channels and leaking evidence.
+
+### B. Clock
+`dayBudget = 30`, `tickMs = 8000`. Clock warnings fire at 50% (Day 15) and at `dayBudget - 3`. LOST_TIME is `currentDay > 30`.
+
+### C. Core model changes
+- **Soft caps:** raw V/C/N still add up (spec Stage 1, incl. the 1.35x synergy), but the engine uses
+  `x / (1 + x / cap)` with caps 1.5 / 1.0 / 1.6, so late channels still help but never saturate the game.
+- **Doubt has a source:** `growth = tag base (1.0 / 2.4 / 1.8) + hype + coverUp pressure`; `hype` = 0.5 x velocity of owned SOCIAL channels
+  (viral reach without receipts breeds skepticism). Anchor = `C_eff x 1.7`. Doubt can fall at most 0.8/day.
+- **Heard -> Believers** uses `heard x C_eff x 0.35 x doubtShield` (+3% conviction floor).
+- **Contagion is lossier:** highway chance per neighbour = `0.05 + 0.12 V + street bonus` (max 0.45), source needs >2000 reached AND >0.5% of its
+  population. Flights use `0.10 + 0.15 V` (max 0.5). Geography and the seed state now matter.
+- **Economy:** First Whisper bounty = `4 + 10 x sqrt(pop / 15.4M)` (Lagos > Bayelsa). Stochastic sparks: chance `0.4 + 0.35 N_eff`, up to 6 on the board,
+  fast 4-6 (2 ticks) / fat 9-14 (4 ticks). About 17% of income now comes from stochastic sparks, so Notoriety pays off.
+- **Heat:** `max(1.0, N_eff x 7 x proxy) x target.heatMult x tier.heat`. **Investigation:** +3.6/day (+3 with the Whistleblower).
+
+### D. New meters
+- **Cover-Up (the Target's "cure"):** grows daily by `2.0 x tier x target.coverUpRate x (1 + 1.5 x believerShare) x (1 - 0.45 x C_eff/cap)`.
+  Detonated Spin bubbles +3, counter-stories (abilities) add more. Verified evidence reduces it (6/10/16/28), forgeries 4/6; a forgery backfire adds 15.
+  **Reaching 100% = `LOST_COVERUP`** ("STORY SPUN! {TARGET} WALKS FREE"). Endgame priority: WON, LOST_HEAT, LOST_COVERUP, LOST_TIME.
+  Counter-offensives (§8) now fire on Believers (20/45/70%) OR Cover-Up (30/55/80%). New alerts at Cover-Up 65% and 88%.
+- **Story Freshness (0-100):** decays 2/day (floor 15). Channels contribute V and C at `0.55 + 0.45 x freshness`. Refreshed by evidence
+  (+20/30/45/70, forgeries +10/15), buying a channel (+8), milestones (flip, critical mass, regional sweep, hub breach) and events.
+
+### E. Target abilities and mods (`data/targetTypes.ts`)
+Targets are data, not code. `TargetMods`: heatMult, doubtFlat/doubtAdd, tagDoubt, zoneDoubt, coverUpRate, eliteFriction, spinHubs, spinRate,
+counterHeat, forgeryRisk, staleRate. `AbilityDef` kinds fire on a schedule: `INJUNCTION` (freezes an owned channel, optionally one lane),
+`DISTRACTION` (-Freshness), `HEAT_SURGE`, `COUNTER_STORY` (+Cover-Up), `BOT_SWARM` (spawns Spin bubbles). The dossier text is generated from this
+data (`describeTarget`) so it cannot drift from the engine.
+- **Frozen channels** contribute nothing and show red tape on the Conspiracy Board. **SAN Counter-Injunction** now also thaws them and blocks the next 2 injunctions.
+  The Darknet Relay halves heat surges.
+
+### F. 50 Targets, 5 tiers (`data/targets/tier1..5.ts`)
+10 Targets per tier, each with a personality, 3 scandals in distinct categories (the player picks one), a passive and 1-3 abilities.
+Tiers: 1 Neighbourhood Big Men, 2 State Players (Godfather, Televangelist, CryptoKing), 3 National Heavyweights (Hon. Danjuma), 4 Titans, 5 The Untouchables.
+All Targets are **fictional archetypes with invented names and invented scandals**; some are loose parodies of types of public figure, never of named real people.
+Tier baselines (`BALANCE.tier`): Cover-Up x[0.8, 1.15, 1.7, 2.1, 2.6], Heat x[0.9, 1.05, 1.2, 1.35, 1.5], starting Doubt +[0, 3, 6, 10, 14].
+The next task (the difficulty system) should scale these tables.
+
+### G. Events and informant decisions (`engine/events.ts`)
+Decision cards (cannot be dismissed, clock stays stopped): blackout (random zone), fuel protests, Detty December, ASUU strike, network outage,
+platform ban, celebrity wedding, election season, comedian skit, court adjourns, owambe season, and three INFORMANT_TIP choices (clerk, rival, driver).
+One per tick at most, cooldown 4 days, never repeated. Effects use the shared `Effect` engine (`engine/effects.ts`), including timed modifiers
+(zone friction, highway multiplier, lane multiplier, spark bounty).
+
+### H. Meta-progression (`engine/profile.ts`, key `rumor_profile_v1`)
+Tier 1 is open. Tier N+1 opens after taking down 3 *different* Targets in tier N. Sealed tiers show only identical grey silhouettes, "? ? ?" and a lock, so
+a new player cannot identify or be overwhelmed by later Targets. Wins are archived as front pages. "Reset saved game" never erases unlocks;
+"Erase progress" does. `?unlock=all` in the URL opens every tier for testing.
+
+### I. Save key
+`rumor_game_save_v5` (state shape changed; incompatible saves are discarded, never migrated).
+
+### J. Tooling
+`npm run build` type-checks first. `npm run verify` runs 79 spec checks. `npm run simulate` plays full runs with three bot skill levels
+(`RUNS`, `TIER`, `VERBOSE`, `BALANCE='{"coverUpBase":2.4}'` env overrides). Current baseline win rates (expert / average bot, tiers 1-5):
+100/100/96/90/41% and 93/82/64/35/8%.
+---
+
+## 10. V2 EXPANSION: CHESS.COM-STYLE BOT ROSTER, AI PERSONALITIES & META-ECONOMY
+
+### A. Global Player Profile & Meta-Currency (`MetaProfile` in `saveManager.ts`)
+Maintain a persistent `MetaProfile` in `localStorage` (`rumor_meta_profile_v1`) separate from the active match save so it never resets when a match ends:
+- `envelopes: number` (Global currency: "Brown Envelopes ✉️", starts at `50 ✉️` for new players).
+- `targetStars: Record<string, number>` (Maps `targetId` -> `1 | 2 | 3` stars earned).
+- `unlockedTargetIds: string[]` (Tier 1 targets + Featured Creators are unlocked by default).
+- `unlockedPerks: string[]` (Permanent pre-game loadout perks bought with ✉️).
+- `equippedPerkId: string | null` (1 active perk per run).
+
+### B. Earning Stars & Brown Envelopes (✉️) on Victory
+When a player wins a match (`status === 'WON'`):
+- Calculate Stars (`1 to 3`):
+  - `1 Star`: Won the match (`Believers >= 75%` by Day 20).
+  - `2 Stars`: Won in `<= 15 Days` AND `peakHeat < 75%`.
+  - `3 Stars`: Won in `<= 12 Days` AND `peakHeat < 50%` AND `backfiresCount === 0`.
+- Award **Brown Envelopes (✉️)**:
+  - First-time win against this Target: `+50 ✉️`
+  - Star Improvement bonus: `+15 ✉️` per new star earned
+  - Replay win bonus: `+15 ✉️`
+- Check Tier Progression: Earning `>= 4 Stars` in a Tier automatically unlocks all Targets in the next Tier, OR a player can click `"Bribe Informant to Unseal Dossier (100 ✉️)"` on any locked Target to unlock them immediately!
+
+### C. Tiered Roster & Creator Spotlight (`src/engine/data/targets.ts`)
+Organize the Case File Selection Screen into 5 folder tabs:
+1. **`CREATOR_SPOTLIGHT` (★ Featured Personalities — Always Unlocked for Viral Access):**
+   - **Lord Lamba "The Cruise Master"** (`PR Rating: 1100` | `LEAKED_MEDIA`) — Temperament: `THE_CRASHOUT`, Defense: `SPIN_DOCTOR`.
+   - **Daddy Freeze-Frame "The Tithe Collector"** (`PR Rating: 1450` | `FINANCIAL`) — Temperament: `THE_STOIC`, Defense: `SPIN_DOCTOR`.
+2. **`TIER_1_STREET` (PR Rating: 300–750 | 24 Days | 0.75x Doubt & Heat):**
+   - **Slay Queen "Soft Life" Amaka** (`PR Rating: 400` | `AFFAIR`)
+   - **Chukwudi "Forex Signals" Okafor** (`PR Rating: 680` | `FINANCIAL`)
+3. **`TIER_2_HEAVYWEIGHTS` (PR Rating: 800–1350 | 20 Days | 1.0x Doubt & Heat):**
+   - **Tobi "CryptoKing" Adeyemi** (`PR Rating: 1050` | `LEAKED_MEDIA`)
+   - **Burna-Lite "Afro Bad Boy" Kazeem** (`PR Rating: 1280` | `AFFAIR`)
+4. **`TIER_3_SYNDICATE` (PR Rating: 1400–1950 | 18 Days | 1.25x Doubt & Heat | Locked until 4 Stars in Tier 2 or 120 ✉️):**
+   - **Apostle Miracle "Anointed" Chukwu** (`PR Rating: 1600` | `AFFAIR`)
+   - **Hon. Musa "Toronto" Danjuma** (`PR Rating: 1850` | `FAKE_CREDENTIALS`)
+5. **`TIER_4_UNTOUCHABLES` (PR Rating: 2000–2600 | 16 Days | 1.5x Doubt & Heat | Locked until 4 Stars in Tier 3 or 250 ✉️):**
+   - **Chief Obafemi "The Godfather" Adebayo** (`PR Rating: 2350` | `FINANCIAL`)
+
+### D. The AI Personality Matrix & Live Polaroid Chatter
+Every Target in `targets.ts` includes:
+- `aiProfile`:
+  - `defenseStyle`: `'SPIN_DOCTOR'` (1.5x SpinBubbles, 0.8x Heat) | `'IRON_FIST'` (1.4x Heat, fewer SpinBubbles) | `'BALANCED'`
+  - `temperament`: `'THE_CRASHOUT'` (Triggers an early rant at 15% Believers giving player +10% Velocity but spawning 2 SpinBubbles) | `'THE_STOIC'` (Saves counter-attack for a massive ambush at 55% Believers)
+  - `weaknessBranch` & `resistanceBranch`: Multiplies channel effectiveness (`1.25x` vs `0.75x`).
+  - `signatureMove`: Custom alert headline, body, and mechanical effect triggered once at `50% Believers`.
+- `chatter`: 5 reactive 1-liner strings (`onStart`, `onChannelBought`, `onEvidenceDropped`, `onBackfire`, `onCritical`) displayed in a small pinned **Target Polaroid Speech Bubble** at the top-left of the map HUD for 4 seconds whenever those events occur.
+
+### E. Syndicate Perks Shop (Spend Brown Envelopes ✉️ on the Dossier Screen)
+Allow players to spend ✉️ on the Case File screen to unlock & equip 1 pre-game Perk:
+1. **Motor Park Union Boss (`75 ✉️`):** First Whisper spark gives `22 ⚡` instead of `15 ⚡`.
+2. **Encrypted Burner Rig (`100 ✉️`):** Daily Heat rises `20%` slower.
+3. **Inside Secretariat Mole (`125 ✉️`):** Investigation starts at `25%` on Day 1 (Tier 1 Evidence unlocked immediately).
+4. **Fact-Check Immunity (`150 ✉️`):** Reduces Fabricated Evidence backfire risk by `50%`.
+
+---
+
+## 11. HOW THE "V2 EXPANSION" (SECOND §10 ABOVE) WAS BLENDED INTO THE CODEBASE
+
+The expansion was **not** implemented verbatim. It was merged with the systems from "§10 v2 REVISIONS" so nothing is duplicated.
+Where the two disagree, this section wins.
+
+| Expansion asks for | What exists | Blended result |
+|---|---|---|
+| 4 tiers + Creator Spotlight, ~2 Targets each | 5 tiers, 50 Targets | All 50 kept. 6 new Targets added (56 total: 12/10/11/11/10 + 2 Spotlight). Godfather moved to Tier 4 and the Apostle to Tier 3 so their design-doc PR Ratings (2350 / 1600) fit their folder. `folder` (display/unlock) is separate from `tier` (mechanics). |
+| Per-tier days 24/20/18/16 and Doubt/Heat x0.75-1.5 | One 30-day clock | `BALANCE.tier.days = [36,30,28,26,24]`, `heat = [0.75,1.05,1.2,1.35,1.55]`, `doubtGrowth = [0.75..1.75]`; recalibrated with `npm run simulate`. Each match carries its own `dayBudget`. |
+| `aiProfile.defenseStyle` | Scattered `heatMult` / `spinRate` target mods | Style is now the **only** source: SPIN_DOCTOR (Spin x1.5, Heat x0.8), IRON_FIST (Heat x1.4, Spin x0.6). The old per-target mods were removed so nothing stacks. `heatMultiplier()` / `spinMultiplier()` in `selectors.ts` are shared by the sim and the Heat sheet. |
+| `temperament` | Counter-offensives at 20/45/70% | THE_CRASHOUT: meltdown at 15% Believers (+10% Velocity for 6 days, 2 Spin). THE_STOIC: skips the 20% and 45% counter-offensives and ambushes at 55% (Doubt +14, Cover-Up +10, Heat +10, 4 Spin). STEADY (default) is unchanged. |
+| `weaknessBranch` / `resistanceBranch` | Channel stats | Lane multiplier x1.25 / x0.75 on Velocity and Credibility in `computeMasterVariables`. The Conspiracy Board labels the weak and resisted lanes. |
+| `signatureMove` (custom copy per Target) | Each Target already has abilities | The signature move is the Target's **strongest ability at double strength, once, at 50% Believers** (alert stamp "SIGNATURE MOVE // ..."). No duplicate copy to maintain. |
+| `chatter` (5 lines per Target) | none | `data/aiProfiles.ts`: per-Target custom `onStart` and `onCritical`; the other three beats come from temperament pools (a Crashout and a Stoic sound different). `PolaroidChatter` shows the line for 4s top-left of the map. `onStart` fires when the Ground Zero card is dismissed; `onCritical` on Heat 90, Cover-Up 88, the meltdown and the ambush. Chatter is transient and never saved. |
+| `MetaProfile` in `saveManager.ts` (`rumor_meta_profile_v1`) | `Profile` (wins + archive, `rumor_profile_v1`) | The profile was **extended, not duplicated**: `engine/profile.ts` now holds envelopes, stars, bribes, bought tiers, perks and the archive, under the specified key. The old profile is migrated on first load (each old win becomes 1 star and its envelopes). The match save is `rumor_game_save_v6`. |
+| Stars: 15/20 and 12/20 days, Heat < 75 / 50, no backfires | n/a | The day thresholds are **shares of the match's own clock** (75% and 60%), which is exactly the doc's 15/20 and 12/20. `GameState.backfires` counts exposed forgeries. |
+| Envelopes: +50 first win, +15 per new star, +15 replay | n/a | Implemented as written. Start balance 50. Rewards are stored on the finished match (`winRewards`) so a win can be claimed only once, even across reloads. |
+| Tier unlock at 4 stars, or bribe 100 | "3 distinct wins" rule, silhouettes | 4 stars in the previous tier opens the next. A **bribe unseals one Target** (100 ✉️); a **folder buy-out** opens a whole tier (T2 80, T3 120, T4 250, T5 400). Everything still sealed stays a silhouette with hidden name and rating. |
+| 4 perks | n/a | The 4 specified perks plus 2 that fit v2 systems: **Press Club Membership** (Freshness decays 25% slower, 110 ✉️) and **Court Bailiff on the Payroll** (first injunction blocked, 130 ✉️). |
+| PR Ratings | n/a | Design-doc ratings are fixed (`SPEC_RATINGS`). All others are **calibrated by `npm run rate`**, which plays every Target with the bots and spreads ratings across each folder's range by measured difficulty. The roster sorts easiest first. |
+
+### Roster facts
+- Spotlight (always open): Lord Lambo "The Cruise Master" (1100, Leaked Media, Crashout, Spin Doctor) and Daddy Freeze-Frame "The Tithe Collector" (1450, Financial, Stoic, Spin Doctor).
+  Both are deliberate parody names with invented scandals; rename freely in `data/targets/spotlight.ts`.
+- Added: Amaka (T1, 400), Chukwudi "Forex Signals" (T1, 680), Burna-Lite (T2, 1280), Madam Abiodun "NGO Queen" (T2).
+
+### Tooling added
+`npm run rate` (regenerate PR Ratings), `npm run simulate`, `npm run verify` (132 checks), `npm run build` (type-checks first).
+
+
+---
+
+## 12. VARIETY, PARODY ROSTER & ROBUSTNESS PASS
+
+Goal: every run should feel different, every beat should feel earned, and nothing should be able to break the game.
+
+### A. Parody layer (`data/parody.ts`)
+- Base Targets carry **generic fictional names**. When `USE_PARODY_NAMES` is true, a Target in `PARODY` is re-skinned with a parody name that winks at a famous Nigerian persona (Davi-Dough, Wizz-Kidd, Mercy-Full, DJ Cupcake, Mr. Macaroony, Don Jazzier, Tiwa Savagery, Falsz, Basket-Mouth-Full, Dan-Goat, plus the design-doc creators Lord Lambo, Daddy Freeze-Frame and Burna-Lite). Flip the flag to return to the generic roster.
+- **A recognisable name is never paired with a believable accusation.** Parody Targets get comic scandals, comic channel flavor (`PARODY_CHANNEL_LINES`), comic evidence (`PARODY_EVIDENCE`) and a comic win screen ("Cancelled! Apology Video & Indefinite Hiatus!") instead of arrests. A test fails the build if accusatory wording reaches a parody Target.
+- **No politicians or officeholders by name.** Offices stay generic ("The President").
+- An in-game disclaimer ("Every character is a fictional parody...") shows on the Dossier, Pause menu and parody endings.
+- Another test fails the build if any Target carries a known real person's name. (An earlier Tier 5 Target accidentally did; fixed.)
+- **Before launch, get legal review.** Nigerian cybercrime law has been used against online satire.
+
+### B. Playstyle variety
+- Defense styles: SPIN_DOCTOR, IRON_FIST, **LAWYER_UP** (injunctions +1 day and 15% more often, Heat x0.9), **DISTRACTOR** (distractions x1.3, Spin x0.8, story stales 10% faster), BALANCED.
+- Temperaments: THE_CRASHOUT, THE_STOIC, **THE_SHOWMAN** (moves 25% more often, 25% softer), **THE_PARANOID** (genuine evidence +50% Heat, Cover-Up -15%), **THE_SCHEMER** (plants a bait bombshell at 30% Believers: verify it, run it and pay, or bin it), STEADY.
+- The 61 Targets are spread across all of them (no style or temperament above 30% of the roster).
+- Roster: 61 Targets (13 / 12 / 13 / 11 / 10 plus a 2-creator Spotlight). `npm run rate` regenerates PR Ratings.
+
+### C. Run climates (`data/climates.ts`)
+Every case rolls a **news climate**: Clear Skies, Harmattan, Rainy Season, Election Year, Detty December, Fuel Scarcity, Strike Season, Blackout Week, Slow News Cycle, Scandal Season. Each nudges lane strength, land-border spread, Heat, spark value, staleness or Cover-Up. The forecast is shown on the Dossier before you commit, in the HUD chip and in the Case File sheet.
+
+### D. Daily Case (`engine/daily.ts`)
+One Target, scandal, climate and **random seed** per calendar day, identical for every player. The pool is the always-open Spotlight and Tier 1, so it never reveals sealed Targets. No perks. Winning pays a once-a-day bonus of +25 envelopes, +5 per streak day up to +30. A "Share result" button copies a Wordle-style emoji card.
+
+### E. Copy and card variants
+- `copySeed` (per run; the daily seed on dailies) picks which wording each milestone, event and ending uses, so a run reads consistently but runs differ. 30+ alert keys have 3+ variants each (`data/copy.ts`); 24 events (14 + 10 new) each with an alternate body; 4 Ground Zero openings; win/loss headline and body variants; zone-flavored street gist; 24 tips; 8 taglines.
+- Every alert archetype has **3 skins** (18 total) chosen per alert: notebook / napkin / receipt; WhatsApp / Instagram story / social post; The Daily Gist / The Naija Sun / The Lagos Ledger; letterhead / legal notice / press statement (Target counter-moves are tinted by the Target's temperament colour); telex / fax / terminal; envelope / voice note / burner SMS. Entry animations vary too.
+- Ids and priorities never change with the variant, only wording and visuals.
+
+### F. Feel
+- **Spark kinds:** WHISPER (amber), FAST (small teal), FAT (big gold), and a rare **GOLDEN** jackpot (7% of stochastic sparks, x3 value) with its own look and sound.
+- Floating "+N ⚡", combo streaks (cosmetic), screen shake and haptics on heavy hits, confetti, star pop-ins and counting-up envelopes on victory.
+- **Sound** (`ui/audio.ts`): zero-asset WebAudio synth, mute toggle persisted, haptics gated on user activation.
+- **Mood colours** (`ui/mood.ts`): Heat tints the frame and pulses a red vignette; a stale story desaturates; belief builds a golden glow; frozen channels add an icy edge; the map tints from morning paper to evening amber across the match.
+
+### G. Robustness
+- `engine/invariants.ts` defines what a healthy state is. `sanitizeState` repairs loaded saves (clamps numbers, drops unanswerable decision cards, realigns the ability schedule) and discards a save that stays unhealthy.
+- An unanswerable decision card is dropped when answered, so a player can never be trapped. Every event offers a free choice (tested).
+- `ErrorBoundary` shows a recovery screen instead of a blank page and never touches stars, envelopes or perks.
+- **Fuzz test:** 400 random whole games across every Target, thousands of random actions, asserting no crash, all invariants, and that the player can always move on.
+- Save key is `rumor_game_save_v8`.
+
+---
+
+## 13. SETTINGS, AUDIO, TUTORIAL, TARGET PACKS & STORY MODE
+
+- **Settings** (`ui/settings.ts`, key `rumor_settings_v1`): master/music/effects/ambience volumes, mute, haptics, reduce motion, screen shake,
+  mood overlay, high contrast, text size, hints, **Assist Mode**, progress export/import code. Reachable from the Dossier (⚙) and the Pause menu
+  (Resume, Case Log, Settings, How to play, Abandon case).
+- **Assist Mode:** each day lasts 1.5x longer (`BALANCE.assistTickMult`); assisted wins cap at 1 star, pay half the envelopes and skip the Daily bonus.
+  The match carries `assisted`. Training Cases (`training`) pay nothing.
+- **Audio** (`ui/audio.ts`, `ui/music/*`): all synthesised. A 15-track music library (`library.ts`: patterns, chords, layers; `synth.ts`: instruments; `player.ts`: bar-by-bar scheduler, crossfades, offline render; `director.ts`: picks the song and intensity from stage, tier, Heat, Cover-Up, belief, time and climate). Stations (Auto, Afrobeats, Amapiano, Chill, Street) and a jukebox live in Settings. Recorded tracks can be listed in `public/music/index.json`. Older note: SFX, a generative Afrobeat-style music bed with scenes (`dossier` / `live` / `tense` / `silent`),
+  and ambient beds chosen by climate (rain, harmattan wind, generator hum, party bass, fuel queue, street). Real recorded tracks can replace the music
+  by routing a decoded buffer into `musicBus`.
+- **Tutorial** (`ui/components/Tutorial.tsx`, `FieldGuide.tsx`): a 14-step guided Training Case in 4 parts (basics, how it spreads, what fights back, your plan) that teaches Velocity, Credibility, Notoriety, Synergy, state types, Doubt, events and climates; every card has "Learn more" (opens the Field Guide), "Take over" (keep playing the case) and "Skip". A Field Guide glossary is in the pause menu and the Dossier. The old description: (fixed Target and seed) with coach-mark spotlights
+  (`data-tour` attributes), steps that wait for the real action, the clock held while a card explains something, plus one-time contextual hints.
+- **Target packs** (`engine/data/targetPacks.ts`): Targets are JSON (`TargetDef`), validated and registered at runtime. `public/target-packs/index.json`
+  lists published packs; Studio drafts live in the browser. Open `?studio=1` for the **Target Studio** (editor, validation, preview, bot balance test, import/export).
+  `kind` is FICTIONAL / PARODY / CREATOR (needs consent record, comic scandals only) / STORY. Built-in ids can never be overwritten.
+  This is a file-based content pipeline, not a hosted multi-user backend; a CMS can serve the same JSON later.
+- **Story Mode** (`data/story.ts`, `engine/story.ts`, `ui/screens/StoryScreen.tsx`): Season 1 "The Receipts", 9 chapters in 3 acts, 12 invented Targets
+  (ex, cheating partner, former bestie, colleague, business partner, boss, in-law, ex-spouse, mentor). Pair chapters let the player choose who it was.
+  Each chapter has a motive, three approaches (Receipts Only / Whatever Works / Soft Landing) and a reputation ("integrity") that carries forward and
+  changes starting Doubt. Three season endings. Approaches are encoded in `perkId` as `story:<approach>:<band>`. `npm run simulate:story` checks fairness.
+- Save key is `rumor_game_save_v9`.
+
+---
+
+## 14. DESKTOP DESIGN, OFFLINE LEADERBOARDS, SHARING, FOUNDER'S MARK, OFFLINE PLAY
+
+- **Two deliberate layouts** (`ui/useLayout.ts`, Settings > Layout: Auto/Mobile/Desktop). Mobile is the portrait frame. Desktop (window at least 1100x620) is a
+  situation room: `DesktopLiveScreen` has a labelled instrument header, the Target's case file on the left (their next moves with countdowns), the map or the
+  Conspiracy Board in the centre (inspection card under the map), Evidence/Defence/Log docked on the right, a news ticker, and keys (1 map, 2 board, E, D, L,
+  Space, Esc). Desks reuse the same components with `docked`. The Dossier becomes three panes (your desk, roster grid, case file). Story and Leaderboards are
+  centred reading columns. Sheets become centred dialogs (`desk-wrap`/`desk-sheet` CSS). The clock rule is identical on both layouts: while you work at a desk the
+  clock waits. Shared live logic is in `ui/live/shared.tsx`.
+- **Offline leaderboards** (`engine/scores.ts`, `ui/screens/BoardsScreen.tsx`): no server. A score is a signed code or link (`?s=`); a board code carries up to 25
+  scores. Opening a link or pasting a code adds scores locally. Boards: Today, This week, All-time, Crews (average of a crew's best five), Challenges. Name and
+  crew are set on the Leaderboards screen. Signatures stop casual edits only; `ScoreStore` is the seam where a server can plug in later.
+- **Challenges** (`?c=`): the code holds Target, scandal, climate and seed. Every match is now seeded, so any win can be challenged. Challenge matches have no perks.
+- **Share**: `ui/shareCard.ts` draws a 1080x1350 front page on a canvas and shares it with the Web Share API (download fallback).
+- **Founder's mark** (`ui/egg.ts`): found, never shown. Paths: secret phrase in Settings > Redeem a code (only a salted SHA-256 is in the source; change it with
+  `npm run egg:hash -- "NEW PHRASE"`), the Konami keys, 12 title taps in 8 seconds, a 1-in-300 fax on day 3, a cryptic console note. First find pays 100 envelopes.
+  `CREDITS_PUBLIC` or `REVEAL_ON` make the credits public. `LICENSE`, `<meta name="author">` and package.json carry the copyright.
+- **Offline play**: `public/sw.js` + `manifest.webmanifest` + icons. After one visit the game opens and plays with no data, and can be installed to the home screen.
+- Safety: the clock pauses when the page is hidden; audio suspends; Escape closes layers or pauses; reloading mid-case resumes paused.
+
+## 15. PREMIUM, REMINDERS AND LAUNCH
+
+- **Gist Pass** (`engine/premium.ts`, `ui/components/PremiumSheet.tsx`, `src/config.ts`): "coming soon" with a waitlist until `VITE_MONETIZATION_LIVE=true`. Licences are
+  ECDSA-signed codes checked offline with a public key; issue them with `node scripts/licenseTool.mjs issue` (private key in `private/`, never shipped). Premium unlocks
+  every Target file, the gold share card and a supporter badge. Licence codes work in Settings > Redeem a code too.
+- **Reminders** (`ui/notify.ts`): OneSignal web push, opt-in only, loaded only after opt-in, its worker in the `/push/` scope. Off ("coming soon") until `VITE_ONESIGNAL_APP_ID`.
+  Tags streak / daily_done / last_played for segmentation; app-icon badge while the Daily Case is waiting.
+- **Launch guide**: `docs/LAUNCH.md` (hosting, env vars, Studio lock, reminders, payments, checklist). `public/_headers`, `privacy.html`, `terms.html` (templates).

@@ -3,10 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="I Heard A Rumor: an investigative tabloid strategy game set in Nigeria." />
+    <meta name="theme-color" content="#0B0E14" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>I Heard A Rumor - Investigative Tabloid</title>
   </head>
   <body class="bg-[#07090D] overflow-hidden select-none">
     <div id="root"></div>
+    <!-- Waitlist form for Netlify Forms (harmless on other hosts). The game posts to it from the Gist Pass page. -->
+    <form name="waitlist" data-netlify="true" netlify-honeypot="bot-field" hidden><input type="hidden" name="form-name" value="waitlist" /><input name="bot-field" /><input type="email" name="email" /></form>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

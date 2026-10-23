@@ -27,7 +27,7 @@ export const DEFENSE_DATA: DefenseItem[] = [
     cost: 20,
     maxUses: 1,
     heatReduction: 15,
-    effectText: 'Immediate -15% Heat. Permanently cuts daily Notoriety Heat gain by 25%.',
+    effectText: 'Immediate -15% Heat. Permanently cuts daily Notoriety Heat gain by 25% and halves Target heat surges.',
     alertBody: '"Traffic is now bouncing through three offshore relays. Cybercrime analysts see only static where your uploads used to be."'
   },
   {
@@ -36,7 +36,7 @@ export const DEFENSE_DATA: DefenseItem[] = [
     cost: 25,
     maxUses: 1,
     heatReduction: 20,
-    effectText: 'Immediate -20% Heat. Neutralizes every active Spin bubble on the map.',
+    effectText: 'Immediate -20% Heat. Neutralizes every Spin bubble, thaws frozen channels, and blocks the next 2 injunctions.',
     alertBody: '"A Senior Advocate walked into the Federal High Court at 8:01 AM and had the Target\'s gag order set aside before the tea went cold."'
   },
   {
@@ -45,7 +45,7 @@ export const DEFENSE_DATA: DefenseItem[] = [
     cost: 28,
     maxUses: 1,
     heatReduction: 15,
-    effectText: 'Immediate -15% Heat. Investigation speed rises from +6%/day to +11%/day.',
+    effectText: 'Immediate -15% Heat. Investigation speed nearly doubles (+3.6%/day to +6.6%/day).',
     alertBody: '"A director inside the ministry has agreed to leak on a monthly retainer. New files will reach your locker faster."'
   },
   {

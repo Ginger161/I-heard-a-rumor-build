@@ -1,4 +1,5 @@
 import { ScandalCategory } from './channels';
+import { PARODY_EVIDENCE } from './parody';
 
 export type EvidenceKind = 'VERIFIED' | 'FORGERY';
 
@@ -19,12 +20,20 @@ export interface EvidenceItem {
   jadedToHeard: number;         // Fraction of Jaded returned to Heard (0..1)
   jadedToBelievers: number;     // Fraction of Jaded converted straight to Believers (0..1)
   heardToBelievers: number;     // Fraction of all Heard converted to Believers (0..1)
+  coverUpReduction: number;     // Points removed from the Target's Cover-Up meter
+  freshnessBoost: number;       // Points of story Freshness restored
   isFabricated: boolean;
   variants: { DEFAULT: EvidenceVariant } & Partial<Record<ScandalCategory, EvidenceVariant>>;
 }
 
-export const getEvidenceVariant = (item: EvidenceItem, category: ScandalCategory): EvidenceVariant =>
-  item.variants[category] ?? item.variants.DEFAULT;
+// Parody Targets never get an accusatory file: they get the comic variant.
+export const getEvidenceVariant = (item: EvidenceItem, category: ScandalCategory, parody = false): EvidenceVariant => {
+  if (parody && PARODY_EVIDENCE[item.id]) {
+    const p = PARODY_EVIDENCE[item.id];
+    return { name: p.name, flavor: [p.flavor] };
+  }
+  return item.variants[category] ?? item.variants.DEFAULT;
+};
 
 export const EVIDENCE_DATA: EvidenceItem[] = [
   // ---------------- VERIFIED DOSSIER FILES ----------------
@@ -40,6 +49,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 0.25,
     jadedToBelievers: 0,
     heardToBelievers: 0,
+    coverUpReduction: 6,
+    freshnessBoost: 20,
     isFabricated: false,
     variants: {
       DEFAULT: { name: 'Redacted Wire / Call Log Snippet', flavor: ['A half-blacked-out call log showing the target phoning people he swore he never knew.'] },
@@ -61,6 +72,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 0.5,
     jadedToBelievers: 0.1,
     heardToBelievers: 0,
+    coverUpReduction: 10,
+    freshnessBoost: 30,
     isFabricated: false,
     variants: {
       DEFAULT: { name: 'Insider Voice Note & Stamped Memo', flavor: ['A nervous voice note from a staffer, backed by a memo carrying a real ministry stamp.'] },
@@ -88,6 +101,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 0.75,
     jadedToBelievers: 0.2,
     heardToBelievers: 0,
+    coverUpReduction: 16,
+    freshnessBoost: 45,
     isFabricated: false,
     variants: {
       DEFAULT: { name: 'Uncensored HD Footage / Forensic Audit', flavor: ['Crisp, timestamped footage and a forensic audit that no lawyer can wave away.'] },
@@ -115,6 +130,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 1,
     jadedToBelievers: 0,
     heardToBelievers: 0.25,
+    coverUpReduction: 28,
+    freshnessBoost: 70,
     isFabricated: false,
     variants: {
       DEFAULT: { name: 'The Smoking Gun Master File', flavor: ['Everything, in one folder, with signatures. The kind of file that ends careers.'] },
@@ -137,6 +154,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 0,
     jadedToBelievers: 0,
     heardToBelievers: 0,
+    coverUpReduction: 4,
+    freshnessBoost: 10,
     isFabricated: true,
     variants: {
       DEFAULT: { name: 'Doctored WhatsApp Receipt', flavor: ['A screenshot of a chat that looks right at first glance and wrong at second.'] },
@@ -157,6 +176,8 @@ export const EVIDENCE_DATA: EvidenceItem[] = [
     jadedToHeard: 0,
     jadedToBelievers: 0,
     heardToBelievers: 0,
+    coverUpReduction: 6,
+    freshnessBoost: 15,
     isFabricated: true,
     variants: {
       DEFAULT: { name: 'Deepfake Audio Leak', flavor: ['An AI-cloned voice note that sounds exactly like the target, saying exactly what you need.'] },

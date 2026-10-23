@@ -2,6 +2,7 @@ import React from 'react';
 import { GameState } from '../../engine/types';
 import { DISPLAY_POPULATION_LABEL, nationalAverageDoubt } from '../../engine/selectors';
 import { formatCount } from './common';
+import { pickGist } from '../../engine/data/copyUi';
 
 interface Slice {
   population: number;
@@ -12,23 +13,23 @@ interface Slice {
   doubt: number;
 }
 
-// Spec §4B quotes, in priority order. The spec lists five; a sixth covers a state mid-spread.
-export const streetGist = (s: Slice): string => {
+// Spec quotes, in priority order, now seed-varied and flavoured by the state's zone.
+const streetGist = (s: Slice, zone: string, seed: number, stateId: string): string => {
   const reached = s.heard + s.believers;
-  if (reached === 0) return 'Dead silence. Nobody in this state has heard a single whisper yet.';
+  if (reached === 0) return pickGist('UNAWARE', zone, seed, stateId);
   const believerPct = (s.believers / s.population) * 100;
   const heardPct = (s.heard / s.population) * 100;
   const jadedPct = (s.jaded / s.population) * 100;
-  if (believerPct > 50) return 'Open outrage across the state! Street debates and radio callers are demanding immediate arrest.';
-  if (s.doubt > 65) return 'The streets are calling cap! People think this is a paid political hatchet job without receipts.';
-  if (jadedPct > 20) return 'Gist fatigue has set in. Citizens are tired of hearing talk with no hard evidence.';
-  if (heardPct < 15) return "Quiet whispers at bus stops and barbershops. People are asking if it's true...";
-  return 'Screenshots are flying and everyone has an opinion. The debate is getting louder by the hour.';
+  if (believerPct > 50) return pickGist('OUTRAGE', zone, seed, stateId);
+  if (s.doubt > 65) return pickGist('CAP', zone, seed, stateId);
+  if (jadedPct > 20) return pickGist('JADED', zone, seed, stateId);
+  if (heardPct < 15) return pickGist('EARLY', zone, seed, stateId);
+  return pickGist('MID', zone, seed, stateId);
 };
 
 const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : 0);
 
-export const InspectionCard: React.FC<{ gameState: GameState }> = ({ gameState }) => {
+export const InspectionCard: React.FC<{ gameState: GameState; desktop?: boolean }> = ({ gameState, desktop = false }) => {
   const selected = gameState.selectedStateId ? gameState.states[gameState.selectedStateId] : null;
   const all = Object.values(gameState.states);
 
@@ -54,11 +55,11 @@ export const InspectionCard: React.FC<{ gameState: GameState }> = ({ gameState }
   } else if (!gameState.hasPoppedFirstSpark) {
     quote = 'The rumor is out. Tap the ⚡ bubble to bank your first Sparks and start the clock.';
   } else {
-    quote = streetGist(slice);
+    quote = streetGist(slice, selected?.region ?? 'NC', gameState.copySeed, selected?.id ?? 'nation');
   }
 
   return (
-    <div className="flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] p-3 z-10 border-t-2 border-[#1A1A1A] shadow-[0px_-4px_0px_rgba(0,0,0,0.1)] rounded-t-2xl mt-[-10px] pb-20">
+    <div data-tour="inspect" className={desktop ? "flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] px-5 py-3.5 z-10 border-t-4 border-[#8B0000]" : "flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] p-3 z-10 border-t-2 border-[#1A1A1A] shadow-[0px_-4px_0px_rgba(0,0,0,0.1)] rounded-t-2xl mt-[-10px] pb-20"}>
       <div className="flex justify-between items-center mb-2 px-1 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-bold tracking-wide uppercase truncate">
