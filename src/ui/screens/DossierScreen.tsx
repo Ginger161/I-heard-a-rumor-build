@@ -62,6 +62,8 @@ const Envelope: React.FC<{ n: number; className?: string }> = ({ n, className = 
   <span className={`inline-flex items-center gap-1 font-black ${className}`}>✉️ {n}</span>
 );
 
+const MENU_BTN = 'text-left px-3 py-2.5 border-2 border-[#1A1A1A] rounded-md bg-white font-black text-[12px] uppercase tracking-wider cursor-pointer shadow-[2px_2px_0px_#1A1A1A] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none';
+
 const SheetFrame: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="absolute inset-0 z-50 bg-[#1A1A1A]/60 backdrop-blur-[2px] flex items-end animate-fade-in desk-wrap" onClick={onClose}>
     <div className="relative w-full max-h-[80%] bg-[#EADCC8] border-t-4 border-[#1A1A1A] rounded-t-3xl flex flex-col overflow-hidden animate-slide-up desk-sheet" onClick={e => e.stopPropagation()}>
@@ -130,7 +132,8 @@ export const DossierScreen: React.FC<DossierProps> = ({
   const [folder, setFolder] = useState<Folder>(1);
   const [selectedId, setSelectedId] = useState<string>(targetsInFolder(1)[0].id);
   const [scandalIdx, setScandalIdx] = useState(0);
-  const [sheet, setSheet] = useState<'none' | 'archive' | 'perks' | 'premium'>('none');
+  const [sheet, setSheet] = useState<'none' | 'archive' | 'perks' | 'premium' | 'menu'>('none');
+  const [fileOpen, setFileOpen] = useState(false);   // phone: the case file is its own full screen
   const premium = usePremium();
   const [confirm, setConfirm] = useState<'none' | 'save' | 'progress'>('none');
 
@@ -156,9 +159,38 @@ export const DossierScreen: React.FC<DossierProps> = ({
   const pickTarget = (id: string) => {
     setSelectedId(id);
     setScandalIdx(0);
+    if (!wide) setFileOpen(true);
   };
 
   const folderLabel = (f: Folder) => (f === 'SPOTLIGHT' ? '★' : `T${f}`);
+
+  // Small print and reset controls: at the foot of the case file on desktop, inside the menu on a phone.
+  const footer = (
+    <>
+      {SHOW_DISCLAIMER && <div className="text-[8px] font-sans italic text-center text-[#1A1A1A]/55 leading-tight">{PARODY_DISCLAIMER}</div>}
+
+      <div className="flex items-center justify-center gap-3 text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50"><a href="./privacy.html" target="_blank" rel="noopener" className="underline">Privacy</a><a href="./terms.html" target="_blank" rel="noopener" className="underline">Terms</a></div>
+
+      {/* RESET */}
+      <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
+        {confirm === 'none' && (
+          <>
+            {wide && <button onClick={onStartTraining} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">? How to play</button>}
+            {wide && <button onClick={() => setGuideOpen(true)} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">📖 Field Guide</button>}
+            <button onClick={() => setConfirm('save')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">New Investigation / Reset saved game</button>
+            <button onClick={() => setConfirm('progress')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">Erase progress</button>
+          </>
+        )}
+        {confirm !== 'none' && (
+          <div className="inline-flex items-center gap-2">
+            <span className="text-[10px] font-sans font-bold text-[#8B0000]">{confirm === 'save' ? 'Wipe the saved game?' : 'Erase stars, envelopes, perks and archive?'}</span>
+            <button onClick={() => { if (confirm === 'save') onReset(); else onEraseProgress(); setConfirm('none'); }} className="text-[10px] font-black uppercase text-white bg-[#8B0000] px-2 py-1 rounded cursor-pointer">Confirm</button>
+            <button onClick={() => setConfirm('none')} className="text-[10px] font-black uppercase bg-white border border-[#1A1A1A] px-2 py-1 rounded cursor-pointer">Cancel</button>
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="relative flex-1 min-h-0 bg-[#EFEBE0] text-[#1A1A1A] font-serif flex flex-col select-none overflow-hidden">
@@ -171,18 +203,43 @@ export const DossierScreen: React.FC<DossierProps> = ({
           <h1 onClick={eggTap} className={wide ? 'text-[30px] whitespace-nowrap font-black uppercase tracking-tight leading-none' : 'text-[17px] whitespace-nowrap font-black uppercase tracking-tight leading-none'}>I Heard A Rumor</h1>
           <div className="text-[8px] font-sans italic text-[#1A1A1A]/60 leading-tight mt-0.5 truncate">{tagline}</div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={() => { sfx.play('click'); setSheet('premium'); }} aria-label="Gist Pass" className={`text-[11px] border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer ${premium ? 'bg-[#FDE68A]' : 'bg-white'}`}>⭐</button>
-          <span className="bg-[#E6D5B8] border-2 border-[#1A1A1A] rounded px-1.5 py-1 text-[10px] shadow-[2px_2px_0px_#1A1A1A]" aria-label="Brown Envelopes"><Envelope n={profile.envelopes} /></span>
-          <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} aria-label="Settings" className="text-[11px] bg-white border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer">⚙</button>
-          {onOpenBoards && !wide && <button onClick={() => { sfx.play('click'); onOpenBoards(); }} aria-label="Leaderboards" className="text-[11px] bg-[#FDE68A] border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer">🏆</button>}
-          <button onClick={() => setSheet('perks')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Perks</button>
-          <button onClick={() => setSheet('archive')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Archive</button>
-        </div>
+        {wide ? (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={() => { sfx.play('click'); setSheet('premium'); }} aria-label="Gist Pass" className={`text-[11px] border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer ${premium ? 'bg-[#FDE68A]' : 'bg-white'}`}>⭐</button>
+            <span className="bg-[#E6D5B8] border-2 border-[#1A1A1A] rounded px-1.5 py-1 text-[10px] shadow-[2px_2px_0px_#1A1A1A]" aria-label="Brown Envelopes"><Envelope n={profile.envelopes} /></span>
+            <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} aria-label="Settings" className="text-[11px] bg-white border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer">⚙</button>
+            <button onClick={() => setSheet('perks')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Perks</button>
+            <button onClick={() => setSheet('archive')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Archive</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="bg-[#E6D5B8] border-2 border-[#1A1A1A] rounded px-1.5 py-1 text-[11px] shadow-[2px_2px_0px_#1A1A1A]" aria-label="Brown Envelopes"><Envelope n={profile.envelopes} /></span>
+            <button onClick={() => { sfx.play('click'); setSheet('menu'); }} aria-label="Menu" className="text-[14px] leading-none bg-white border-2 border-[#1A1A1A] rounded px-2 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">☰</button>
+          </div>
+        )}
       </div>
 
       <div className={wide ? 'relative flex-1 min-h-0 grid grid-cols-[330px_minmax(0,1fr)_440px]' : 'contents'}>
+      {/* PHONE: story and daily case share one compact row */}
+      {!wide && (
+        <div className="relative flex-shrink-0 px-3 pt-2 grid grid-cols-2 gap-2">
+          <button onClick={() => { sfx.play('click'); onOpenStory(); }} className="text-left bg-[#1A1A1A] text-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 shadow-[2px_2px_0px_#8B0000] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none min-w-0">
+            <div className="text-[8px] font-black uppercase tracking-widest text-[#FDE68A] truncate">📖 Story • {chaptersWon(profile.story)}/{STORY_CHAPTERS.length}</div>
+            <div className="text-[11px] font-black leading-tight truncate">{chaptersWon(profile.story) === 0 ? 'Start' : seasonComplete(profile.story) ? 'Replay' : 'Continue'} ▶</div>
+          </button>
+          <button
+            onClick={() => { if (!dailyDone) { sfx.play('click'); onStartDaily(); } }}
+            disabled={dailyDone}
+            className={`text-left border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 min-w-0 ${dailyDone ? 'bg-[#D1FAE5] cursor-default' : 'bg-[#FDE68A] shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'}`}
+          >
+            <div className="text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60 truncate">📅 Daily{streak > 0 ? ` • 🔥 ${streak}` : ''}</div>
+            <div className="text-[11px] font-black leading-tight truncate">{dailyDone ? '✓ Done today' : `${dailyTarget.shortName} • +${dailyBonus(streak)}✉️`}</div>
+          </button>
+        </div>
+      )}
+
       <div className={wide ? 'relative border-r-4 border-[#1A1A1A] bg-[#E6D5B8] overflow-y-auto no-scrollbar flex flex-col gap-1 pb-3' : 'contents'}>
+      {wide && (<>
       {/* STORY MODE */}
       <div className="relative flex-shrink-0 px-3 pt-2">
         <button onClick={() => { sfx.play('click'); onOpenStory(); }} className="w-full text-left flex items-center gap-2.5 bg-[#1A1A1A] text-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 shadow-[2px_2px_0px_#8B0000] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
@@ -214,6 +271,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
           )}
         </div>
       </div>
+      </>)}
 
       {wide && <DeskAside profile={profile} onOpenPerks={() => setSheet('perks')} onOpenArchive={() => setSheet('archive')} onOpenPremium={() => setSheet('premium')} supporter={!!premium} onOpenBoards={onOpenBoards} onGuide={() => setGuideOpen(true)} onTraining={onStartTraining} />}
       </div>
@@ -247,14 +305,16 @@ export const DossierScreen: React.FC<DossierProps> = ({
               : 'Locked'}
           </div>
         </div>
-        <div className="text-[10px] font-sans text-[#1A1A1A]/65 px-0.5 mb-1.5">
-          {tierOpen ? FOLDER_INFO[folder].blurb : 'The identities in this folder are hidden until you earn or buy access.'}
-        </div>
+        {wide
+          ? <div className="text-[10px] font-sans text-[#1A1A1A]/65 px-0.5 mb-1.5">
+              {tierOpen ? FOLDER_INFO[folder].blurb : 'The identities in this folder are hidden until you earn or buy access.'}
+            </div>
+          : <div className="mb-1" />}
       </div>
 
       {/* ROSTER */}
-      <div className={wide ? 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4' : 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-2'}>
-        <div className={wide ? 'grid grid-cols-3 2xl:grid-cols-4 gap-3 pt-1' : 'grid grid-cols-2 gap-2'}>
+      <div className={wide ? 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4' : 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-4'}>
+        <div className={wide ? 'grid grid-cols-3 2xl:grid-cols-4 gap-3 pt-1' : 'grid grid-cols-2 gap-x-2.5 gap-y-3 pt-1.5'}>
           {list.map((t, i) => {
             const open = isTargetUnlocked(profile, t, unlockAll);
             const stars = starsOf(profile, t.id);
@@ -297,7 +357,14 @@ export const DossierScreen: React.FC<DossierProps> = ({
       </div>
 
       {/* CASE FILE PANEL */}
-      <div className={wide ? 'relative min-h-0 overflow-y-auto no-scrollbar bg-[#E6D5B8] border-l-4 border-[#1A1A1A] p-5 flex flex-col gap-3' : 'relative flex-shrink-0 max-h-[46%] overflow-y-auto no-scrollbar bg-[#E6D5B8] border-t-4 border-[#1A1A1A] p-3 flex flex-col gap-2.5'}>
+      {(wide || fileOpen) && (
+      <div className={wide ? 'relative min-h-0 overflow-y-auto no-scrollbar bg-[#E6D5B8] border-l-4 border-[#1A1A1A] p-5 flex flex-col gap-3' : 'absolute inset-0 z-40 overflow-y-auto no-scrollbar bg-[#E6D5B8] px-4 pb-4 flex flex-col gap-3 animate-slide-up'}>
+        {!wide && (
+          <div className="sticky top-0 z-10 -mx-4 flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] px-3 py-2.5 flex items-center gap-3 border-b-4 border-[#8B0000]">
+            <button onClick={() => { sfx.play('click'); setFileOpen(false); }} className="text-[11px] font-black uppercase tracking-wider bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded px-2 py-1 cursor-pointer">← Back</button>
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Classified // Case File</span>
+          </div>
+        )}
         {selectedOpen ? (
           <>
             <div>
@@ -362,9 +429,11 @@ export const DossierScreen: React.FC<DossierProps> = ({
               <button onClick={() => setSheet('perks')} className="text-[9px] font-black uppercase tracking-wider underline cursor-pointer whitespace-nowrap">{equipped ? 'Change' : 'Browse'}</button>
             </div>
 
-            <BrutalButton tone="crimson" className="py-3.5 text-xs" onClick={() => onStart(selected.id, scandal.category)}>
-              Open Case File →
-            </BrutalButton>
+            <div className={wide ? '' : 'sticky bottom-0 z-10 -mx-4 mt-auto px-4 py-3 bg-[#EFEBE0] border-t-4 border-[#1A1A1A]'}>
+              <BrutalButton tone="crimson" className="py-3.5 text-xs" onClick={() => onStart(selected.id, scandal.category)}>
+                Open Case File →
+              </BrutalButton>
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center text-center gap-2 py-1">
@@ -395,29 +464,9 @@ export const DossierScreen: React.FC<DossierProps> = ({
           </div>
         )}
 
-        {SHOW_DISCLAIMER && <div className="text-[8px] font-sans italic text-center text-[#1A1A1A]/55 leading-tight">{PARODY_DISCLAIMER}</div>}
-
-        <div className="flex items-center justify-center gap-3 text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50"><a href="./privacy.html" target="_blank" rel="noopener" className="underline">Privacy</a><a href="./terms.html" target="_blank" rel="noopener" className="underline">Terms</a></div>
-
-        {/* RESET */}
-        <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
-          {confirm === 'none' && (
-            <>
-              <button onClick={onStartTraining} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">? How to play</button>
-              <button onClick={() => setGuideOpen(true)} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">📖 Field Guide</button>
-              <button onClick={() => setConfirm('save')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">New Investigation / Reset saved game</button>
-              <button onClick={() => setConfirm('progress')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">Erase progress</button>
-            </>
-          )}
-          {confirm !== 'none' && (
-            <div className="inline-flex items-center gap-2">
-              <span className="text-[10px] font-sans font-bold text-[#8B0000]">{confirm === 'save' ? 'Wipe the saved game?' : 'Erase stars, envelopes, perks and archive?'}</span>
-              <button onClick={() => { if (confirm === 'save') onReset(); else onEraseProgress(); setConfirm('none'); }} className="text-[10px] font-black uppercase text-white bg-[#8B0000] px-2 py-1 rounded cursor-pointer">Confirm</button>
-              <button onClick={() => setConfirm('none')} className="text-[10px] font-black uppercase bg-white border border-[#1A1A1A] px-2 py-1 rounded cursor-pointer">Cancel</button>
-            </div>
-          )}
-        </div>
+        {wide && footer}
       </div>
+      )}
 
       </div>
 
@@ -441,6 +490,22 @@ export const DossierScreen: React.FC<DossierProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MENU (phone) */}
+      {sheet === 'menu' && (
+        <SheetFrame title="Menu" onClose={() => { setSheet('none'); setConfirm('none'); }}>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setSheet('perks')} className={MENU_BTN}>Perks{equipped ? ' ✓' : ''}</button>
+            <button onClick={() => setSheet('archive')} className={MENU_BTN}>Archive</button>
+            {onOpenBoards && <button onClick={() => { setSheet('none'); onOpenBoards(); }} className={`${MENU_BTN} col-span-2 bg-[#FDE68A]`}>🏆 Leaderboards</button>}
+            <button onClick={() => setSheet('premium')} className={`${MENU_BTN} col-span-2 ${premium ? 'bg-[#D1FAE5]' : ''}`}>{premium ? '⭐ Supporter • thank you' : '⭐ Gist Pass'}</button>
+            <button onClick={() => { setSheet('none'); setGuideOpen(true); }} className={MENU_BTN}>📖 Field Guide</button>
+            <button onClick={() => { setSheet('none'); onStartTraining(); }} className={MENU_BTN}>? How to play</button>
+            <button onClick={() => { setSheet('none'); setSettingsOpen(true); }} className={`${MENU_BTN} col-span-2`}>⚙ Settings</button>
+          </div>
+          <div className="flex flex-col gap-2 pt-2 border-t-2 border-dashed border-[#1A1A1A]/30">{footer}</div>
+        </SheetFrame>
       )}
 
       {/* ARCHIVE */}
