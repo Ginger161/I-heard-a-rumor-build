@@ -145,7 +145,6 @@ const sfx = bus();
   S1.words.forEach((f, i) => put(sfx, key(i), f / FPS, -6, rnd() * 0.4));
   [S1.words[0], S1.words[2], S1.words[4]].forEach((f, i) => put(sfx, junk({ rate: 0.9 - i * 0.05 }), f / FPS, -9 + i));
   put(sfx, sledge('big2'), S1.words[6] / FPS, -6);
-  put(sfx, key(7), (226 + 2) / FPS, -10); // dymo tag
 }
 
 // ---- Scene 2: ground zero & shatter
@@ -232,7 +231,7 @@ const vo = bus();
 const voWindows = [];
 const report = [];
 for (const l of LINES) {
-  const c = decode(join(AUD, 'vo', `${l.id}.mp3`), SR, 2);
+  const c = decode(join(AUD, 'vo', `${l.id}.wav`), SR, 2);
   const m = mono(c);
   let pk = 0;
   for (const v of m) pk = Math.max(pk, Math.abs(v));

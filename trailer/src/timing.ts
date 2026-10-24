@@ -32,7 +32,7 @@ export const S1 = {
   dropDelay: 30,
   dropCfg: { damping: 7, stiffness: 80, mass: 1.5 },
   // phrase starts leave ~1s between lines so a voiceover can read them
-  words: [78, 84, 138, 144, 198, 204, 216],
+  words: [72, 78, 129, 135, 213, 219, 229],
 };
 export const S2 = { craneEnd: 90, sparkPop: 88, shatter: 150, cardSlam: 205 };
 export const S3 = { pins: [70, 135, 200, 265], whipFrames: 22 };

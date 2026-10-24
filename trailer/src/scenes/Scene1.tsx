@@ -4,7 +4,7 @@ import { CinematicRig } from '../CinematicRig';
 import { useLayout } from '../layout';
 import { C } from '../theme';
 import { FONT } from '../fonts';
-import { Desk, Lift, Dymo } from '../components/props';
+import { Desk, Lift } from '../components/props';
 import { ManilaFolder } from '../components/cards';
 import { caShadow } from '../components/props';
 import { clamp01, flicker, mapRange } from '../fx';
@@ -94,13 +94,6 @@ export const Scene1: React.FC = () => {
           })}
         </div>
       ))}
-      {f > 226 && (
-        <div style={{ marginTop: 24 * S, opacity: clamp01((f - 226) / 8) }}>
-          <Dymo size={26 * S} rot={-1.5} bg={C.blood}>
-            I Heard A Rumor
-          </Dymo>
-        </div>
-      )}
     </div>
   );
 
