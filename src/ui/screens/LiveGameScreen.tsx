@@ -58,7 +58,8 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   // The first time each of these appears it is pointed at (see Reveal). Not while a card, desk or tutorial step is in the way.
   const { active: reveal, dismiss: dismissReveal } = useReveals(
     { heat: showHeat, meters: showMeters, evidence: showEvidence, defense: showDefense },
-    lite && gameState.status === 'PLAYING' && gameState.hasPoppedFirstSpark && gameState.notificationQueue.length === 0 && gameState.activeModal === 'NONE' && !shared.tourHold && !gameState.isPaused
+    lite && gameState.status === 'PLAYING' && gameState.hasPoppedFirstSpark && gameState.notificationQueue.length === 0 && gameState.activeModal === 'NONE' && !shared.tourHold && !gameState.isPaused,
+    lite
   );
 
   const activeEffects = gameState.timedEffects.filter(e => e.until >= gameState.currentDay);

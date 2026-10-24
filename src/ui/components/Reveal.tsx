@@ -21,7 +21,7 @@ const readSeen = (): RevealId[] => { try { const v = JSON.parse(localStorage.get
 const writeSeen = (s: RevealId[]) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage unavailable */ } };
 
 /** Which reveal (if any) should be pointing at something right now. `enabled` is false while a card, desk or tutorial step is in the way. */
-export const useReveals = (visible: Record<RevealId, boolean>, enabled: boolean) => {
+export const useReveals = (visible: Record<RevealId, boolean>, enabled: boolean, lite = true) => {
   const [seen, setSeen] = useState<RevealId[]>(readSeen);
   const [active, setActive] = useState<RevealId | null>(null);
   const seenRef = useRef(seen);
@@ -33,6 +33,12 @@ export const useReveals = (visible: Record<RevealId, boolean>, enabled: boolean)
       return null;
     });
   }, []);
+
+  // A beginner gets the reveal instead of the plain hint toast for the same thing, so the two never stack on top of each other.
+  useEffect(() => {
+    if (!lite) return;
+    ORDER.forEach(id => { const h = REVEALS[id].hint; if (h && visible[id]) markHintSeen(h); });
+  }, [lite, visible]);
 
   useEffect(() => {
     if (!enabled || active) return;
