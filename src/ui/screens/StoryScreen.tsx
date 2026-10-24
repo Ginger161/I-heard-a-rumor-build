@@ -247,7 +247,7 @@ const Shell: React.FC<{ title: string; onBack: () => void; children: React.React
   <div className="relative flex-1 min-h-0 bg-[#EFEBE0] text-[#1A1A1A] font-serif flex flex-col overflow-hidden">
     <PaperGrain />
     <div className="relative flex-shrink-0 px-3 py-2.5 border-b-4 border-double border-[#1A1A1A] flex items-center gap-3">
-      <button onClick={() => { sfx.play('click'); onBack(); }} aria-label="Back" className="w-8 h-8 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer flex-shrink-0">←</button>
+      <button onClick={() => { sfx.play('click'); onBack(); }} aria-label="Back" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer flex-shrink-0">←</button>
       <div className="min-w-0">
         <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Story Mode</div>
         <h1 className="text-[16px] font-black uppercase tracking-tight leading-none truncate">{title}</h1>

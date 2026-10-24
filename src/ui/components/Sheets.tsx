@@ -8,6 +8,7 @@ import { DEFENSE_DATA } from '../../engine/data/defense';
 import { WIN_BELIEVER_PCT } from '../../engine/simulation';
 import { BrutalButton, PaperGrain } from './common';
 import { Avatar } from './Silhouette';
+import { playStyleOf } from '../../engine/data/playStyles';
 import { targetEmotion } from '../mood';
 import { describeClimate, getClimate } from '../../engine/data/climates';
 import { pickTip } from '../../engine/data/copyUi';
@@ -238,6 +239,13 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
           <div className="text-[11px] font-sans italic text-slate-700 mt-1 leading-snug">"{gameState.scandalTitle}"</div>
         </div>
       </div>
+
+      {playStyleOf(target) && (
+        <div className="bg-[#F4F1EA] border-2 border-[#8B0000] rounded-lg px-3 py-2">
+          <div className="text-[10px] font-black uppercase tracking-widest text-[#8B0000]">Play style: {playStyleOf(target)!.label}</div>
+          {playStyleOf(target)!.hints.map(h => <div key={h} className="text-[11px] font-sans leading-snug mt-1">{h}</div>)}
+        </div>
+      )}
 
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">

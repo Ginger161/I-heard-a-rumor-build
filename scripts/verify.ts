@@ -1,6 +1,9 @@
 // Spec conformance checks for the engine.
 //   npx esbuild scripts/verify.ts --bundle --platform=node --format=cjs --outfile=<tmp>/v.cjs && node <tmp>/v.cjs
 import { LOOKS } from '../src/engine/data/looks';
+import { ALL_STATE_IDS, STATES_A_TO_Z, STATES_BY_ZONE, focusTransform, layoutLabels, stateLabel } from '../src/engine/data/stateLabels';
+import { PLAN } from './difficultyPlan';
+import { playStyleOf } from '../src/engine/data/playStyles';
 import { Actions, seedSparkId } from '../src/engine/actions';
 import { SimulationEngine, canTick, evaluateEndgame } from '../src/engine/simulation';
 import { AlertFactory } from '../src/engine/alerts';
@@ -8,7 +11,7 @@ import { ZONE_STATE_IDS } from '../src/engine/data/zones';
 import { computeMasterVariables, isFrozen, nationalBelieverPct } from '../src/engine/selectors';
 import { applyEffects } from '../src/engine/effects';
 import { BALANCE } from '../src/engine/balance';
-import { TARGETS, TIERS, targetsInTier, describeTarget } from '../src/engine/data/targets';
+import { TARGETS, TIERS, targetsInTier, describeTarget, getTarget } from '../src/engine/data/targets';
 import { CHANNELS_DATA } from '../src/engine/data/channels';
 import { EVENTS, buildEventAlert } from '../src/engine/events';
 import {
@@ -116,9 +119,9 @@ ok('Danjuma passive adds +10 Heat to every counter-offensive', milestoneEffect('
 ok('a SAN Counter-Injunction cancels the Danjuma surcharge', !milestoneEffect('TARGET_PR_20', { activeTargetId: 'minister', defensePurchases: { san_injunction: 1 } })!.some(e => e.kind === 'heat'));
 
 // ---- Defense styles ----
-ok('SPIN_DOCTOR: Heat x0.8, Spin x1.5', Math.abs(heatMultiplier({ activeTargetId: 'cryptoking', perkId: null }) - 1.05 * 0.8) < 1e-9 && spinMultiplier({ activeTargetId: 'cryptoking' }) === 1.5);
-ok('IRON_FIST: Heat x1.4 on top of the tier, Spin x0.6', Math.abs(heatMultiplier({ activeTargetId: 'godfather', perkId: null }) - 1.35 * 1.4) < 1e-9 && spinMultiplier({ activeTargetId: 'godfather' }) === 0.6);
-ok('BALANCED has no style modifier', Math.abs(heatMultiplier({ activeTargetId: 'pothole_commissioner', perkId: null }) - 1.05) < 1e-9);
+ok('SPIN_DOCTOR: Heat x0.8, Spin x1.5', Math.abs(heatMultiplier({ activeTargetId: 'cryptoking', perkId: null }) - 1.05 * 0.8 * (getTarget('cryptoking').mods.heatRate ?? 1)) < 1e-9 && spinMultiplier({ activeTargetId: 'cryptoking' }) === 1.5);
+ok('IRON_FIST: Heat x1.4 on top of the tier, Spin x0.6', Math.abs(heatMultiplier({ activeTargetId: 'godfather', perkId: null }) - 1.35 * 1.4 * (getTarget('godfather').mods.heatRate ?? 1)) < 1e-9 && spinMultiplier({ activeTargetId: 'godfather' }) === 0.6);
+ok('BALANCED has no style modifier', Math.abs(heatMultiplier({ activeTargetId: 'pothole_commissioner', perkId: null }) - 1.05 * (getTarget('pothole_commissioner').mods.heatRate ?? 1)) < 1e-9);
 
 // ---- Evidence ----
 let ev = started('godfather');
@@ -207,7 +210,7 @@ const evOut = Actions.leakEvidence(evCu, 'ev_tier3_footage');
 ok('genuine evidence lowers Cover-Up and refreshes the story', evOut.coverUp === 34 && evOut.freshness === 85, `${evOut.coverUp} ${evOut.freshness}`);
 const bfOut = Actions.leakEvidence(evCu, 'ev_fake_whatsapp', fixed(0));
 ok('forgery backfire raises Cover-Up +15 and drains Freshness', bfOut.coverUp === 65 && bfOut.freshness === 30, `${bfOut.coverUp} ${bfOut.freshness}`);
-ok('Cover-Up grows faster on a harder tier', SimulationEngine.processTick(started('pothole_commissioner'), fixed(0.99)).coverUp > SimulationEngine.processTick(started('iyaloja_general'), fixed(0.99)).coverUp);
+ok('Cover-Up baselines rise with the tier', BALANCE.tier.coverUp.every((c, i, a) => i === 0 || c > a[i - 1]));
 
 // ---- Doubt now has a source ----
 const dbt = { ...started(), coverUp: 90, unlockedChannels: [] as string[] };
@@ -271,7 +274,7 @@ const tgt = (id: string) => TARGETS.find(x => x.id === id)!;
 // ---- Roster and ratings ----
 ok('every Target has a full AI profile with 5 non-empty chatter lines', TARGETS.every(x => Object.values(x.ai.chatter).length === 5 && Object.values(x.ai.chatter).every(l => l.length > 5)));
 ok('weakness and resistance lanes always differ', TARGETS.every(x => x.ai.weaknessBranch !== x.ai.resistanceBranch));
-ok('design-doc PR Ratings are kept exactly', [['slay_queen', 400], ['forex_signals', 680], ['cryptoking', 1050], ['lord_lambo', 1100], ['afro_bad_boy', 1280], ['daddy_freeze_frame', 1450], ['televangelist', 1600], ['minister', 1850], ['godfather', 2350]].every(([id, r]) => tgt(id as string).prRating === r));
+ok('every Target has a distinct PR Rating (the rating is a position on the difficulty ladder)', new Set(TARGETS.filter(x => !x.storyOnly).map(x => x.prRating)).size === TARGETS.filter(x => !x.storyOnly).length);
 ok('every rating sits inside its folder range (Spotlight excepted)', TARGETS.filter(x => x.folder !== 'SPOTLIGHT').every(x => x.prRating >= RATING_RANGES[x.folder as number][0] && x.prRating <= RATING_RANGES[x.folder as number][1]), TARGETS.filter(x => x.folder !== 'SPOTLIGHT' && (x.prRating < RATING_RANGES[x.folder as number][0] || x.prRating > RATING_RANGES[x.folder as number][1])).map(x => x.id + ':' + x.prRating).join(','));
 ok('folders are placed per the design doc (Godfather T4, Apostle T3, Danjuma T3, CryptoKing T2)', tgt('godfather').folder === 4 && tgt('televangelist').folder === 3 && tgt('minister').folder === 3 && tgt('cryptoking').folder === 2);
 ok('Spotlight creators keep their design-doc temperament and style', tgt('lord_lambo').ai.temperament === 'THE_CRASHOUT' && tgt('lord_lambo').ai.defenseStyle === 'SPIN_DOCTOR' && tgt('daddy_freeze_frame').ai.temperament === 'THE_STOIC' && tgt('daddy_freeze_frame').ai.defenseStyle === 'SPIN_DOCTOR');
@@ -622,7 +625,39 @@ ok('every Story Target registered and is hidden from the Dossier folders', STORY
 ok('every chapter points at registered Targets and has a motive, a win and a loss epilogue', STORY_CHAPTERS.every(c => c.variants.every(vr => TARGETS.some(x => x.id === vr.targetId && x.scandals.length >= 1) && vr.motive.length >= 2 && vr.win.length >= 1 && vr.lose.length > 0)));
 ok('story pairs: ex, cheater and ex-spouse each offer two Targets', STORY_CHAPTERS.filter(c => c.variants.length === 2).length === 3);
 ok('the full cast spans the requested relationships', ['story_ex_boyfriend', 'story_ex_girlfriend', 'story_cheating_girlfriend', 'story_cheating_boyfriend', 'story_ex_husband', 'story_ex_wife', 'story_colleague', 'story_former_bestie', 'story_boss', 'story_rival', 'story_uncle', 'story_fixer', 'story_client', 'story_mentor'].every(id => TARGETS.some(x => x.id === id)));
+const planIds = Object.values(PLAN).flatMap(p => p.order);
+ok('the difficulty plan lists every built-in Target exactly once', new Set(planIds).size === planIds.length && TARGETS.filter(x => !x.storyOnly).every(x => planIds.includes(x.id)) && planIds.every(id => TARGETS.some(x => x.id === id)));
+ok('PR ratings rise with difficulty inside every tier (the plan order)', Object.values(PLAN).every(p => p.order.every((id, i) => i === 0 || getTarget(id).prRating > getTarget(p.order[i - 1]).prRating)));
+ok('every tier keeps to its rating range and no tier overlaps the next', [1, 2, 3, 4, 5].every(t => PLAN[t].order.every(id => getTarget(id).prRating >= RATING_RANGES[t][0] && getTarget(id).prRating <= RATING_RANGES[t][1])) && [1, 2, 3, 4].every(t => Math.max(...PLAN[t].order.map(id => getTarget(id).prRating)) < Math.min(...PLAN[t + 1].order.map(id => getTarget(id).prRating))));
+ok('every built-in Target has a play style hint for the dossier', TARGETS.filter(x => !x.storyOnly).every(x => (playStyleOf(x)?.hints.length ?? 0) > 0));
 ok('every built-in Target has a portrait Look (gender, age, region)', TARGETS.filter(x => !x.id.startsWith('verify_')).every(x => !!LOOKS[x.id] && !!LOOKS[x.id].g && !!LOOKS[x.id].age && !!LOOKS[x.id].region), TARGETS.filter(x => !LOOKS[x.id]).map(x => x.id).join(','));
+
+// ---- state names on the map and the state list
+{
+  const VW = 400, VH = 420;   // a phone-sized map area
+  const view = (scale: number, tx = 0, ty = 0, forced: string[] = []) => layoutLabels({ viewW: VW, viewH: VH, scale, tx, ty, forced });
+  const full = new Set(ALL_STATE_IDS.map(stateLabel));
+  const normal = view(1);
+  ok('state names are written in full, never as codes (every label is a real state name)', normal.every(l => full.has(l.lines.join(' '))), normal.map(l => l.lines.join(' ')).join(','));
+  ok('at normal zoom the famous states are named (Lagos, Abuja, Kano, Rivers)', ['lagos', 'fct', 'kano', 'rivers'].every(id => normal.some(l => l.id === id)));
+  ok('at normal zoom at least 18 of the 37 states are named', normal.length >= 18, String(normal.length));
+  ok('zooming in names more states: "Find a state" on Abia shows every state around it by name', view(1.5).length > normal.length && (() => { const f = focusTransform('abia', VW, VH); const l = layoutLabels({ viewW: VW, viewH: VH, scale: f.scale, tx: f.x, ty: f.y }); return ['imo', 'abia', 'anambra', 'ebonyi', 'enugu', 'rivers', 'akwa_ibom'].every(id => l.some(x => x.id === id)); })());
+  const overlap = (l: ReturnType<typeof view>) => l.some((a, i) => l.slice(i + 1).some(b => {
+    const wa = Math.max(...a.lines.map(x => x.length)) * a.fontUnits * 0.62, wb = Math.max(...b.lines.map(x => x.length)) * b.fontUnits * 0.62;
+    const ha = a.lines.length * a.fontUnits * 1.15, hb = b.lines.length * b.fontUnits * 1.15;
+    return Math.abs(a.x - b.x) < (wa + wb) / 2 * 0.999 && Math.abs(a.y - b.y) < (ha + hb) / 2 * 0.999;
+  }));
+  ok('state names never overlap each other (at four zoom levels)', [1, 1.5, 2.5, 4].every(z => !overlap(view(z))));
+  const k = Math.min(Math.min(VW * 0.94, 640) / 744, Math.min(VH * 0.94, 520) / 600);
+  ok('state names never run off the edge of the map', [1, 2].every(z => view(z).every(l => {
+    const w = Math.max(...l.lines.map(x => x.length)) * l.fontUnits * 0.62 / 2; return l.x - w >= -1 && l.x + w <= 745;
+  })), '');
+  ok('a state that must be shown (selected or searched) is always named', view(1, 0, 0, ['ebonyi', 'abia']).filter(l => l.forced).length === 2);
+  ok('the list has every state exactly once, A to Z and by region', STATES_A_TO_Z.length === ALL_STATE_IDS.length && new Set(STATES_A_TO_Z).size === ALL_STATE_IDS.length && STATES_BY_ZONE.reduce((n, z) => n + z.ids.length, 0) === ALL_STATE_IDS.length);
+  const f = focusTransform('abia', VW, VH);
+  ok('"Find a state" zooms in on the state it was asked for', f.scale >= 2 && Number.isFinite(f.x) && Number.isFinite(f.y));
+  ok('the first-case plan: a brand-new case plants a seed in the state the player chose', (() => { const s = Actions.plantSeed(Actions.startMatch('slay_queen', 'AFFAIR', null, 'CLEAR_SKIES', { seed: 7, training: true }), 'enugu'); return s.hasPlantedSeed && s.startingStateId === 'enugu' && s.training; })());
+}
 ok('Story Targets use the comic voice (never arrests)', STORY_PACK.targets.every(d => TARGETS.find(x => x.id === d.id)!.parody));
 // validation catches what it should
 const blank = newBlankDef();

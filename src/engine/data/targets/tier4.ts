@@ -18,9 +18,9 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'The Old Guard',
     passiveFlavor: 'Elite hubs obey him from habit, and the security services still salute, from the bathroom too.',
-    mods: { eliteFriction: 0.14 },
+    mods: { eliteFriction: 0.14, heatRate: 0.8, coverUpRate: 0.8 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'OLD GUARD ACTIVATED', 'Retired Officers Open Your Files',
+      ab('HEAT_SURGE', 7, 8, 5, 'OLD GUARD ACTIVATED', 'Retired Officers Open Your Files',
         'Old comrades inside the security services opened a file on you at {Target}’s request. It is thicker than your birth certificate and meaner.'),
       ab('INJUNCTION', 9, 10, 4, 'CALL FROM THE COMPOUND', 'A Phone Call Silences a Channel',
         'One call from {Target}’s compound and one of your channels suddenly decided to stop publishing, wipe its drive and move to Cotonou.')
@@ -41,9 +41,9 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Offshore Lawyers',
     passiveFlavor: 'A legal army in three countries checks every document you leak and bills you for the pleasure.',
-    mods: { forgeryRisk: 0.1, coverUpRate: 1.1 },
+    mods: { forgeryRisk: 0.1, coverUpRate: 1, doubtFlat: 46, doubtRate: 1.8, heatRate: 1.15, counterHeat: 5 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 9, 'LEGAL STATEMENT', 'A Legal Statement in Three Languages',
+      ab('COUNTER_STORY', 8, 9, 8, 'LEGAL STATEMENT', 'A Legal Statement in Three Languages',
         'Lawyers in London, Lagos and Dubai issued a joint statement denying everything, in three accents and one font.'),
       ab('INJUNCTION', 10, 11, 4, 'ELITE CLOSES RANKS', 'The Boardrooms Go Quiet',
         'Every banker and golf partner that mattered stopped taking your calls. The elite are closing ranks, and one is closing a door on your fingers.', 'ELITE')
@@ -64,7 +64,7 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Silicon Armour',
     passiveFlavor: 'He owns the platforms where the story spreads, and his bots own the comments.',
-    mods: { tagDoubt: { HYPER_ONLINE: 12 }, spinHubs: true },
+    mods: { tagDoubt: { HYPER_ONLINE: 12 }, spinHubs: true, days: -6, staleRate: 1.25, heatRate: 0.85, doubtFlat: 30, doubtRate: 1.3 },
     abilities: [
       ab('BOT_SWARM', 6, 7, 4, 'ALGORITHM SHIFT', 'The Algorithm Suddenly Favours the Target',
         'An "algorithm update" buried your posts and surfaced {Target}’s own, including a thirst trap from his board meeting. Spin bubbles are everywhere.'),
@@ -87,7 +87,7 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Spiritual Shield',
     passiveFlavor: 'The faithful believe him over every receipt you show them, and will fast for his enemies to suffer.',
-    mods: { doubtFlat: 30 },
+    mods: { doubtFlat: 39, doubtRate: 1.55, heatRate: 1.05, counterHeat: 3 },
     abilities: [
       ab('COUNTER_STORY', 8, 9, 9, 'NATIONAL PRAYER DAY', 'A National Day of Prayer for the Bishop',
         'Millions of followers were told to pray against "the spirit of slander". Doubt is hardening, and so are the knees.'),
@@ -110,7 +110,7 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Gavel Authority',
     passiveFlavor: 'He controls the narrative on the floor and on the front page, and bangs the table when he cannot.',
-    mods: { eliteFriction: 0.2 },
+    mods: { eliteFriction: 0.2, heatRate: 1.45, counterHeat: 10, coverUpRate: 1.05 },
     abilities: [
       ab('INJUNCTION', 8, 9, 4, 'COMMITTEE HEARING', 'A Committee Summons Your Press Contacts',
         'A "hearing on press ethics" pulled your Press channels into days of questions about their mothers’ surnames.', 'PRESS'),
@@ -133,11 +133,11 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Global Network',
     passiveFlavor: 'Contacts in every capital amplify his defence in real time, mostly by blocking you.',
-    mods: { spinHubs: true },
+    mods: { spinHubs: true, days: -6, staleRate: 1.25, heatRate: 0.85, doubtFlat: 31, doubtRate: 1.3 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'PLAYER ENDORSEMENTS', 'Famous Players Post in His Defence',
         'A handful of famous players posted supportive messages, thanking him "for the opportunity", and a fan army followed.'),
-      ab('DISTRACTION', 10, 11, 15, 'TRANSFER WINDOW', 'Transfer Window Frenzy Takes Over',
+      ab('DISTRACTION', 10, 11, 23, 'TRANSFER WINDOW', 'Transfer Window Frenzy Takes Over',
         'A record-breaking transfer announcement swept every sports and news desk. The player has not been told yet.')
     ]
   },
@@ -156,7 +156,7 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Owns the Press',
     passiveFlavor: 'Press and elite channels bend toward him, and the story goes stale faster.',
-    mods: { eliteFriction: 0.2, staleRate: 1.25 },
+    mods: { eliteFriction: 0.2, staleRate: 1.1, days: -3, heatRate: 0.95, doubtFlat: 32, doubtRate: 1.35 },
     abilities: [
       ab('INJUNCTION', 7, 8, 4, 'EDITORIAL DIRECTIVE', 'An Editorial Directive Silences the Press',
         'Every outlet owned by {Target} dropped the story the same morning, and replaced it with a recipe.', 'PRESS'),
@@ -179,9 +179,9 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'State Machinery',
     passiveFlavor: 'The entire state apparatus is a weapon against anyone who looks at him for too long.',
-    mods: {},
+    mods: { heatRate: 1, counterHeat: 3, doubtFlat: 24, doubtRate: 1.1 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'STATE SECURITY BRIEFED', 'State Security Is Told to Find You',
+      ab('HEAT_SURGE', 7, 8, 8, 'STATE SECURITY BRIEFED', 'State Security Is Told to Find You',
         '{Target} ordered the state security service to "look into" the source of the leaks. They are now looking into your mother’s landlord.'),
       ab('COUNTER_STORY', 9, 10, 9, 'STATE DEFENCE RALLY', 'A Rally Fills the State Stadium',
         'Civil servants were given the day off, a bag of rice and a T-shirt to attend a rally defending {Target}. The rice was stale.')
@@ -202,9 +202,9 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Family Shield',
     passiveFlavor: 'Everyone in the story is related to someone who can end it.',
-    mods: { coverUpRate: 1.2 },
+    mods: { coverUpRate: 1.05, heatRate: 1.5, counterHeat: 11 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 10, 'FAMILY STATEMENT', 'The First Family Issues a Statement',
+      ab('COUNTER_STORY', 8, 9, 9, 'FAMILY STATEMENT', 'The First Family Issues a Statement',
         'A statement "on behalf of the family" called the allegations a personal attack, and a threat to Christmas.'),
       ab('INJUNCTION', 10, 11, 4, 'A FRIENDLY CALL', 'A Friendly Call Closes a Channel',
         'Somebody in a very big office asked one of your channels to "reconsider". The channel reconsidered immediately.')
@@ -225,11 +225,11 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Offshore Reach',
     passiveFlavor: 'Lawyers abroad pick apart anything you leak, in a posher accent than yours.',
-    mods: { forgeryRisk: 0.1 },
+    mods: { forgeryRisk: 0.1, doubtFlat: 39, doubtRate: 1.55, days: -4, staleRate: 1.2, heatRate: 0.9 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'DIASPORA GROUP CHATS', 'Diaspora WhatsApp Groups Rally Behind Him',
         'A thousand diaspora group chats suddenly agreed {Target} is a victim of "jealousy at home". All of them have the same typo.'),
-      ab('DISTRACTION', 11, 12, 14, 'PHILANTHROPY TOUR', 'A Charity Tour Dominates the Diaspora News',
+      ab('DISTRACTION', 11, 12, 17, 'PHILANTHROPY TOUR', 'A Charity Tour Dominates the Diaspora News',
         '{Target} announced a scholarship fund and a hospital wing in one week, both paid for by the people he cheated.')
     ]
   },
@@ -248,9 +248,9 @@ export const TIER_4: TargetBase[] = [
     ],
     passiveName: 'Federal Might',
     passiveFlavor: 'Elite hubs barely listen to street gossip, and the security agencies take his calls, and his wives’ calls too.',
-    mods: { eliteFriction: 0.18 },
+    mods: { eliteFriction: 0.18, heatRate: 0.9, counterHeat: 1, doubtFlat: 22, doubtRate: 1.05 },
     abilities: [
-      ab('HEAT_SURGE', 8, 10, 7, 'AGENCIES ACTIVATED', 'Security Agencies Receive a Phone Call',
+      ab('HEAT_SURGE', 8, 10, 5, 'AGENCIES ACTIVATED', 'Security Agencies Receive a Phone Call',
         'A call from {Target}’s office to "the right people" put your network on three different watchlists, one of them for a crime you have not thought of yet.')
     ]
   }

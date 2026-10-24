@@ -1,8 +1,8 @@
 // Offline support. On install the whole app is fetched and stored (the page, its hashed scripts and styles, icons, the
 // legal pages), so the very first visit is enough: the game opens and plays with no data afterwards. Hashed build files
 // never change, so they are served from the cache first; everything else tries the network and falls back to the last copy.
-const CACHE = 'rumor-v2';
-const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/privacy.html', '/terms.html', '/target-packs/index.json', '/music/index.json'];
+const CACHE = 'rumor-v3';
+const SHELL = ['/', '/early.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/privacy.html', '/terms.html', '/target-packs/index.json', '/music/index.json'];
 
 const precache = async () => {
   const cache = await caches.open(CACHE);

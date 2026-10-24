@@ -19,7 +19,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Bot Farm War Chest',
     passiveFlavor: 'A bot army fights for him, especially in the big online cities, mostly in all caps.',
-    mods: { spinHubs: true },
+    mods: { spinHubs: true, heatRate: 1.35, counterHeat: 8, doubtFlat: 31, doubtRate: 1.3 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'BOT FARM ACTIVATED', 'Ten Thousand Fake Accounts Wake Up',
         'A bot farm paid by {Target} is replying to every post with "this is FUD, stay calm, wen moon". The spin is spreading.')
@@ -40,7 +40,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Contractor Network',
     passiveFlavor: 'Every contractor in the state owes him a favour, a billboard and a kickback with interest.',
-    mods: {},
+    mods: { days: -7, staleRate: 1.3, heatRate: 0.85, doubtFlat: 32, doubtRate: 1.35 },
     abilities: [
       ab('INJUNCTION', 8, 9, 3, 'ADVERTS PLACED', 'Newspaper Pages Suddenly Fill With Road Adverts',
         '{Target}’s contractors bought every front-page slot to "celebrate infrastructure". The road in the photo is in Dubai.', 'PRESS')
@@ -61,9 +61,9 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Red Carpet Allies',
     passiveFlavor: 'Half of Nollywood will defend her on camera by evening.',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, days: -5, staleRate: 1.2, heatRate: 0.9 },
     abilities: [
-      ab('DISTRACTION', 9, 8, 14, 'PREMIERE ANNOUNCED', 'Blockbuster Premiere Announced for Friday',
+      ab('DISTRACTION', 9, 8, 18, 'PREMIERE ANNOUNCED', 'Blockbuster Premiere Announced for Friday',
         '{Target} announced a star-studded premiere. Entertainment blogs dropped everything else.')
     ]
   },
@@ -82,7 +82,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Global Fanbase',
     passiveFlavor: 'A billion streams and a fan army that never logs off.',
-    mods: { tagDoubt: { HYPER_ONLINE: 10 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 10 }, doubtFlat: 40, doubtRate: 1.6 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'FAN ARMY MOBILISED', 'Stan Accounts Take Over the Timeline',
         '{Target}\'s international stans are flooding every thread with coordinated memes.')
@@ -103,9 +103,9 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Senate Loyalty',
     passiveFlavor: 'Professors sign whatever he puts in front of them, usually without reading, usually with a smile.',
-    mods: { eliteFriction: 0.3 },
+    mods: { eliteFriction: 0.3, doubtFlat: 52, doubtRate: 1.95, coverUpRate: 1.1 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 7, 'SENATE RESOLUTION', 'Academic Senate Issues a Defence',
+      ab('COUNTER_STORY', 8, 9, 8, 'SENATE RESOLUTION', 'Academic Senate Issues a Defence',
         'The University Senate released a 14-page resolution praising {Target}’s "integrity and scholarship". Eleven of the signatories failed their own courses.')
     ]
   },
@@ -124,7 +124,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Deep Pockets',
     passiveFlavor: 'His legal team is always one step ahead, and watches for fake receipts like a man watching a woman.',
-    mods: { eliteFriction: 0.3, forgeryRisk: 0.05 },
+    mods: { eliteFriction: 0.3, forgeryRisk: 0.05, heatRate: 1.75, counterHeat: 14, coverUpRate: 1.2 },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'ADVERTISING BUDGET', 'Bank Adverts Appear Across the Press',
         '{Target}’s bank pulled its advertising from any outlet that covers the story, and bought double elsewhere. The editors suddenly love banking.', 'PRESS')
@@ -145,9 +145,9 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Stadium Crowd',
     passiveFlavor: 'A beloved national team shields him from the street, even when the street wants to throw something.',
-    mods: { tagDoubt: { GRASSROOTS: 5 } },
+    mods: { tagDoubt: { GRASSROOTS: 5 }, days: -5, staleRate: 1.2, heatRate: 0.9 },
     abilities: [
-      ab('DISTRACTION', 10, 10, 15, 'SUPER EAGLES WIN', 'Super Eagles Win Their Qualifier!',
+      ab('DISTRACTION', 10, 10, 20, 'SUPER EAGLES WIN', 'Super Eagles Win Their Qualifier!',
         'A last-minute goal gave the nation a reason to scream. {Target} is suddenly everyone’s hero, and everyone’s wife is crying with joy.')
     ]
   },
@@ -166,7 +166,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Palace Loyalty',
     passiveFlavor: 'The Eastern states revere the throne and refuse to repeat gossip about it, out of fear and fruit.',
-    mods: { zoneDoubt: { SE: 10, SS: 6 } },
+    mods: { zoneDoubt: { SE: 10, SS: 6 }, doubtFlat: 53, doubtRate: 2, heatRate: 1.2, counterHeat: 6 },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'PALACE DECREE', 'Palace Spokesmen Forbid Market Gossip',
         'A palace decree warned the market women and motor parks against "spreading rumour about the throne" on pain of a very public kolanut.', 'STREET')
@@ -187,7 +187,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Bad Boy Brand',
     passiveFlavor: 'Every scandal makes his fans louder, not quieter.',
-    mods: { tagDoubt: { HYPER_ONLINE: 8 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 8 }, heatRate: 1.5, counterHeat: 10, doubtFlat: 37, doubtRate: 1.5 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'FAN WAR', 'The Fan Wars Begin',
         '{Target}\'s fanbase declared war on everyone sharing the story. Spin bubbles are everywhere.'),
@@ -210,9 +210,9 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Photo-Op Machine',
     passiveFlavor: 'Elite donors are happy to be seen with her, and happy to defend her, as long as the lighting is good.',
-    mods: { eliteFriction: 0.3 },
+    mods: { eliteFriction: 0.3, coverUpRate: 1.6 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 7, 'ORPHAN PHOTO-OP', 'A Photo-Op With Orphans Floods the Feeds',
+      ab('COUNTER_STORY', 8, 9, 13, 'ORPHAN PHOTO-OP', 'A Photo-Op With Orphans Floods the Feeds',
         '{Target} was photographed hugging fourteen children in matching T-shirts. Eleven of them were hired, and two of them are crying.'),
       ab('DISTRACTION', 11, 12, 12, 'CHARITY GALA', 'A Charity Gala Takes Over the Society Pages',
         '{Target} hosted a gala with three governors. The society pages have nothing else to print, and the aso-ebi is fire.')
@@ -233,11 +233,11 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Label Family',
     passiveFlavor: 'Every artist on his roster posts in his defence on the same afternoon.',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, doubtFlat: 40, doubtRate: 1.6, days: -3, staleRate: 1.15, heatRate: 0.95 },
     abilities: [
       ab('BOT_SWARM', 8, 8, 3, 'ROSTER ACTIVATED', 'The Whole Roster Posts in Unison',
         'Every artist signed to {Target} posted the same defence at 4:15 PM. The timeline is buzzing.'),
-      ab('DISTRACTION', 11, 11, 12, 'ALBUM DROP', 'A Surprise Compilation Album Drops',
+      ab('DISTRACTION', 11, 11, 13, 'ALBUM DROP', 'A Surprise Compilation Album Drops',
         '{Target} dropped a surprise compilation. The streaming charts have moved on.')
     ]
   },
@@ -256,7 +256,7 @@ export const TIER_2: TargetBase[] = [
     ],
     passiveName: 'Queendom',
     passiveFlavor: 'Her fans guard her like a national treasure.',
-    mods: { tagDoubt: { HYPER_ONLINE: 8 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 8 }, doubtFlat: 53, doubtRate: 2, coverUpRate: 1.05 },
     abilities: [
       ab('BOT_SWARM', 8, 8, 3, 'QUEENDOM ASSEMBLES', 'The Queendom Assembles',
         '{Target}\'s fan army has quote-posted every critic with a crown emoji. Spin everywhere.'),

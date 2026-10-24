@@ -19,7 +19,7 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Court Injunction Machine',
     passiveFlavor: 'Every counter-offensive comes with a frivolous defamation suit and a very smug lawyer.',
-    mods: { counterHeat: 10 },
+    mods: { counterHeat: 10, heatRate: 1.6, coverUpRate: 1.2 },
     abilities: [
       ab('INJUNCTION', 8, 9, 3, 'EX PARTE ORDER', 'A Court Order Lands on Your Desk',
         'Within hours, {Target}’s lawyers obtained an ex parte order forcing one of your channels to go silent. The judge’s car was new.')
@@ -40,11 +40,11 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Immunity of the Chamber',
     passiveFlavor: 'Elite hubs defend the institution, and so do his friends in the press, for a modest fee.',
-    mods: { eliteFriction: 0.3 },
+    mods: { eliteFriction: 0.3, doubtFlat: 43, doubtRate: 1.7, coverUpRate: 1.15 },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'PRESS ACCREDITATION REVIEW', 'National Assembly Reviews Press Accreditation',
         'A "routine review" of press accreditation quietly sidelined the outlets running the story. Three reporters were asked to bring their birth certificates.', 'PRESS'),
-      ab('COUNTER_STORY', 10, 11, 8, 'SENATE STATEMENT', 'The Senate Issues a Solidarity Statement',
+      ab('COUNTER_STORY', 10, 11, 9, 'SENATE STATEMENT', 'The Senate Issues a Solidarity Statement',
         'Senators from both parties signed a statement calling the allegations "an attack on the legislature". It is the first thing they have agreed on all year.')
     ]
   },
@@ -63,9 +63,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Regulatory Capture',
     passiveFlavor: 'The regulator reports to him, informally, over expensive dinners.',
-    mods: {},
+    mods: { heatRate: 0.8 },
     abilities: [
-      ab('HEAT_SURGE', 7, 9, 8, 'REGULATOR WHISPERS', 'Your Domain Is Flagged by the Regulator',
+      ab('HEAT_SURGE', 7, 9, 5, 'REGULATOR WHISPERS', 'Your Domain Is Flagged by the Regulator',
         'A quiet request from {Target} led to a regulator flagging your servers for "suspicious activity". Nobody has defined it. Nobody will.')
     ]
   },
@@ -84,7 +84,7 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Control of the Pipes',
     passiveFlavor: 'He can slow down any platform where the story spreads, and does, usually at 6 PM.',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, days: -5, staleRate: 1.25, heatRate: 0.9, doubtFlat: 31, doubtRate: 1.35 },
     abilities: [
       ab('INJUNCTION', 8, 8, 3, 'NETWORK THROTTLED', 'Social Platforms Mysteriously Slow Down',
         'Data speeds collapsed across the networks carrying your Social channels. "Technical difficulties," says {Target}’s company, with a straight face.', 'SOCIAL')
@@ -105,9 +105,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Policy Fog',
     passiveFlavor: 'Nobody can explain the story clearly, including you. Forgeries are checked fast.',
-    mods: { eliteFriction: 0.3, forgeryRisk: 0.08 },
+    mods: { eliteFriction: 0.3, forgeryRisk: 0.08, doubtFlat: 44, doubtRate: 1.7, days: -3, staleRate: 1.15, heatRate: 0.95 },
     abilities: [
-      ab('DISTRACTION', 9, 10, 15, 'NEW POLICY ANNOUNCED', 'Surprise Monetary Policy Dominates the News',
+      ab('DISTRACTION', 9, 10, 17, 'NEW POLICY ANNOUNCED', 'Surprise Monetary Policy Dominates the News',
         'A dramatic new policy announcement from {Target}’s office has every business desk rewriting its front page. Nobody understands it, and everybody is panicking.')
     ]
   },
@@ -126,7 +126,7 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Bench Immunity',
     passiveFlavor: 'He can silence anything with an order, and the order lasts longer than most marriages.',
-    mods: {},
+    mods: { days: -5, staleRate: 1.25, heatRate: 0.9, doubtFlat: 30, doubtRate: 1.3 },
     abilities: [
       ab('INJUNCTION', 9, 9, 4, 'RESTRAINING ORDER', 'Restraining Order Served on Your Channels',
         'A judge who has "heard enough" of the case issued a sweeping order against further publication. He had not heard any of it.')
@@ -147,9 +147,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Uniformed Muscle',
     passiveFlavor: 'Armed officers are good at finding who is behind a leak, and better at finding their wallet.',
-    mods: {},
+    mods: { heatRate: 0.85, counterHeat: 1, coverUpRate: 0.8 },
     abilities: [
-      ab('HEAT_SURGE', 6, 8, 8, 'DAWN RAID DRILL', 'Armed Officers Question Your Couriers',
+      ab('HEAT_SURGE', 6, 8, 6, 'DAWN RAID DRILL', 'Armed Officers Question Your Couriers',
         '{Target}’s men detained two of your couriers for "routine questioning" at 4 AM. Heat is climbing, and so is the cost of bail.')
     ]
   },
@@ -168,11 +168,11 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Spin Doctor',
     passiveFlavor: 'His whole career is making stories go away. PR bubbles are far more common.',
-    mods: {},
+    mods: { doubtFlat: 42, doubtRate: 1.65, coverUpRate: 1 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'CLARIFICATION ISSUED', 'A Clarification Flood Hits Every Platform',
         '{Target} issued a dozen "clarifications" at once, each amplified by a paid network of accounts called "Patriot Pikin".'),
-      ab('COUNTER_STORY', 10, 11, 8, 'OFFICIAL STATEMENT', 'The Presidency Issues a Formal Rebuttal',
+      ab('COUNTER_STORY', 10, 11, 7, 'OFFICIAL STATEMENT', 'The Presidency Issues a Formal Rebuttal',
         'A formal rebuttal from the Presidency calls the allegations "politically motivated, malicious and false". It is four pages long and has no facts.')
     ]
   },
@@ -191,9 +191,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'The Force Behind Him',
     passiveFlavor: 'Every officer in the country is on his side, and on your trail.',
-    mods: {},
+    mods: { heatRate: 0.8, coverUpRate: 0.8 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'OPERATION LAUNCHED', 'A New Operation Is Announced Against "Mischief Makers"',
+      ab('HEAT_SURGE', 7, 8, 5, 'OPERATION LAUNCHED', 'A New Operation Is Announced Against "Mischief Makers"',
         '{Target} launched "Operation Silence". Officers are already asking questions about your network, and your mother’s house.')
     ]
   },
@@ -212,9 +212,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Bottomless Budget',
     passiveFlavor: 'He can afford the best crisis managers in the country, and the worst ones too, just in case.',
-    mods: { coverUpRate: 1.15 },
+    mods: { coverUpRate: 1.2, heatRate: 1.3, counterHeat: 8 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 8, 'CRISIS FIRM RETAINED', 'A Top Crisis Firm Takes the Lead',
+      ab('COUNTER_STORY', 8, 9, 10, 'CRISIS FIRM RETAINED', 'A Top Crisis Firm Takes the Lead',
         'A famous crisis-management firm just issued {Target}’s first coordinated response. It was posted at 6:06 PM and signed "peace and light".'),
       ab('DISTRACTION', 11, 12, 12, 'PHILANTHROPY GALA', 'A Charity Gala Fills the News',
         '{Target} donated a hospital wing on live television. The cameras did not show the closed wards.')
@@ -235,9 +235,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Flock Immunity',
     passiveFlavor: 'His followers defend him blindly. Every state starts with high Doubt.',
-    mods: { doubtFlat: 25 },
+    mods: { doubtFlat: 25, coverUpRate: 1.25 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 7, 'MIRACLE TESTIMONIES', 'The Flock Testifies',
+      ab('COUNTER_STORY', 8, 9, 9, 'MIRACLE TESTIMONIES', 'The Flock Testifies',
         'Hundreds of members took to the pulpit to swear {Target} is a man of God and the allegations are demonic. One woman fainted on cue.')
     ]
   },
@@ -256,7 +256,7 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Movement Credibility',
     passiveFlavor: 'Students and young voters believe him over most journalists.',
-    mods: { tagDoubt: { HYPER_ONLINE: 8 }, forgeryRisk: 0.05 },
+    mods: { tagDoubt: { HYPER_ONLINE: 8 }, forgeryRisk: 0.05, doubtFlat: 42, doubtRate: 1.65 },
     abilities: [
       ab('COUNTER_STORY', 9, 9, 8, 'PROTEST SONG', 'A Protest Song Defends Him',
         '{Target} dropped a protest anthem about "people who attack the movement". Streams are climbing.'),
@@ -279,9 +279,9 @@ export const TIER_3: TargetBase[] = [
     ],
     passiveName: 'Laugh It Off',
     passiveFlavor: 'He turns every attack into a bit, and the crowd always laughs along.',
-    mods: { staleRate: 1.15 },
+    mods: { staleRate: 1.25, days: -6, heatRate: 0.85 },
     abilities: [
-      ab('DISTRACTION', 8, 9, 14, 'SPECIAL ANNOUNCED', 'A Surprise Comedy Special Drops Tonight',
+      ab('DISTRACTION', 8, 9, 21, 'SPECIAL ANNOUNCED', 'A Surprise Comedy Special Drops Tonight',
         '{Target} announced a surprise special. Every entertainment desk dropped everything to cover it.'),
       ab('COUNTER_STORY', 10, 11, 8, 'ROAST OF THE ACCUSERS', 'He Roasts His Accusers on Live TV',
         '{Target} spent twelve minutes on live TV roasting the allegations. The audience gave a standing ovation.')

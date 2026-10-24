@@ -7,7 +7,7 @@ import { perkEffects } from './data/perks';
 import { DEFAULT_CLIMATE } from './data/climates';
 
 // Each tier plays on its own clock (spec ratios 24/20/18/16 days, scaled to our longer run).
-export const dayBudgetFor = (target: TargetArchetype): number => BALANCE.tier.days[target.tier - 1] ?? BALANCE.dayBudget;
+export const dayBudgetFor = (target: TargetArchetype): number => Math.max(12, (BALANCE.tier.days[target.tier - 1] ?? BALANCE.dayBudget) + (target.mods.days ?? 0));
 
 // Starting Doubt for a state under a given Target (see targetTypes.TargetMods).
 export const startingDoubt = (state: StateNode, target: TargetArchetype): number => {

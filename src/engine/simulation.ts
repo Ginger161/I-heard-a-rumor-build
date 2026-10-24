@@ -150,7 +150,7 @@ export const SimulationEngine = {
         BALANCE.doubtGrowth[s.demographicTag] +
         vars.hype * (s.demographicTag === 'HYPER_ONLINE' ? 1.5 : 1) +
         doubtPressure
-      ) * BALANCE.tier.doubtGrowth[tierIdx];
+      ) * BALANCE.tier.doubtGrowth[tierIdx] * (mods.doubtRate ?? 1);
 
       // Unaware -> Heard
       const susceptibleRatio = Math.max(0.05, s.unaware / s.population);

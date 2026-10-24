@@ -11,6 +11,12 @@ import { SpinBubble } from './SpinBubble';
 import { ShatterBurst } from './common';
 import { haptic, sfx } from '../audio';
 import { usePanZoom } from '../../hooks/usePanZoom';
+import { focusTransform, layoutLabels, stateLabel } from '../../engine/data/stateLabels';
+import { StateFinder } from './StateFinder';
+import { MapTraffic } from './MapTraffic';
+import { ZONE_TINT } from '../zoneColors';
+import type { ZoneId } from '../../engine/data/zones';
+import { useSettings } from '../settings';
 
 interface MapCanvasProps {
   gameState: GameState;
@@ -38,7 +44,9 @@ const lerpColor = (a: string, b: string, t: number): string => {
 
 // Spec §4A choropleth: heard tints pale amber -> warm orange, believers tint light crimson -> blood red at 60%.
 const stateFill = (s: StateNode | undefined): string => {
-  if (!s || (s.heard === 0 && s.believers === 0)) return '#F4F1EA';
+  if (!s) return '#F4F1EA';
+  // Nobody has heard it yet: the region's own pale colour. The spread then paints amber and red over it.
+  if (s.heard === 0 && s.believers === 0) return ZONE_TINT[s.region as ZoneId] || '#F4F1EA';
   const heardPct = s.heard / s.population;
   const believerPct = s.believers / s.population;
   const heardColor = lerpColor('#FEF3C7', '#F59E0B', heardPct / 0.5);
@@ -60,7 +68,7 @@ const FlightArc: React.FC<{ from: { x: number; y: number }; to: { x: number; y: 
         <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur={`${(FLIGHT_MS + 200) / 1000}s`} fill="freeze" />
       </path>
       <g>
-        <path d="M -5 -5 L 9 0 L -5 5 L -2 0 Z" fill="#8B0000" stroke="#F4F1EA" strokeWidth="0.8" />
+        <g transform="scale(1.15)"><path d="M 11 0 L 3 -2.2 L -1 -9 L -4 -9 L -2.6 -2.2 L -8 -1.6 L -10 -4.5 L -12 -4.5 L -10.6 0 L -12 4.5 L -10 4.5 L -8 1.6 L -2.6 2.2 L -4 9 L -1 9 L 3 2.2 Z" fill="#8B0000" stroke="#F4F1EA" strokeWidth="0.9" strokeLinejoin="round" /></g>
         <animateMotion dur={dur} path={d} rotate="auto" fill="freeze" />
         <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.92;1" dur={dur} fill="freeze" />
       </g>
@@ -69,7 +77,40 @@ const FlightArc: React.FC<{ from: { x: number; y: number }; to: { x: number; y: 
 };
 
 export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking, onStateTap, onSparkTap, onSpinTap }) => {
-  const { t: transform, viewRef, moved, handlers, zoomBy, reset } = usePanZoom({ minScale: 1, maxScale: 4, content: null, origin: 'center' });
+  const { t: transform, viewRef, moved, handlers, zoomBy, reset, setT } = usePanZoom({ minScale: 1, maxScale: 4, content: null, origin: 'center' });
+
+  // The size of the map area, so state names can be fitted to the room there is (and refitted when you zoom or the phone turns).
+  const [viewSize, setViewSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = viewRef.current;
+    if (!el) return;
+    const read = () => setViewSize(v => (v.w === el.clientWidth && v.h === el.clientHeight ? v : { w: el.clientWidth, h: el.clientHeight }));
+    read();
+    if (typeof ResizeObserver === 'undefined') { window.addEventListener('resize', read); return () => window.removeEventListener('resize', read); }
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [viewRef]);
+
+  // "Find a state": pick any state from a written list; the map zooms to it and names it.
+  const [finderOpen, setFinderOpen] = useState(false);
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  const pickFromList = (id: string) => {
+    setFinderOpen(false);
+    setT(focusTransform(id, viewSize.w, viewSize.h));
+    setFlashId(id);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashId(null), 3500);
+    onStateTap(id);
+  };
+  // Bubbles are drawn inside the map, so they shrink with it. Their invisible tap area is sized from how big the map is on
+  // screen right now, so it is always about 52 px across for a finger, at any zoom.
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const mapWidth = svgRef.current?.getBoundingClientRect().width ?? 0;
+  const unitPx = mapWidth > 0 ? mapWidth / (parseFloat((NigeriaMapData?.viewBox || '0 0 744 600').split(' ')[2]) || 744) : 0.6;
+  const hitUnits = Math.min(120, 52 / Math.max(0.2, unitPx));
 
   // Bubbles mid-shatter: the seed spark (deferred collect) and ghosts for already-collected sparks.
   const [seedShattering, setSeedShattering] = useState(false);
@@ -143,7 +184,23 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
     });
   }, [locations, selectedId, gameState.startingStateId]);
 
+  const settings = useSettings();
+  // The states that know the rumour (changes a few times a game, so the traffic is rebuilt only then).
+  const infectedKey = Object.values(gameState.states).filter(st => st.heard > 0 || st.believers > 0).map(st => st.id).join(',');
+  const infectedSet = useMemo(() => new Set(infectedKey ? infectedKey.split(',') : []), [infectedKey]);
+
   const earlyPulse = gameState.currentDay <= 3 || !gameState.hasPoppedFirstSpark;
+
+  // Which state names fit right now. The selected, searched and starting states are always named.
+  const bubbleKey = [...gameState.activeSparks.map(sp => `${sp.stateId}:${sp.offsetX}:${sp.offsetY}`), ...gameState.activeSpinBubbles.map(sp => `${sp.stateId}:${sp.offsetX}:${sp.offsetY}`)].join('|');
+  const labels = useMemo(
+    () => layoutLabels({
+      avoid: [...gameState.hasPlantedSeed ? gameState.activeSparks : [], ...gameState.activeSpinBubbles].map(b => { const c = getStateCentroid(b.stateId); return { x: c.x + b.offsetX, y: c.y + b.offsetY }; }),
+      viewW: viewSize.w, viewH: viewSize.h, scale: Math.round(transform.scale * 20) / 20, tx: Math.round(transform.x / 4) * 4, ty: Math.round(transform.y / 4) * 4,
+      forced: [selectedId, flashId, gameState.startingStateId].filter((x): x is string => !!x)
+    }),
+    [viewSize.w, viewSize.h, transform.scale, transform.x, transform.y, selectedId, flashId, gameState.startingStateId, bubbleKey]
+  );
 
   return (
     <div
@@ -156,7 +213,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
         className="w-full h-full absolute flex items-center justify-center"
         style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})` }}
       >
-        <svg viewBox={NigeriaMapData?.viewBox || '0 0 744 600'} className="w-[94%] h-[94%] max-w-[640px] max-h-[520px] drop-shadow-md select-none overflow-visible">
+        <svg ref={svgRef} viewBox={NigeriaMapData?.viewBox || '0 0 744 600'} className="w-[94%] h-[94%] max-w-[640px] max-h-[520px] drop-shadow-md select-none overflow-visible">
           <defs>
             <pattern id="jadedHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" strokeWidth="1.8" />
@@ -183,6 +240,8 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
               if (isStart) { stroke = '#B45309'; strokeWidth = 2.5; }
               if (isSelected) { strokeWidth = 3; if (!isStart) stroke = '#1A1A1A'; }
               if (isPulsing) { stroke = '#F59E0B'; strokeWidth = 3; }
+              const isFlash = flashId === dataId;
+              if (isFlash) { stroke = '#B91C1C'; strokeWidth = 3; }
 
               return (
                 <g
@@ -200,7 +259,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                     stroke={stroke}
                     strokeWidth={strokeWidth}
                     strokeLinejoin="round"
-                    className={`transition-colors duration-500 ${isStart && earlyPulse ? 'animate-pulse' : ''} ${isPulsing ? 'animate-border-pulse' : ''}`}
+                    className={`transition-colors duration-[900ms] ${isStart && earlyPulse ? 'animate-pulse' : ''} ${isPulsing || isFlash ? 'animate-border-pulse' : ''}`}
                   />
                   {infected && (
                     <path d={location.path} fill="url(#halftone)" opacity={Math.min(0.4, 0.08 + awareness * 0.5)} pointerEvents="none" />
@@ -213,6 +272,29 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
             })}
           </g>
 
+          {/* STATE NAMES: written in full, same size on screen at every zoom, never overlapping or cut off */}
+          <g pointerEvents="none" aria-hidden>
+            {labels.map(l => (
+              <text
+                key={l.id}
+                x={l.x}
+                y={l.y - ((l.lines.length - 1) * l.fontUnits * 1.15) / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={l.fontUnits}
+                fontWeight={800}
+                fontFamily="ui-sans-serif, system-ui, sans-serif"
+                fill={l.forced ? '#8B0000' : '#1A1A1A'}
+                stroke="#F4F1EA"
+                strokeWidth={l.fontUnits * 0.32}
+                strokeLinejoin="round"
+                paintOrder="stroke"
+              >
+                {l.lines.map((line, i) => <tspan key={i} x={l.x} dy={i === 0 ? 0 : l.fontUnits * 1.15}>{line}</tspan>)}
+              </text>
+            ))}
+          </g>
+
           {/* AIRPORT HUB MARKERS */}
           {AIRPORT_HUBS.map(id => {
             const c = getStateCentroid(id);
@@ -222,6 +304,9 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
               </text>
             );
           })}
+
+          {/* PLANES AND SHIPS: always something moving; red when it carries the rumour */}
+          {!settings.reduceMotion && <MapTraffic infected={infectedSet} />}
 
           {/* FLIGHT ARCS */}
           {arcs.map(a => (
@@ -242,6 +327,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                     kind={spark.kind}
                     urgent={spark.ticksRemaining <= 1}
                     shattering={isSeed && seedShattering}
+                    hit={hitUnits}
                     onTap={() => tapSpark(spark.id, x, y)}
                   />
                 </div>
@@ -259,6 +345,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                     ticksRemaining={spin.ticksRemaining}
                     lifetime={BALANCE.spinLifetimeTicks}
                     paused={!ticking}
+                    hit={hitUnits}
                     onTap={() => onSpinTap(spin.id)}
                   />
                 </div>
@@ -285,6 +372,31 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
           <div className="animate-combo-pop bg-[#1A1A1A] text-[#FDE68A] border-2 border-[#FDE68A] px-3 py-1 rounded-full font-black text-xs tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,0.35)]">
             COMBO ×{combo.n}!
           </div>
+        </div>
+      )}
+
+      {/* FIND A STATE: for everyone who cannot spot their own state by its shape */}
+      <button
+        data-tour="find-state"
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); setFinderOpen(true); }}
+        className="absolute bottom-3 left-3 z-20 h-11 px-3 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-[12px] font-sans flex items-center gap-1.5 active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+      >
+        <span aria-hidden>📍</span> Find a state
+      </button>
+      {finderOpen && (
+        <StateFinder
+          title={gameState.hasPlantedSeed ? 'Which state?' : 'Where the gist go start?'}
+          subtitle={gameState.hasPlantedSeed ? 'Tap a state and the map goes straight to it.' : 'Tap your state, or any state, to plant the rumour there.'}
+          grouped
+          current={selectedId}
+          onPick={pickFromList}
+          onClose={() => setFinderOpen(false)}
+        />
+      )}
+      {flashId && (
+        <div className="absolute top-3 inset-x-0 flex justify-center pointer-events-none z-30">
+          <div className="animate-pop-in bg-[#8B0000] text-white border-2 border-[#1A1A1A] rounded-full px-4 py-1.5 font-black text-sm shadow-[3px_3px_0px_#1A1A1A]">📍 {stateLabel(flashId)}</div>
         </div>
       )}
 

@@ -10,7 +10,8 @@ import { StoryEpilogue, StoryScreen } from './ui/screens/StoryScreen';
 import { BoardsScreen, ChallengeIntro } from './ui/screens/BoardsScreen';
 import { FounderReveal } from './ui/components/FounderReveal';
 import { OWNER, EggSource, maybeFax, onEgg, startEggListeners, triggerEgg } from './ui/egg';
-import { getSettings, updateSettings } from './ui/settings';
+import { getSettings, updateSettings, useSettings } from './ui/settings';
+import { ColdOpen } from './ui/screens/ColdOpen';
 import { loadLicense } from './engine/premium';
 import { usePremium } from './ui/usePremium';
 import { initReminders, setAppBadge, syncReminderTags } from './ui/notify';
@@ -19,9 +20,22 @@ import type { Challenge } from './engine/scores';
 import { ambientForClimate, sfx } from './ui/audio';
 import type { MusicContext } from './ui/music/director';
 import { nationalBelieverPct } from './engine/selectors';
-import { getTarget } from './engine/data/targets';
+import { getTarget, targetsInTier } from './engine/data/targets';
 import { getRosterVersion, subscribeRoster } from './engine/data/targetPacks';
 import { parseStoryPerk } from './engine/data/perks';
+
+// Dev server only: ?fresh=1 wipes this browser's saved data and reloads, so the brand-new-player experience can be tested.
+if (import.meta.env.DEV) {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('fresh') === '1') {
+      localStorage.clear(); sessionStorage.clear();
+      q.delete('fresh');
+      window.history.replaceState(null, '', window.location.pathname + (q.toString() ? `?${q}` : ''));
+      window.location.reload();
+    }
+  } catch { /* storage unavailable */ }
+}
 
 // The Target Studio is a content tool for the team. It only exists in the dev server and in the separate studio build
 // (`npm run build:studio`); the public game build contains none of its code. Locally: http://localhost:5173/?studio=1
@@ -40,12 +54,15 @@ export default function App() {
 
 function Game() {
   const engine = useGameEngine();
-  const { gameState, startMatch, resetAll, returnToDossier, profile, unlockAll, resetProgress, climateId, daily, startDaily, bribe, buyTierFiles, buyPerk, equipPerk, startTraining, importProgress, startStory, pickStoryVariant, seeStoryPrologue, scores, startChallenge, importCode, grantEnvelopes } = engine;
+  const { gameState, startMatch, resetAll, returnToDossier, profile, unlockAll, resetProgress, climateId, daily, startDaily, bribe, buyTierFiles, buyPerk, equipPerk, startTraining, startFirstRumor, importProgress, startStory, pickStoryVariant, seeStoryPrologue, scores, startChallenge, importCode, grantEnvelopes } = engine;
   const [screen, setScreen] = useState<'dossier' | 'story' | 'boards'>('dossier');
   const [incoming, setIncoming] = useState<Challenge | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [egg, setEgg] = useState<{ source: EggSource; reward: boolean } | null>(null);
   const premium = usePremium();
+  const settings = useSettings();
+  // A brand-new player (no tutorial done, nothing won) goes straight to the first rumour, with no menu or roster in the way.
+  const brandNew = !settings.tutorialDone && Object.keys(profile.targetStars).length === 0 && profile.archive.length === 0 && Object.keys(profile.story?.results ?? {}).length === 0;
   const dailyDone = profile.dailyWins.includes(daily.dateKey);
   const streak = dailyStreak(profile.dailyWins, daily.dateKey);
 
@@ -107,9 +124,10 @@ function Game() {
       : over
         ? { screen: 'end', won: status === 'WON' }
         : { screen: 'live', started, training: gameState.training, tier: getTarget(gameState.activeTargetId).tier, heat: heatQ, coverUp: coverQ, believers: believersQ, dayFrac: dayQ, climateId: gameState.climateId };
+    sfx.setGamePaused(status === 'PLAYING' && gameState.isPaused);
     sfx.setMusic(ctx, gameState.copySeed);
     sfx.setAmbient(status === 'PLAYING' && started ? ambientForClimate(gameState.climateId) : null);
-  }, [status, started, screen, heatQ, coverQ, believersQ, dayQ, gameState.climateId, gameState.copySeed, gameState.training, gameState.activeTargetId, profile.story]);
+  }, [status, gameState.isPaused, started, screen, heatQ, coverQ, believersQ, dayQ, gameState.climateId, gameState.copySeed, gameState.training, gameState.activeTargetId, profile.story]);
 
   useEffect(() => { if (!isGameOver(status)) setEpilogue(false); }, [status]);
   // a very rare mysterious fax, on day 3 of a real case
@@ -145,6 +163,8 @@ function Game() {
       desktop
         ? <div className="flex-1 min-h-0 flex justify-center bg-[#EFEBE0]"><div className="w-full max-w-[780px] flex flex-col border-x-4 border-[#1A1A1A] shadow-2xl">{storyScreen}</div></div>
         : storyScreen
+    ) : brandNew ? (
+      <ColdOpen onStart={startFirstRumor} onSkip={() => updateSettings({ tutorialDone: true })} />
     ) : (
       <DossierScreen wide={desktop} profile={profile} climateId={climateId} daily={daily} onStartDaily={startDaily} unlockAll={unlockAll || !!premium} onStart={startMatch} onReset={resetAll} onEraseProgress={resetProgress} onBribe={bribe} onBuyTier={buyTierFiles} onBuyPerk={buyPerk} onEquipPerk={equipPerk} onStartTraining={startTraining} onImportProgress={importProgress} onOpenStory={() => setScreen('story')} onOpenBoards={() => setScreen('boards')} />
     )
@@ -155,8 +175,12 @@ function Game() {
         <EndgameScreen
           gameState={gameState}
           rewards={gameState.winRewards}
-          continueLabel={inStory ? 'Continue the story' : undefined}
-          onNewInvestigation={() => { if (inStory) setEpilogue(true); else returnToDossier(); }}
+          continueLabel={inStory ? 'Continue the story' : gameState.training ? 'Back to the case files' : undefined}
+          teaser={gameState.training && gameState.status === 'WON' ? (() => {
+            const next = targetsInTier(1).find(t => t.id !== gameState.activeTargetId);
+            return next ? { target: next, onPlay: () => { updateSettings({ tutorialDone: true }); startMatch(next.id, next.scandals[0].category); } } : undefined;
+          })() : undefined}
+          onNewInvestigation={() => { if (inStory) setEpilogue(true); else { if (gameState.training && gameState.status === 'WON') updateSettings({ tutorialDone: true }); returnToDossier(); } }}
         />
       )}
       {over && inStory && epilogue && (

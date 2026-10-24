@@ -9,6 +9,7 @@ import {
 } from '../../engine/profile';
 import { BALANCE, STARS_TO_UNLOCK_TIER } from '../../engine/balance';
 import { BrutalButton, PaperGrain, TapeStrip } from '../components/common';
+import { playStyleOf } from '../../engine/data/playStyles';
 import { Avatar } from '../components/Silhouette';
 import { DAILY_BASE_BONUS, DailyCase, dailyBonus, dailyStreak } from '../../engine/daily';
 import { describeClimate, getClimate } from '../../engine/data/climates';
@@ -24,6 +25,7 @@ import { chaptersWon, seasonComplete } from '../../engine/story';
 import { SettingsSheet } from '../components/SettingsSheet';
 import { FieldGuide } from '../components/FieldGuide';
 import { updateSettings, useSettings } from '../settings';
+import { StoryHero } from '../components/StoryHero';
 
 interface DossierProps {
   profile: MetaProfile;
@@ -62,7 +64,7 @@ const Envelope: React.FC<{ n: number; className?: string }> = ({ n, className = 
   <span className={`inline-flex items-center gap-1 font-black ${className}`}>✉️ {n}</span>
 );
 
-const MENU_BTN = 'text-left px-3 py-2.5 border-2 border-[#1A1A1A] rounded-md bg-white font-black text-[12px] uppercase tracking-wider cursor-pointer shadow-[2px_2px_0px_#1A1A1A] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none';
+const MENU_BTN = 'text-left px-3 py-3.5 border-2 border-[#1A1A1A] rounded-md bg-white font-black text-[12px] uppercase tracking-wider cursor-pointer shadow-[2px_2px_0px_#1A1A1A] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none';
 
 const SheetFrame: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="absolute inset-0 z-50 bg-[#1A1A1A]/60 backdrop-blur-[2px] flex items-end animate-fade-in desk-wrap" onClick={onClose}>
@@ -70,7 +72,7 @@ const SheetFrame: React.FC<{ title: string; onClose: () => void; children: React
       <PaperGrain />
       <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex items-center justify-between border-b-4 border-[#8B0000]">
         <span className="font-black tracking-widest uppercase font-serif">{title}</span>
-        <button onClick={onClose} aria-label={`Close ${title}`} className="w-8 h-8 bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md font-bold cursor-pointer">✕</button>
+        <button onClick={onClose} aria-label={`Close ${title}`} className="w-11 h-11 bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md font-bold cursor-pointer">✕</button>
       </div>
       <div className="relative overflow-y-auto no-scrollbar p-4 flex flex-col gap-3">{children}</div>
     </div>
@@ -214,26 +216,31 @@ export const DossierScreen: React.FC<DossierProps> = ({
         ) : (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="bg-[#E6D5B8] border-2 border-[#1A1A1A] rounded px-1.5 py-1 text-[11px] shadow-[2px_2px_0px_#1A1A1A]" aria-label="Brown Envelopes"><Envelope n={profile.envelopes} /></span>
-            <button onClick={() => { sfx.play('click'); setSheet('menu'); }} aria-label="Menu" className="text-[14px] leading-none bg-white border-2 border-[#1A1A1A] rounded px-2 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">☰</button>
+            <button onClick={() => { sfx.play('click'); setSheet('menu'); }} aria-label="Menu" className="text-[20px] leading-none bg-white border-2 border-[#1A1A1A] rounded-md px-3 py-2 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">☰</button>
           </div>
         )}
       </div>
 
-      <div className={wide ? 'relative flex-1 min-h-0 grid grid-cols-[330px_minmax(0,1fr)_440px]' : 'contents'}>
-      {/* PHONE: story and daily case share one compact row */}
+      <div className={wide ? 'relative flex-1 min-h-0 grid grid-cols-[330px_minmax(0,1fr)_480px]' : 'flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col pb-6'}>
+      {/* PHONE: Story Mode is the headline. Arcade cases are the second course, below it. */}
       {!wide && (
-        <div className="relative flex-shrink-0 px-3 pt-2 grid grid-cols-2 gap-2">
-          <button onClick={() => { sfx.play('click'); onOpenStory(); }} className="text-left bg-[#1A1A1A] text-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 shadow-[2px_2px_0px_#8B0000] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none min-w-0">
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#FDE68A] truncate">📖 Story • {chaptersWon(profile.story)}/{STORY_CHAPTERS.length}</div>
-            <div className="text-[11px] font-black leading-tight truncate">{chaptersWon(profile.story) === 0 ? 'Start' : seasonComplete(profile.story) ? 'Replay' : 'Continue'} ▶</div>
-          </button>
+        <div className="relative flex-shrink-0 px-3 pt-3">
+          <StoryHero profile={profile} onOpen={onOpenStory} />
+          <div className="flex items-center gap-2 mt-4 mb-1.5 px-0.5">
+            <span className="text-[11px] font-black uppercase tracking-[0.22em] text-[#1A1A1A]">⚡ Arcade</span>
+            <span className="flex-1 h-px bg-[#1A1A1A]/25" />
+            <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/55">Quick standalone cases</span>
+          </div>
           <button
             onClick={() => { if (!dailyDone) { sfx.play('click'); onStartDaily(); } }}
             disabled={dailyDone}
-            className={`text-left border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 min-w-0 ${dailyDone ? 'bg-[#D1FAE5] cursor-default' : 'bg-[#FDE68A] shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'}`}
+            className={`w-full text-left border-2 border-[#1A1A1A] rounded-lg px-3 py-2 flex items-center justify-between gap-2 min-h-[48px] ${dailyDone ? 'bg-[#D1FAE5] cursor-default' : 'bg-[#FDE68A] shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'}`}
           >
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60 truncate">📅 Daily{streak > 0 ? ` • 🔥 ${streak}` : ''}</div>
-            <div className="text-[11px] font-black leading-tight truncate">{dailyDone ? '✓ Done today' : `${dailyTarget.shortName} • +${dailyBonus(streak)}✉️`}</div>
+            <div className="min-w-0">
+              <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60 truncate">📅 Daily case{streak > 0 ? ` • 🔥 ${streak}-day streak` : ''}</div>
+              <div className="text-[13px] font-black leading-tight truncate">{dailyDone ? '✓ Done today' : dailyTarget.shortName}</div>
+            </div>
+            {!dailyDone && <span className="text-[11px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-2.5 py-1.5 whitespace-nowrap">Play +{dailyBonus(streak)}✉️</span>}
           </button>
         </div>
       )}
@@ -242,14 +249,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
       {wide && (<>
       {/* STORY MODE */}
       <div className="relative flex-shrink-0 px-3 pt-2">
-        <button onClick={() => { sfx.play('click'); onOpenStory(); }} className="w-full text-left flex items-center gap-2.5 bg-[#1A1A1A] text-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 shadow-[2px_2px_0px_#8B0000] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
-          <span className="text-base" aria-hidden>📖</span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#FDE68A]">Story Mode • Season 1</div>
-            <div className="text-[11px] font-black leading-tight truncate">The Receipts <span className="font-sans font-bold text-slate-300">• {chaptersWon(profile.story)}/{STORY_CHAPTERS.length} chapters</span></div>
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-[#FDE68A]">{chaptersWon(profile.story) === 0 ? 'Start' : seasonComplete(profile.story) ? 'Replay' : 'Continue'} ▶</span>
-        </button>
+        <StoryHero profile={profile} onOpen={onOpenStory} wide />
       </div>
 
       {/* DAILY CASE */}
@@ -265,7 +265,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
           {dailyDone ? (
             <span className="text-[9px] font-black uppercase tracking-wider text-[#065F46]">✓ Done today</span>
           ) : (
-            <button onClick={onStartDaily} className="text-[9px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-2 py-1.5 cursor-pointer whitespace-nowrap active:translate-y-[1px]">
+            <button onClick={onStartDaily} className="text-[11px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-3 py-2 cursor-pointer whitespace-nowrap active:translate-y-[1px]">
               Play +{dailyBonus(streak)}✉️
             </button>
           )}
@@ -288,7 +288,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
                 key={String(f)}
                 onClick={() => pickFolder(f)}
                 aria-label={f === 'SPOTLIGHT' ? 'Creator Spotlight' : `Tier ${f}${open ? '' : ' (sealed)'}`}
-                className={`flex-1 py-1.5 border-2 border-[#1A1A1A] rounded-md font-black text-xs flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                className={`flex-1 min-h-[44px] py-2 border-2 border-[#1A1A1A] rounded-md font-black text-sm flex items-center justify-center gap-1 cursor-pointer transition-all ${
                   active ? 'bg-[#1A1A1A] text-[#F4F1EA] shadow-[2px_2px_0px_#8B0000]' : open ? (f === 'SPOTLIGHT' ? 'bg-[#FDE68A]' : 'bg-white') : 'bg-[#D4CFC4] text-[#1A1A1A]/55'
                 }`}
               >
@@ -313,9 +313,9 @@ export const DossierScreen: React.FC<DossierProps> = ({
       </div>
 
       {/* ROSTER */}
-      <div className={wide ? 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4' : 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-4'}>
-        <div className={wide ? 'grid grid-cols-3 2xl:grid-cols-4 gap-3 pt-1' : 'grid grid-cols-2 gap-x-2.5 gap-y-3 pt-1.5'}>
-          {list.map((t, i) => {
+      <div className={wide ? 'relative flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4' : 'relative flex-shrink-0 px-3 pb-4'}>
+        <div className={wide ? 'grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-3 pt-2' : 'grid grid-cols-3 gap-2 pt-2'}>
+          {list.map(t => {
             const open = isTargetUnlocked(profile, t, unlockAll);
             const stars = starsOf(profile, t.id);
             const active = t.id === selectedId;
@@ -324,19 +324,25 @@ export const DossierScreen: React.FC<DossierProps> = ({
               <button
                 key={t.id}
                 onClick={() => pickTarget(t.id)}
-                className={`relative text-left p-2 border-2 border-[#1A1A1A] rounded-lg flex items-center gap-2 transition-all cursor-pointer ${
+                aria-label={open ? `${t.fullName}, PR rating ${t.prRating}` : 'Sealed file'}
+                className={`relative text-left flex flex-col border-2 border-[#1A1A1A] rounded-lg overflow-hidden transition-all cursor-pointer ${
                   active ? 'bg-[#E6D5B8] shadow-[3px_3px_0px_#8B0000] -translate-y-0.5' : open ? 'bg-[#F4F1EA] shadow-[2px_2px_0px_#1A1A1A]' : 'bg-[#E3DDCF]'
-                } ${i % 2 === 0 ? 'rotate-[-0.3deg]' : 'rotate-[0.3deg]'}`}
+                }`}
               >
-                {active && <TapeStrip className="-top-2.5 left-4 rotate-[-4deg] w-8 h-3" />}
-                <Avatar target={t} locked={!open} className="w-9 h-11 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
+               <div className="relative aspect-[6/7] bg-[#D9CBB0] border-b-2 border-[#1A1A1A] overflow-hidden">
+                  <Avatar target={t} locked={!open} emotion={stars > 0 ? 'DEFEATED' : 'NEUTRAL'} className="w-full h-full" />
+                  {open && <span className="absolute top-1 left-1 text-[9px] font-sans font-black tracking-wider bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-[1px] rounded-sm">{t.prRating}</span>}
+                  {!open && <span className="absolute top-1 left-1 text-[#1A1A1A]/60"><LockIcon className="w-3.5 h-3.5" /></span>}
+                  {bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#B45309] text-[#B45309] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">UNSEALED</span>}
+                  {open && stars > 0 && !bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#065F46] text-[#065F46] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">CLOSED</span>}
+                </div>
+                <div className="px-1.5 py-1.5 min-w-0">
                   {open ? (
                     <>
-                      <div className="font-black text-[11px] leading-tight line-clamp-2">{t.fullName}</div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-[9px] font-sans font-black tracking-wider bg-[#1A1A1A] text-[#F4F1EA] px-1 rounded-sm" aria-label={`PR Rating ${t.prRating}`}>{t.prRating}</span>
-                        <Stars n={stars} className="text-[10px]" />
+                      <div className="font-black text-[11px] leading-tight truncate">{t.shortName}</div>
+                      <div className="flex items-center justify-between gap-1 mt-0.5">
+                        <span className="text-[9px] font-sans text-[#1A1A1A]/65 truncate">{t.title}</span>
+                        <Stars n={stars} className="text-[10px] flex-shrink-0" />
                       </div>
                     </>
                   ) : (
@@ -346,8 +352,6 @@ export const DossierScreen: React.FC<DossierProps> = ({
                     </>
                   )}
                 </div>
-                {bribed && <span className="absolute -top-1.5 -right-1 rotate-[8deg] border-2 border-[#B45309] text-[#B45309] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">UNSEALED</span>}
-                {open && stars > 0 && !bribed && <span className="absolute -top-1.5 -right-1 rotate-[8deg] border-2 border-[#065F46] text-[#065F46] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">CLOSED</span>}
               </button>
             );
           })}
@@ -361,19 +365,22 @@ export const DossierScreen: React.FC<DossierProps> = ({
       <div className={wide ? 'relative min-h-0 overflow-y-auto no-scrollbar bg-[#E6D5B8] border-l-4 border-[#1A1A1A] p-5 flex flex-col gap-3' : 'absolute inset-0 z-40 overflow-y-auto no-scrollbar bg-[#E6D5B8] px-4 pb-4 flex flex-col gap-3 animate-slide-up'}>
         {!wide && (
           <div className="sticky top-0 z-10 -mx-4 flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] px-3 py-2.5 flex items-center gap-3 border-b-4 border-[#8B0000]">
-            <button onClick={() => { sfx.play('click'); setFileOpen(false); }} className="text-[11px] font-black uppercase tracking-wider bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded px-2 py-1 cursor-pointer">← Back</button>
+            <button onClick={() => { sfx.play('click'); setFileOpen(false); }} className="text-[13px] font-black uppercase tracking-wider bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md px-3 py-2 cursor-pointer">← Back</button>
             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Classified // Case File</span>
           </div>
         )}
         {selectedOpen ? (
           <>
             <div>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex-shrink-0 w-14 h-[68px] bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden"><Avatar target={selected} emotion={starsOf(profile, selected.id) > 0 ? 'DEFEATED' : 'SMUG'} className="w-full h-full" /></div>
-                  <div className="font-black text-sm leading-tight">{selected.fullName}</div>
+              <div className="flex items-start gap-3">
+                <div className={`flex-shrink-0 ${wide ? 'w-32 h-40' : 'w-24 h-[120px]'} bg-[#D9CBB0] border-[3px] border-[#1A1A1A] rounded-lg shadow-[3px_3px_0px_#1A1A1A] overflow-hidden -rotate-2`}>
+                  <Avatar target={selected} emotion={starsOf(profile, selected.id) > 0 ? 'DEFEATED' : 'SMUG'} className="w-full h-full" />
                 </div>
-                <Stars n={starsOf(profile, selected.id)} className="text-sm flex-shrink-0" />
+                <div className="min-w-0 pt-1">
+                  <div className="font-black text-base leading-tight">{selected.fullName}</div>
+                  <div className="text-[11px] font-sans text-slate-700 mt-0.5 leading-tight">{selected.title}</div>
+                  <Stars n={starsOf(profile, selected.id)} className="text-lg block mt-1" />
+                </div>
               </div>
               <div className="flex flex-wrap gap-1 mt-1">
                 <span className="text-[9px] font-sans font-black bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-0.5 rounded-sm tracking-wider">PR RATING {selected.prRating}</span>
@@ -394,6 +401,13 @@ export const DossierScreen: React.FC<DossierProps> = ({
               </ul>
             </div>
 
+            {playStyleOf(selected) && (
+              <div className="bg-[#F4F1EA] border-2 border-[#8B0000] rounded-md px-2.5 py-2">
+                <div className="text-[9px] font-black uppercase tracking-widest text-[#8B0000]">Play style: {playStyleOf(selected)!.label}</div>
+                {playStyleOf(selected)!.hints.map(h => <div key={h} className="text-[11px] font-sans leading-snug mt-1">{h}</div>)}
+              </div>
+            )}
+
             <div>
               <div className="text-[9px] font-black uppercase tracking-widest mb-1">Choose the scandal</div>
               <div className="flex flex-col gap-1.5">
@@ -403,7 +417,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
                     <button
                       key={sd.category}
                       onClick={() => setScandalIdx(i)}
-                      className={`text-left px-2.5 py-1.5 border-2 border-[#1A1A1A] rounded-md cursor-pointer transition-all ${
+                      className={`text-left px-3 py-2.5 border-2 border-[#1A1A1A] rounded-md cursor-pointer transition-all ${
                         active ? 'bg-[#1A1A1A] text-[#F4F1EA] shadow-[2px_2px_0px_#8B0000]' : 'bg-white'
                       }`}
                     >
@@ -433,7 +447,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
             </div>
 
             <div className={wide ? '' : 'sticky bottom-0 z-10 -mx-4 mt-auto px-4 py-3 bg-[#EFEBE0] border-t-4 border-[#1A1A1A]'}>
-              <BrutalButton tone="crimson" className="py-3.5 text-xs" onClick={() => onStart(selected.id, scandal.category)}>
+              <BrutalButton tone="crimson" className="w-full py-3.5 text-sm" onClick={() => onStart(selected.id, scandal.category)}>
                 Open Case File →
               </BrutalButton>
             </div>

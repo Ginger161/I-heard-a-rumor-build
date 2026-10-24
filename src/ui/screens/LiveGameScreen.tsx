@@ -9,6 +9,8 @@ import { NigeriaMapCanvas } from '../components/NigeriaMapCanvas';
 import { InspectionCard } from '../components/InspectionCard';
 import { PaperGrain, SparkCounter } from '../components/common';
 import { PolaroidChatter } from '../components/PolaroidChatter';
+import { RumorCard } from '../components/RumorCard';
+import { Reveal, useReveals } from '../components/Reveal';
 import { accentOf } from '../theme';
 import { moodOf, targetEmotion } from '../mood';
 import { getClimate } from '../../engine/data/climates';
@@ -35,7 +37,7 @@ const DOCK_OFF = 'bg-[#D4CFC4] text-slate-500 opacity-60 cursor-not-allowed';
 
 // The phone design: a portrait frame with a top HUD, the map, an inspection card and a bottom dock. Desks open over the map.
 export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => {
-  const { gameState, pause, resume, plantSeed, selectState, collectSpark, popSpin } = engine;
+  const { gameState, profile, pause, resume, plantSeed, selectState, collectSpark, popSpin } = engine;
   const settings = useSettings();
   const rootRef = useRef<HTMLDivElement>(null);
   const shared = useLiveShared(engine);
@@ -44,6 +46,20 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   const target = getTarget(gameState.activeTargetId);
   const believers = nationalBelieverPct(gameState.states);
   const ticking = canTick(gameState);
+
+  // Beginners get a lighter screen: the day, believers and cash first, and each other meter or button appears the moment it starts
+  // to matter (with a one-time hint). Experienced players, with three Targets beaten, always see everything.
+  const lite = gameState.training || Object.keys(profile.targetStars).length < 3;
+  const showHeat = !lite || gameState.peakHeat >= 10;
+  const showMeters = !lite || gameState.coverUp >= 8 || gameState.freshness <= 80;
+  const showEvidence = !lite || gameState.investigationProgress >= 25 || gameState.droppedEvidence.length > 0;
+  const showDefense = !lite || gameState.peakHeat >= 15 || Object.keys(gameState.defensePurchases).length > 0;
+
+  // The first time each of these appears it is pointed at (see Reveal). Not while a card, desk or tutorial step is in the way.
+  const { active: reveal, dismiss: dismissReveal } = useReveals(
+    { heat: showHeat, meters: showMeters, evidence: showEvidence, defense: showDefense },
+    lite && gameState.status === 'PLAYING' && gameState.hasPoppedFirstSpark && gameState.notificationQueue.length === 0 && gameState.activeModal === 'NONE' && !shared.tourHold && !gameState.isPaused
+  );
 
   const activeEffects = gameState.timedEffects.filter(e => e.until >= gameState.currentDay);
   const frozenCount = Object.values(gameState.frozenChannels).filter(until => until >= gameState.currentDay).length;
@@ -59,17 +75,19 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
     selectState(stateId);
   };
 
-  const dockButton = (label: string, modal: 'CHANNELS_DESK' | 'EVIDENCE_DESK' | 'COUNTER_OPS_DESK', tone: 'ink' | 'paper') => (
-    <button
-      data-tour={modal === 'CHANNELS_DESK' ? 'dock-channels' : undefined}
-      disabled={!unlocked}
-      onClick={() => openModal(modal)}
-      className={`flex-1 py-3 font-black text-[11px] tracking-widest uppercase border-2 border-[#1A1A1A] rounded-lg transition-all ${
-        unlocked ? `${tone === 'ink' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-[#1A1A1A]'} ${DOCK_ON}` : DOCK_OFF
-      }`}
-    >
-      {label}
-    </button>
+  const dockButton = (label: string, modal: 'CHANNELS_DESK' | 'EVIDENCE_DESK' | 'COUNTER_OPS_DESK', tone: 'ink' | 'paper', revealId?: 'evidence' | 'defense') => (
+    <Reveal id={revealId ?? 'evidence'} on={!!revealId && reveal === revealId} onDone={dismissReveal} className="flex-1">
+      <button
+        data-tour={modal === 'CHANNELS_DESK' ? 'dock-channels' : undefined}
+        disabled={!unlocked}
+        onClick={() => openModal(modal)}
+        className={`w-full py-3 font-black text-[11px] tracking-widest uppercase border-2 border-[#1A1A1A] rounded-lg transition-all ${
+          unlocked ? `${tone === 'ink' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-[#1A1A1A]'} ${DOCK_ON}` : DOCK_OFF
+        }`}
+      >
+        {label}
+      </button>
+    </Reveal>
   );
 
   return (
@@ -89,26 +107,40 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
 
       {/* ZONE 1: TOP BAR */}
       <div className="flex-shrink-0 bg-[#F4F1EA] border-b-2 px-3 pt-2 pb-3 flex flex-col gap-2 z-10 transition-colors duration-700" style={{ borderColor: mood.accent }}>
-        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest px-1 text-[#1A1A1A]/60">
-          <span className="truncate">Target: {target.shortName}{gameState.training ? ' • Training' : ''}</span>
-          <span data-tour="climate" className="whitespace-nowrap truncate max-w-[60%]" title={climate.blurb}>{climate.icon} {climate.name} • {SCANDALS[gameState.scandalCategory].label}</span>
-        </div>
+        <RumorCard
+          gameState={gameState}
+          variant="strip"
+          onOpen={() => openModal('TARGET_INFO')}
+          right={!lite ? <span data-tour="climate" className="whitespace-nowrap truncate" title={climate.blurb}>{climate.icon} {climate.name}</span> : undefined}
+        />
         <div data-tour="hud" className="flex items-center justify-between gap-2">
           <button onClick={() => openModal('HISTORY_LOG')} className={`${PILL} bg-white`}>
             DAY {Math.min(gameState.currentDay, gameState.dayBudget)}/{gameState.dayBudget}
           </button>
           <button onClick={() => openModal('BELIEVERS_INFO')} className={`${PILL} bg-white`}>
-            👥 {believers.toFixed(1)}%
+            👥 {believers.toFixed(1)}%{lite && <span className="text-[#1A1A1A]/45 font-bold">&nbsp;/ 75</span>}
           </button>
-          <button onClick={() => openModal('HEAT_INFO')} className={`${PILL} bg-[#FEE2E2] text-[#D9381E]`}>
-            🚨 {Math.floor(gameState.heat)}%
-          </button>
+          <Reveal id="heat" on={reveal === 'heat'} onDone={dismissReveal} className="flex-1">
+            <button
+              onClick={() => openModal('HEAT_INFO')}
+              disabled={!showHeat}
+              aria-hidden={!showHeat}
+              className={`${PILL} w-full bg-[#FEE2E2] text-[#D9381E] transition-opacity duration-500 ${showHeat ? (lite ? 'animate-pop-in' : '') : 'opacity-0 pointer-events-none'}`}
+            >
+              🚨 {Math.floor(gameState.heat)}%
+            </button>
+          </Reveal>
           <SparkCounter value={gameState.sparks} className="flex-1 h-9 flex items-center justify-center text-xs font-sans" />
         </div>
-        <button data-tour="meters" onClick={() => openModal('TARGET_INFO')} aria-label="Open case file" className="flex items-center gap-3 px-1 cursor-pointer text-left">
-          <Meter label="Cover-Up" value={gameState.coverUp} color="#B91C1C" danger={gameState.coverUp >= 65} />
-          <Meter label="Story Freshness" value={gameState.freshness} color="#D97706" danger={gameState.freshness <= 25} />
-        </button>
+        <Reveal id="meters" on={reveal === 'meters'} onDone={dismissReveal}>
+          <button data-tour="meters" onClick={() => openModal('TARGET_INFO')} disabled={!showMeters} aria-hidden={!showMeters} aria-label="Open case file" className={`w-full flex items-center gap-3 px-1 cursor-pointer text-left transition-opacity duration-700 ${showMeters ? '' : 'opacity-0 pointer-events-none'}`}>
+            <Meter label="Cover-Up" value={gameState.coverUp} color="#B91C1C" danger={gameState.coverUp >= 65} />
+            <Meter label="Story Freshness" value={gameState.freshness} color="#D97706" danger={gameState.freshness <= 25} />
+          </button>
+          {!showMeters && (
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-sans font-bold text-[#1A1A1A]/70 text-center leading-tight pointer-events-none">🎯 Get 75% of Nigeria to believe it before the days run out.</div>
+          )}
+        </Reveal>
         {(activeEffects.length > 0 || frozenCount > 0) && (
           <div className="flex gap-1.5 flex-wrap px-1">
             {frozenCount > 0 && (
@@ -158,8 +190,8 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
       {/* BOTTOM ACTION DOCK */}
       <div data-tour="dock" className="absolute bottom-4 inset-x-4 flex gap-2 z-30">
         {dockButton('Channels', 'CHANNELS_DESK', 'ink')}
-        {dockButton('Evidence', 'EVIDENCE_DESK', 'ink')}
-        {dockButton('Defense', 'COUNTER_OPS_DESK', 'paper')}
+        {showEvidence && dockButton('Evidence', 'EVIDENCE_DESK', 'ink', 'evidence')}
+        {showDefense && dockButton('Defense', 'COUNTER_OPS_DESK', 'paper', 'defense')}
         <button
           onClick={() => (gameState.isPaused ? resume() : pause())}
           disabled={!unlocked}

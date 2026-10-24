@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GameState, WinRewards } from '../../engine/types';
-import { getTarget, SCANDALS } from '../../engine/data/targets';
+import { getTarget, SCANDALS, TargetArchetype } from '../../engine/data/targets';
 import { countEvidence, nationalBelieverPct } from '../../engine/selectors';
 import { BrutalButton, PaperGrain } from '../components/common';
 import { Avatar } from '../components/Silhouette';
@@ -23,6 +23,8 @@ interface EndgameProps {
   rewards: WinRewards | null;
   onNewInvestigation: () => void;
   continueLabel?: string;
+  // After the very first win: the next Target, as a cliffhanger with a button that starts that case.
+  teaser?: { target: TargetArchetype; onPlay: () => void };
 }
 
 const Row: React.FC<{ label: string; value: string; className?: string }> = ({ label, value, className = '' }) => (
@@ -149,7 +151,12 @@ const ShareButton: React.FC<{ gameState: GameState; stars: number; tone: 'ink' |
 
   return (
     <div className="flex flex-col gap-2">
-      <BrutalButton tone={tone} onClick={shareCard}>📸 Share front page</BrutalButton>
+      {gameState.status === 'WON' && (
+        <BrutalButton tone="green" onClick={() => { sfx.play('click'); const text = `${shareText(gameState, stars)}
+
+Try am: ${baseUrl()}`; window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener'); }}>💬 Send to WhatsApp</BrutalButton>
+      )}
+      <BrutalButton tone={gameState.status === 'WON' ? 'paper' : tone} onClick={shareCard}>📸 Share front page</BrutalButton>
       {won && challenge && (
         <div className="grid grid-cols-2 gap-2">
           <BrutalButton tone="paper" onClick={shareChallenge}>⚔ Challenge a friend</BrutalButton>
@@ -161,6 +168,21 @@ const ShareButton: React.FC<{ gameState: GameState; stars: number; tone: 'ink' |
     </div>
   );
 };
+
+// The cliffhanger after the first win: who is next, and one tap to go after them.
+const NextHeadline: React.FC<{ teaser: NonNullable<EndgameProps['teaser']> }> = ({ teaser }) => (
+  <div className="rounded-xl border-4 border-[#1A1A1A] bg-[#1A1A1A] text-[#F4F1EA] p-3 shadow-[4px_4px_0px_#B91C1C] flex flex-col gap-3">
+    <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#FDE68A]">Next headline 👀</div>
+    <div className="flex gap-3 items-center">
+      <div className="w-16 h-20 flex-shrink-0 bg-[#D9CBB0] border-2 border-[#F4F1EA] rounded-md overflow-hidden"><Avatar target={teaser.target} emotion="SMUG" className="w-full h-full" /></div>
+      <div className="min-w-0">
+        <div className="font-serif font-black text-lg leading-tight">{teaser.target.shortName}</div>
+        <div className="text-[12px] font-sans leading-snug text-[#F4F1EA]/80">"{teaser.target.scandals[0].title}"</div>
+      </div>
+    </div>
+    <BrutalButton tone="crimson" onClick={() => { sfx.play('click'); teaser.onPlay(); }}>🔥 Spread the next one</BrutalButton>
+  </div>
+);
 
 // How the Target took it: crushed when you won, laughing when you lost.
 const EndPortrait: React.FC<{ gameState: GameState }> = ({ gameState }) => {
@@ -175,7 +197,7 @@ const EndPortrait: React.FC<{ gameState: GameState }> = ({ gameState }) => {
   );
 };
 
-export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNewInvestigation, continueLabel = 'New Investigation' }) => {
+export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNewInvestigation, continueLabel = 'New Investigation', teaser }) => {
   const target = getTarget(gameState.activeTargetId);
   const believers = nationalBelieverPct(gameState.states);
   const ev = countEvidence(gameState);
@@ -226,11 +248,19 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
             {fillEnd(body, vars)}
           </p>
           <EndPortrait gameState={gameState} />
-          <div className="flex flex-col gap-2">
-            {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-[#EBE5D9] shadow-[2px_2px_0px_#1A1A1A]" />)}
-          </div>
-          {rewards && <RewardPanel gameState={gameState} rewards={rewards} />}
-          <div className="text-[10px] font-sans italic text-slate-600 text-center">Tip: {tip}</div>
+          {/* After the very first win the next Target comes first; the numbers are one short row, not a long list. */}
+          {teaser && <NextHeadline teaser={teaser} />}
+          {teaser ? (
+            <Row label="Days taken" value={`${days}/${gameState.dayBudget}`} className="bg-[#EBE5D9] shadow-[2px_2px_0px_#1A1A1A]" />
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                {rows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-[#EBE5D9] shadow-[2px_2px_0px_#1A1A1A]" />)}
+              </div>
+              {rewards && <RewardPanel gameState={gameState} rewards={rewards} />}
+              <div className="text-[10px] font-sans italic text-slate-600 text-center">Tip: {tip}</div>
+            </>
+          )}
           <ShareButton gameState={gameState} stars={stars} tone="green" />
           <BrutalButton tone="ink" onClick={onNewInvestigation}>{continueLabel}</BrutalButton>
           {Disclaimer}

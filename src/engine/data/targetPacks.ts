@@ -71,8 +71,8 @@ export const ABILITY_RANGE: Record<AbilityKind, { min: number; max: number; unit
 };
 
 const MOD_RANGE: Record<string, [number, number]> = {
-  doubtFlat: [0, 60], doubtAdd: [0, 20], coverUpRate: [0.7, 1.5], eliteFriction: [0.1, 0.8],
-  counterHeat: [0, 15], forgeryRisk: [0, 0.4], staleRate: [0.8, 1.5]
+  doubtFlat: [0, 60], doubtAdd: [0, 20], coverUpRate: [0.7, 2], eliteFriction: [0.1, 0.8],
+  counterHeat: [0, 15], heatRate: [0.7, 2], doubtRate: [0.8, 2.2], days: [-14, 6], forgeryRisk: [0, 0.4], staleRate: [0.8, 1.5]
 };
 
 const ID_RE = /^[a-z][a-z0-9_]{2,40}$/;

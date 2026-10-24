@@ -5,19 +5,28 @@ interface SpinBubbleProps {
   lifetime: number;
   paused: boolean;         // Freeze the countdown ring while the clock is stopped
   onTap: () => void;
+  hit?: number;            // Invisible tap area behind the bubble, in the map's own units (keeps it finger-sized on a small map)
 }
 
 const RADIUS = 19;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 // A Target AI "PR Spin" bubble. Shatter it before the ring runs out or Doubt detonates.
-export const SpinBubble: React.FC<SpinBubbleProps> = ({ ticksRemaining, lifetime, paused, onTap }) => {
+export const SpinBubble: React.FC<SpinBubbleProps> = ({ ticksRemaining, lifetime, paused, onTap, hit = 0 }) => {
   const from = Math.max(0, ticksRemaining / lifetime);
   const to = Math.max(0, (ticksRemaining - 1) / lifetime);
   const urgent = ticksRemaining <= 1;
 
   return (
     <div className="relative w-11 h-11">
+      {hit > 0 && (
+        <span
+          aria-hidden
+          onPointerDown={e => { e.stopPropagation(); onTap(); }}
+          className="absolute rounded-full"
+          style={{ width: hit, height: hit, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+        />
+      )}
       <button
         aria-label="Shatter PR spin bubble"
         onPointerDown={e => { e.stopPropagation(); onTap(); }}

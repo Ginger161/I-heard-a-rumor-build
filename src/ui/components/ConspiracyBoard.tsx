@@ -101,13 +101,16 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
   const selected: ChannelUpgrade | undefined = CHANNELS_DATA.find(c => c.id === selectedNode);
 
   return (
-    <div className={docked ? 'relative h-full w-full bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden' : 'absolute inset-0 z-50 bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden animate-slide-up'}>
+    <>
+    {/* On a phone the board is a sheet over the lower part of the screen, like the Evidence and Defence desks: the top of the map stays in view. */}
+    {!docked && <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px] z-40 animate-fade-in" onClick={onClose} />}
+    <div className={docked ? 'relative h-full w-full bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden' : 'absolute inset-x-0 bottom-0 h-[78%] z-50 bg-[#EFEBE0] flex flex-col font-serif select-none overflow-hidden border-t-4 border-[#1A1A1A] shadow-[0px_-10px_20px_rgba(0,0,0,0.3)] rounded-t-3xl animate-slide-up'}>
       {/* HEADER */}
-      <div className="relative z-20 border-b-2 border-[#1A1A1A] p-4 flex justify-between items-start bg-[#EFEBE0] shadow-sm">
+      <div className={`relative z-20 border-b-2 border-[#1A1A1A] flex justify-between items-start bg-[#EFEBE0] shadow-sm ${docked ? 'p-4' : 'px-4 py-3 rounded-t-3xl'}`}>
         <PaperGrain />
         <div className="relative">
-          <h2 className="text-2xl font-black tracking-wider uppercase text-[#1A1A1A] leading-none mb-1">
-            The Conspiracy<br />Board
+          <h2 className={`font-black tracking-wider uppercase text-[#1A1A1A] leading-none mb-1 ${docked ? 'text-2xl' : 'text-xl'}`}>
+            {docked ? <>The Conspiracy<br />Board</> : 'Conspiracy Board'}
           </h2>
           <div className="text-[9px] font-black tracking-widest uppercase text-[#1A1A1A]/50">
             {gameState.unlockedChannels.length}/{CHANNELS_DATA.length} channels • drag to pan, pinch to zoom
@@ -319,5 +322,6 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
         );
       })()}
     </div>
+    </>
   );
 };

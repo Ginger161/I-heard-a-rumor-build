@@ -134,11 +134,15 @@ export const useGameEngine = () => {
   }, [todayKey]);
 
   // The guided first case: a fixed, gentle Target and a fixed seed, with no rewards.
-  const startTraining = useCallback(() => {
-    const t = getTarget('iyaloja_general');
+  // It is always the same very easy Target (Amaka, see ColdOpen), so the first case can be won while learning.
+  const trainingMatch = () => {
+    const t = getTarget('slay_queen');
     try { localStorage.removeItem('rumor_tour_done'); } catch { /* storage unavailable */ }
-    setGameState(Actions.startMatch(t.id, t.scandals[0].category, null, 'CLEAR_SKIES', { seed: 7, training: true }));
-  }, []);
+    return Actions.startMatch(t.id, t.scandals[0].category, null, 'CLEAR_SKIES', { seed: 7, training: true });
+  };
+  const startTraining = useCallback(() => setGameState(trainingMatch()), []);
+  // The first screen already asked "which state you dey?", so the rumour is planted there and play starts at the first spark.
+  const startFirstRumor = useCallback((stateId: string) => setGameState(Actions.plantSeed(trainingMatch(), stateId)), []);
 
   // Story Mode: start a chapter with the chosen approach. The Target's first scandal is the story's grievance.
   const startStory = useCallback((chapterId: string, approach: StoryApproach) => {
@@ -207,6 +211,7 @@ export const useGameEngine = () => {
     startMatch,
     startDaily,
     startTraining,
+    startFirstRumor,
     scores,
     grantEnvelopes,
     startChallenge,

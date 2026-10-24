@@ -109,7 +109,7 @@ export const FieldGuide: React.FC<Props> = ({ focus, onClose }) => {
             <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Reference</div>
             <div className="font-serif font-black text-xl leading-none">Field Guide</div>
           </div>
-          <button onClick={onClose} aria-label="Close field guide" className="w-8 h-8 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
+          <button onClick={onClose} aria-label="Close field guide" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
         </div>
         <div className="relative overflow-y-auto no-scrollbar p-3 flex flex-col gap-3">
           {groups.map(group => (

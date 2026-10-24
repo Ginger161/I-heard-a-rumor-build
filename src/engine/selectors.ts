@@ -151,6 +151,7 @@ export const heatMultiplier = (s: TargetView): number => {
   const target = getTarget(s.activeTargetId);
   return BALANCE.tier.heat[target.tier - 1]
     * STYLE_MULTIPLIERS[target.ai.defenseStyle].heat
+    * (target.mods.heatRate ?? 1)
     * (perkEffects(s.perkId).heatMult ?? 1)
     * (getClimate(s.climateId).mods.heatMult ?? 1);
 };

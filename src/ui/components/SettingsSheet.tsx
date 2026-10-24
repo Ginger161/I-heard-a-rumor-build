@@ -105,7 +105,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
             <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Preferences</div>
             <div className="font-serif font-black text-xl leading-none">Settings</div>
           </div>
-          <button onClick={onClose} aria-label="Close settings" className="w-8 h-8 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
+          <button onClick={onClose} aria-label="Close settings" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
         </div>
 
         <div className="relative overflow-y-auto no-scrollbar p-3 flex flex-col gap-3">

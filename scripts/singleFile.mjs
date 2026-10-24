@@ -19,6 +19,9 @@ let css = '';
 html = html.replace(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>\s*/g, (_, href) => { css += read(href) + '\n'; return ''; });
 if (!js) { console.error('No module script found in dist/index.html.'); process.exit(1); }
 
+// The small start-up helpers (public/early.js) go inline too.
+html = html.replace(/<script src="(\/early\.js)"><\/script>/g, (_, src) => `<script>${read(src)}</script>`);
+
 // A server-only manifest and absolute icon links cannot resolve from a file; use an embedded icon instead.
 const icon = dataUri('/icons/icon-192.png', 'image/png');
 html = html.replace(/<link rel="manifest"[^>]*>\s*/g, '')

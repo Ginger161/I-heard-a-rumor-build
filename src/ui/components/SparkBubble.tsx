@@ -8,6 +8,7 @@ interface SparkBubbleProps {
   urgent?: boolean;       // Last tick of life: bounce faster
   shattering?: boolean;   // Controlled by the map: plays the 6-shard shatter
   onTap: () => void;
+  hit?: number;           // Size of an invisible tap area behind the bubble, in the map's own units (keeps it finger-sized when the map is small)
 }
 
 // Each kind reads differently at a glance, so players learn what is worth chasing:
@@ -20,7 +21,7 @@ const LOOK: Record<SparkKind, { size: string; bg: string; border: string; text: 
 };
 
 // A Spark (⚡) clout bubble pinned over a state. Tapping banks it.
-export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, kind = 'WHISPER', urgent = false, shattering = false, onTap }) => {
+export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, kind = 'WHISPER', urgent = false, shattering = false, onTap, hit = 0 }) => {
   const [animating, setAnimating] = React.useState(false);
   const look = LOOK[kind];
 
@@ -40,6 +41,14 @@ export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, kind = 'WHISPE
         </>
       )}
       {kind === 'FAT' && !shattering && <span className="absolute inset-0 rounded-full border-2 border-[#B45309]/50 animate-ping" aria-hidden />}
+      {hit > 0 && !shattering && (
+        <span
+          aria-hidden
+          onPointerDown={e => { e.stopPropagation(); onTap(); }}
+          className="absolute rounded-full"
+          style={{ width: hit, height: hit, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+        />
+      )}
       <button
         aria-label={`Collect ${amount} ${look.label}`}
         onPointerDown={e => { e.stopPropagation(); if (!shattering) onTap(); }}

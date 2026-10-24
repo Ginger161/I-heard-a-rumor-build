@@ -31,6 +31,7 @@ class AudioEngine {
   private activeAmbient: AmbientKind | null = null;
   private stopAmbient: (() => void) | null = null;
   private lastGestureHook = false;
+  private gamePaused = false;
 
   readonly music = new MusicPlayer();
   private musicCtx: MusicContext | null = null;
@@ -66,7 +67,7 @@ class AudioEngine {
     document.addEventListener('visibilitychange', () => {
       if (!this.ctx) return;
       if (document.visibilityState === 'hidden') void this.ctx.suspend();
-      else if (!getSettings().muted) void this.ctx.resume();
+      else if (!getSettings().muted && !this.gamePaused) void this.ctx.resume();
     });
     window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('keydown', unlock);
@@ -91,7 +92,7 @@ class AudioEngine {
         this.applyVolumes();
         void this.loadManifest();
       }
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx.state === 'suspended' && !this.gamePaused) void this.ctx.resume();
       return this.ctx;
     } catch { return null; }
   }
@@ -181,6 +182,17 @@ class AudioEngine {
       case 'hint': this.tone(660, 0.08, 'sine', 0.09); this.tone(990, 0.12, 'sine', 0.09, 0.07); break;
       case 'step': this.tone(784, 0.07, 'triangle', 0.1); this.tone(1175, 0.14, 'triangle', 0.1, 0.06); break;
     }
+  }
+
+  /** The game is paused: everything (music, ambience, effects) stops where it is, and carries on from there when play resumes. */
+  setGamePaused(paused: boolean) {
+    if (this.gamePaused === paused) return;
+    this.gamePaused = paused;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (paused) { void ctx.suspend(); return; }
+    if (getSettings().muted) return;
+    void ctx.resume().then(() => { this.updateMusic(false); this.sync(); });
   }
 
   // ---- music ----------------------------------------------------------------

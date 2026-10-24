@@ -19,7 +19,7 @@ export const SPOTLIGHT: TargetBase[] = [
     ],
     passiveName: 'Viral Armour',
     passiveFlavor: 'Millions of followers who think any rumour about him is engagement farming.',
-    mods: { tagDoubt: { HYPER_ONLINE: 8 }, spinHubs: true },
+    mods: { tagDoubt: { HYPER_ONLINE: 8 }, spinHubs: true, doubtFlat: 51, doubtRate: 1.95 },
     abilities: [
       ab('BOT_SWARM', 7, 8, 3, 'CRUISE CREW ONLINE', 'The Cruise Crew Floods the Comments',
         '{Target}\'s followers are quote-posting every critic with a yacht emoji. Spin is everywhere.'),
@@ -42,9 +42,9 @@ export const SPOTLIGHT: TargetBase[] = [
     ],
     passiveName: 'Morning Show Authority',
     passiveFlavor: 'Calm, quotable and impossible to rattle on air. He lets you swing first.',
-    mods: { eliteFriction: 0.3 },
+    mods: { eliteFriction: 0.3, coverUpRate: 1.4 },
     abilities: [
-      ab('COUNTER_STORY', 8, 9, 8, 'LIVE ON AIR', 'A Calm On-Air Rebuttal Goes Viral',
+      ab('COUNTER_STORY', 8, 9, 12, 'LIVE ON AIR', 'A Calm On-Air Rebuttal Goes Viral',
         '{Target} spent forty calm minutes on air dismantling the allegations one by one. Clips are everywhere.'),
       ab('INJUNCTION', 10, 11, 3, 'GUESTS PULLED', 'Your Press Contacts Are Mysteriously Unavailable',
         'Every journalist you pitched suddenly had a scheduling conflict.', 'PRESS')

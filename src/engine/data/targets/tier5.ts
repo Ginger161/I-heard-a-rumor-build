@@ -19,13 +19,13 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'The Full State',
     passiveFlavor: 'Every agency, every court and every broadcaster answers to him, and several bishops too.',
-    mods: { coverUpRate: 1.05 },
+    mods: { coverUpRate: 0.85, heatRate: 1.05, counterHeat: 3, doubtFlat: 25, doubtRate: 1.15 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'NATIONAL SECURITY', 'The National Security Adviser Calls a Meeting',
+      ab('HEAT_SURGE', 7, 8, 8, 'NATIONAL SECURITY', 'The National Security Adviser Calls a Meeting',
         '{Target} ordered the entire security architecture to "address the threat of fake news". The architecture is now at your door.'),
       ab('INJUNCTION', 8, 9, 4, 'EXECUTIVE ORDER', 'An Executive Order Shuts a Channel',
         'An executive order labelled one of your channels a "threat to national stability". The order was signed with a pen that has never met a pen pal.'),
-      ab('COUNTER_STORY', 9, 10, 10, 'STATE BROADCAST', 'A Prime-Time National Broadcast',
+      ab('COUNTER_STORY', 9, 10, 7, 'STATE BROADCAST', 'A Prime-Time National Broadcast',
         '{Target} addressed the nation on every channel at once, calling the allegations "enemy propaganda" and the enemy "a certain page".')
     ]
   },
@@ -44,7 +44,7 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'The Invisible Hand',
     passiveFlavor: 'You can never prove he exists, and the story goes cold faster for it.',
-    mods: { coverUpRate: 1.0, staleRate: 1.1 },
+    mods: { coverUpRate: 1, staleRate: 1.1, heatRate: 1.05, counterHeat: 4, doubtFlat: 24, doubtRate: 1.1 },
     abilities: [
       ab('DISTRACTION', 8, 8, 16, 'A BIGGER STORY', 'A Much Bigger Story Appears From Nowhere',
         'A shocking "exclusive" appeared at exactly the moment {Target} needed it. Attention has vanished, and so has the intern who posted it.'),
@@ -69,9 +69,9 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'The Kingmaker',
     passiveFlavor: 'Elite hubs will not hear a word against him, and everyone is a phone call away from a very bad Tuesday.',
-    mods: { eliteFriction: 0.1 },
+    mods: { eliteFriction: 0.1, heatRate: 0.85, counterHeat: 1, doubtFlat: 21, doubtRate: 1.05 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'FAVOURS CALLED IN', 'Every Favour He Owns Is Called In at Once',
+      ab('HEAT_SURGE', 7, 8, 6, 'FAVOURS CALLED IN', 'Every Favour He Owns Is Called In at Once',
         'Governors, ministers and generals all picked up the phone for {Target}. Your Heat is spiking, and so is your landlord’s interest.'),
       ab('INJUNCTION', 8, 9, 4, 'ELITE CLOSES RANKS', 'Every Boardroom Slams Its Doors',
         'The entire business elite stopped taking your calls on the same day. Two of them blocked you in the middle of a sentence.', 'ELITE'),
@@ -94,7 +94,7 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'The Matriarch\'s Network',
     passiveFlavor: 'The North respects her, and every house has a daughter she once helped, and a son she once ruined.',
-    mods: { zoneDoubt: { NW: 9, NC: 8 } },
+    mods: { zoneDoubt: { NW: 9, NC: 8 }, heatRate: 1.05, counterHeat: 4, doubtFlat: 28, doubtRate: 1.25 },
     abilities: [
       ab('COUNTER_STORY', 7, 8, 9, 'WOMEN\'S WING STATEMENT', 'The Women\'s Wings of Every Party Defend Her',
         'Women\'s organisations across all parties issued a joint declaration in support of {Target}. They have not agreed on anything since 1999.'),
@@ -119,11 +119,11 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'World Stage',
     passiveFlavor: 'A billion fans in every timezone, and they never sleep.',
-    mods: { tagDoubt: { HYPER_ONLINE: 14 }, spinHubs: true },
+    mods: { tagDoubt: { HYPER_ONLINE: 14 }, spinHubs: true, doubtFlat: 38, doubtRate: 1.55, days: -3, staleRate: 1.15, heatRate: 0.9 },
     abilities: [
       ab('BOT_SWARM', 6, 7, 4, 'FAN ARMIES UNITE', 'The Global Fan Armies Descend',
         'Fan accounts on four continents attacked every post about {Target} in a coordinated wave.'),
-      ab('DISTRACTION', 9, 10, 16, 'SURPRISE ALBUM', 'A Surprise Album Drops at Midnight',
+      ab('DISTRACTION', 9, 10, 19, 'SURPRISE ALBUM', 'A Surprise Album Drops at Midnight',
         '{Target} dropped a surprise album at midnight. The internet has forgotten everything else.')
     ]
   },
@@ -142,9 +142,9 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'Infinite Resources',
     passiveFlavor: 'Every crisis is solved by writing a bigger cheque.',
-    mods: { coverUpRate: 1.15 },
+    mods: { coverUpRate: 0.95, doubtFlat: 46, doubtRate: 1.8, heatRate: 1.2, counterHeat: 6 },
     abilities: [
-      ab('COUNTER_STORY', 7, 8, 10, 'WAR CHEST OPENED', 'The War Chest Opens Wide',
+      ab('COUNTER_STORY', 7, 8, 8, 'WAR CHEST OPENED', 'The War Chest Opens Wide',
         'A nine-figure PR budget was announced. Every talk show now features {Target}\'s defenders.'),
       ab('DISTRACTION', 10, 11, 15, 'MEGA DONATION', 'A Mega Donation Makes Global Headlines',
         '{Target} donated a hospital to a nation in crisis, live on television.'),
@@ -167,7 +167,7 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'The Faithful',
     passiveFlavor: 'His followers regard evidence as an attack on faith itself, and a personal insult to their mothers.',
-    mods: { doubtFlat: 35 },
+    mods: { doubtFlat: 38, doubtRate: 1.55, heatRate: 1, counterHeat: 3 },
     abilities: [
       ab('COUNTER_STORY', 7, 8, 10, 'DIVINE DECLARATION', 'A Divine Declaration Is Broadcast',
         '{Target} declared the allegations "a satanic attack" to millions of followers, several of whom began to speak in tongues at the page.'),
@@ -192,9 +192,9 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'Old Guard Loyalty',
     passiveFlavor: 'His father\'s friends still hold the keys to every important door and most of the important locks.',
-    mods: { eliteFriction: 0.1 },
+    mods: { eliteFriction: 0.1, heatRate: 0.85, doubtFlat: 21, doubtRate: 1 },
     abilities: [
-      ab('HEAT_SURGE', 7, 8, 9, 'OLD NETWORK ACTIVATED', 'Old Intelligence Contacts Open a Dossier on You',
+      ab('HEAT_SURGE', 7, 8, 6, 'OLD NETWORK ACTIVATED', 'Old Intelligence Contacts Open a Dossier on You',
         'Former intelligence men, loyal to {Target}\'s father, started trailing your couriers. One has been sleeping in your uncle’s shed.'),
       ab('INJUNCTION', 9, 10, 4, 'FRIENDS IN HIGH PLACES', 'A Channel Disappears Overnight',
         'One of your channels woke up to find its domain suspended "pending review". The review, like his father’s reign, has no end date.'),
@@ -217,9 +217,9 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'Control of the Currency',
     passiveFlavor: 'He can move the market whenever the story moves. Forgeries are checked at once, and the narrative is managed.',
-    mods: { eliteFriction: 0.2, forgeryRisk: 0.12, coverUpRate: 1.15 },
+    mods: { eliteFriction: 0.2, forgeryRisk: 0.12, coverUpRate: 1.15, doubtFlat: 31, doubtRate: 1.35, days: -2, staleRate: 1.1, heatRate: 0.95 },
     abilities: [
-      ab('DISTRACTION', 7, 8, 16, 'CURRENCY SHOCK', 'A Sudden Currency Redesign Is Announced',
+      ab('DISTRACTION', 7, 8, 14, 'CURRENCY SHOCK', 'A Sudden Currency Redesign Is Announced',
         '{Target} announced a surprise currency policy. The entire country is now queueing at banks, crying into their sachets of cash.'),
       ab('INJUNCTION', 9, 10, 4, 'BANK ACCOUNTS FROZEN', 'Your Contacts\' Bank Accounts Freeze',
         'Accounts linked to one of your channels were frozen "for compliance review". Their owners were not told, their balances were.'),
@@ -242,7 +242,7 @@ export const TIER_5: TargetBase[] = [
     ],
     passiveName: 'Last Court of Appeal',
     passiveFlavor: 'His orders cannot be appealed, and they last longer than anyone else\'s.',
-    mods: {},
+    mods: { heatRate: 1.15, counterHeat: 5, doubtFlat: 31, doubtRate: 1.35 },
     abilities: [
       ab('INJUNCTION', 7, 8, 5, 'SUPREME ORDER', 'A Supreme Order Shuts a Channel Down',
         'A Supreme Court order found one of your channels in contempt. It cannot appeal. It cannot even blink.'),

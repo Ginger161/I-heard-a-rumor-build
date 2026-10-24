@@ -17,6 +17,7 @@ export interface ScandalDef {
 // Passive rule changes for a Target. All optional; the dossier auto-describes whatever is set.
 export interface TargetMods {
   doubtFlat?: number;                                // Every state starts at exactly this Doubt
+  doubtRate?: number;                                // Multiplies how fast Doubt builds in every state (followers who will not be moved by hype)
   doubtAdd?: number;                                 // Added to every state's starting Doubt
   tagDoubt?: Partial<Record<DemographicTag, number>>; // Starting Doubt bonus by demographic
   zoneDoubt?: Partial<Record<ZoneId, number>>;       // Starting Doubt bonus by zone
@@ -24,6 +25,8 @@ export interface TargetMods {
   eliteFriction?: number;                            // Elite hub friction before 2 Press/Elite channels
   spinHubs?: boolean;                                // Spin bubbles twice as likely in the online hubs
   counterHeat?: number;                              // Extra Heat on every counter-offensive
+  days?: number;                                     // Days added to (or, if negative, taken from) the tier's clock: a short news cycle punishes slow plans
+  heatRate?: number;                                 // Multiplies how fast your Heat builds (security-minded Targets)
   forgeryRisk?: number;                              // Added to forgery backfire probability
   staleRate?: number;                                // Multiplies Freshness decay (short attention spans)
 }

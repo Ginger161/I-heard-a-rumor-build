@@ -7,7 +7,7 @@ import { TIER_5 } from './targets/tier5';
 import { SPOTLIGHT } from './targets/spotlight';
 import { AI_PROFILES } from './aiProfiles';
 import { PARODY, USE_PARODY_NAMES } from './parody';
-import { GENERATED_RATINGS, RATING_RANGES, SPEC_RATINGS } from './ratings';
+import { GENERATED_RATINGS, RATING_RANGES } from './ratings';
 import { AbilityDef, Folder, ScandalDef, TargetArchetype, TargetBase, Tier } from './targetTypes';
 
 export type { AbilityDef, Folder, ScandalDef, SilhouetteKind, TargetArchetype, TargetMods, Tier, AiProfile, DefenseStyle, Temperament, TargetKind, CreatorInfo } from './targetTypes';
@@ -37,7 +37,7 @@ const attach = (base: TargetBase, siblings: TargetBase[], folder: Folder): Targe
     parody: !!p,
     folder,
     ai,
-    prRating: SPEC_RATINGS[base.id] ?? GENERATED_RATINGS[base.id] ?? fallbackRating(base, siblings, folder)
+    prRating: GENERATED_RATINGS[base.id] ?? fallbackRating(base, siblings, folder)
   };
 };
 
@@ -138,6 +138,7 @@ export const describeTarget = (t: TargetArchetype): string[] => {
   if (t.ai.defenseStyle !== 'BALANCED') out.push(STYLE_TEXT[t.ai.defenseStyle]);
   out.push(`Weak to ${BRANCH_NAME[t.ai.weaknessBranch]} channels (x1.25). Resists ${BRANCH_NAME[t.ai.resistanceBranch]} channels (x0.75).`);
   if (m.doubtFlat !== undefined) out.push(`Every state starts at ${m.doubtFlat}% Doubt.`);
+  if (m.doubtRate && m.doubtRate !== 1) out.push(`Doubt builds ${pct(m.doubtRate)} ${m.doubtRate > 1 ? 'faster' : 'slower'} in every state.`);
   if (m.doubtAdd) out.push(`Every state starts with +${m.doubtAdd}% Doubt.`);
   if (m.tagDoubt) Object.entries(m.tagDoubt).forEach(([tag, v]) => out.push(`${tag.replace('_', ' ')} states start +${v}% Doubt.`));
   if (m.zoneDoubt) Object.entries(m.zoneDoubt).forEach(([zone, v]) => out.push(`${zone} zone states start +${v}% Doubt.`));
@@ -145,6 +146,8 @@ export const describeTarget = (t: TargetArchetype): string[] => {
   if (m.coverUpRate) out.push(`Cover-Up grows ${pct(m.coverUpRate)} ${m.coverUpRate > 1 ? 'faster' : 'slower'}.`);
   if (m.staleRate) out.push(`The story goes stale ${pct(m.staleRate)} faster.`);
   if (m.spinHubs) out.push('PR Spin bubbles are twice as likely in Lagos, Rivers, Enugu, Oyo and Abuja.');
+  if (m.heatRate && m.heatRate !== 1) out.push(`Your Heat builds a further ${pct(m.heatRate)} ${m.heatRate > 1 ? 'faster' : 'slower'} (on top of their style and the tier).`);
+  if (m.days) out.push(m.days < 0 ? `A short news cycle: ${-m.days} fewer days than the tier gives.` : `A slow news cycle: ${m.days} more days than the tier gives.`);
   if (m.counterHeat) out.push(`Every counter-offensive adds +${m.counterHeat}% Heat (a SAN Counter-Injunction cancels it).`);
   if (m.forgeryRisk) out.push(`Forgeries are ${Math.round(m.forgeryRisk * 100)}% more likely to be exposed.`);
   t.abilities.forEach(a => out.push(describeAbility(a)));

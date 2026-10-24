@@ -19,9 +19,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Market Loyalty',
     passiveFlavor: 'Traders will defend her until the last wrapper is sold, and then they will defend her from the floor.',
-    mods: { tagDoubt: { GRASSROOTS: 8 } },
+    mods: { tagDoubt: { GRASSROOTS: 8 }, coverUpRate: 1.45 },
     abilities: [
-      ab('COUNTER_STORY', 9, 8, 6, 'MARKET SOLIDARITY MARCH', 'Traders March in Her Defence',
+      ab('COUNTER_STORY', 9, 8, 9, 'MARKET SOLIDARITY MARCH', 'Traders March in Her Defence',
         'Hundreds of traders in matching wrappers marched to the secretariat, singing that {Target} is "a mother to us all" and the journalists are "motherless".')
     ]
   },
@@ -40,7 +40,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Area Boys',
     passiveFlavor: 'A loyal crowd of young men who can appear in any comment section, usually smelling of last night.',
-    mods: {},
+    mods: { heatRate: 1.6, counterHeat: 12 },
     abilities: [
       ab('BOT_SWARM', 8, 9, 2, 'PARK BOYS ON THE TIMELINE', 'The Park Boys Are Online',
         'Union youths flooded every thread about {Target} with identical praise, identical threats and identical spelling mistakes.')
@@ -61,7 +61,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Prayer Warriors',
     passiveFlavor: 'The congregation fasts for him, fights for him, and has never once asked where the offering went.',
-    mods: { tagDoubt: { GRASSROOTS: 6 } },
+    mods: { tagDoubt: { GRASSROOTS: 6 }, doubtFlat: 58, doubtRate: 2.15 },
     abilities: [
       ab('DISTRACTION', 8, 7, 12, 'REVIVAL CRUSADE', 'Three-Day Revival Crusade Announced',
         '{Target} announced a "Fire Revival Night" with free rice and free tongues, and the allegations went quiet under the speakers.')
@@ -82,7 +82,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Thugs on Retainer',
     passiveFlavor: 'Street-level muscle that can shut a lane of gossip by force, and sometimes a lane of traffic.',
-    mods: {},
+    mods: { heatRate: 1.2, counterHeat: 6 },
     abilities: [
       ab('INJUNCTION', 8, 8, 2, 'STREET INTIMIDATION', 'Landlord’s Boys Shut Down the Street',
         '{Target}’s thugs visited every shop and motor park. By nightfall the street was so quiet you could hear a tenant weeping.', 'STREET')
@@ -103,7 +103,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Paper Projects',
     passiveFlavor: 'The local radio station depends on his advertising, and his advertising depends on nobody looking.',
-    mods: {},
+    mods: { coverUpRate: 1.6 },
     abilities: [
       ab('INJUNCTION', 9, 9, 3, 'AIRTIME BOUGHT', 'Local Radio Suddenly Goes Quiet',
         '{Target}’s office paid the stations for "exclusive project coverage". The phone-ins stopped, and one presenter bought a motorbike.', 'PRESS')
@@ -124,9 +124,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Fan Army',
     passiveFlavor: 'His followers argue for free and never sleep.',
-    mods: { tagDoubt: { HYPER_ONLINE: 8 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 8 }, coverUpRate: 1.6 },
     abilities: [
-      ab('BOT_SWARM', 8, 8, 2, 'FAN ARMY DEPLOYED', 'Fan Pages Counter-Attack',
+      ab('BOT_SWARM', 8, 8, 3, 'FAN ARMY DEPLOYED', 'Fan Pages Counter-Attack',
         '{Target}\'s fan pages mass-reported every post about the scandal and spammed the comments.')
     ]
   },
@@ -145,9 +145,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Grateful Parents',
     passiveFlavor: 'Every family he "helped" will say so on camera, because they have already paid.',
-    mods: { tagDoubt: { GRASSROOTS: 4 } },
+    mods: { tagDoubt: { GRASSROOTS: 4 }, days: -8, staleRate: 1.3, heatRate: 0.85 },
     abilities: [
-      ab('DISTRACTION', 9, 8, 10, 'NEW TRIALS ANNOUNCED', 'Open Trials Announced This Weekend',
+      ab('DISTRACTION', 9, 8, 16, 'NEW TRIALS ANNOUNCED', 'Open Trials Announced This Weekend',
         '{Target} announced free trials with a "European scout", who turned out to be a cousin in a borrowed blazer. The streets care about football again.')
     ]
   },
@@ -166,9 +166,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Miracle Testimonies',
     passiveFlavor: 'A parade of cured customers appears whenever he is in trouble. Several look suspiciously like the same man.',
-    mods: {},
+    mods: { coverUpRate: 1.3 },
     abilities: [
-      ab('COUNTER_STORY', 8, 7, 7, 'TESTIMONY MARATHON', 'Cured Customers Line Up',
+      ab('COUNTER_STORY', 8, 7, 9, 'TESTIMONY MARATHON', 'Cured Customers Line Up',
         'A parade of "miraculously healed" customers swore on live radio that {Target} saved their lives, their marriages and one very tired nether region.')
     ]
   },
@@ -187,9 +187,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Flex Culture',
     passiveFlavor: 'The online crowd mistakes rented success for wisdom, and rented girlfriends for a lifestyle.',
-    mods: { tagDoubt: { HYPER_ONLINE: 10 }, spinHubs: true },
+    mods: { tagDoubt: { HYPER_ONLINE: 10 }, spinHubs: true, doubtFlat: 59, doubtRate: 2.2, coverUpRate: 1.25 },
     abilities: [
-      ab('BOT_SWARM', 7, 8, 2, 'SUCCESS STORIES POSTED', 'Fake Profit Screenshots Flood In',
+      ab('BOT_SWARM', 7, 8, 3, 'SUCCESS STORIES POSTED', 'Fake Profit Screenshots Flood In',
         '{Target}’s students posted screenshots of staggering profits. Every one used the same template, and the same typo in "withdrawal".')
     ]
   },
@@ -208,9 +208,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Omo-Onile Boys',
     passiveFlavor: 'His boys know every informant in the neighbourhood and most of their mothers.',
-    mods: {},
+    mods: { heatRate: 0.9, counterHeat: 2 },
     abilities: [
-      ab('HEAT_SURGE', 7, 9, 6, 'THUGS TIP THE POLICE', 'Land Boys Report Your Network',
+      ab('HEAT_SURGE', 7, 9, 5, 'THUGS TIP THE POLICE', 'Land Boys Report Your Network',
         '{Target}’s associates named your couriers to a divisional police officer, who is very interested in the "contribution" that followed. Heat is rising.')
     ]
   },
@@ -229,7 +229,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Soft Life Squad',
     passiveFlavor: 'Her followers defend the lifestyle, and screenshot every critic into a group called "Haters (Tag Them)".',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, doubtFlat: 40, doubtRate: 1.6 },
     abilities: [
       ab('BOT_SWARM', 8, 8, 2, 'SQUAD ACTIVATED', 'The Soft Life Squad Strikes Back',
         '{Target}’s followers are replying to every post with "hater" and a crown emoji. Several have also sent a bucket of toxic DMs.')
@@ -250,7 +250,7 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Signal Group Loyalty',
     passiveFlavor: 'His paying members cannot admit they were fooled, because their wives are already asking.',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, doubtFlat: 60, doubtRate: 2.2, coverUpRate: 1.35 },
     abilities: [
       ab('DISTRACTION', 9, 8, 10, 'FREE SIGNAL DAY', 'A "Free Signal Day" Dominates Telegram',
         '{Target} announced free signals for everyone. The channels are suddenly full of other conversations, and several marriages.')
@@ -271,9 +271,9 @@ export const TIER_1: TargetBase[] = [
     ],
     passiveName: 'Skit Universe',
     passiveFlavor: 'His fans quote him in every comment section, and they never run out of reaction GIFs.',
-    mods: { tagDoubt: { HYPER_ONLINE: 6 } },
+    mods: { tagDoubt: { HYPER_ONLINE: 6 }, days: -2, staleRate: 1.1, heatRate: 0.95 },
     abilities: [
-      ab('DISTRACTION', 8, 8, 10, 'NEW SKIT DROPPED', 'A Brand-New Skit Takes Over the Timeline',
+      ab('DISTRACTION', 8, 8, 9, 'NEW SKIT DROPPED', 'A Brand-New Skit Takes Over the Timeline',
         '{Target} dropped a new skit and the entire internet is quoting it. Nobody is talking about anything else.')
     ]
   }
