@@ -21,7 +21,6 @@ const clearPrefixed = (store: Storage, keep: string[]) => {
 
 /** Wipes the data. Does not reload (see startOver); exported so it can be tested. */
 export const wipeData = (keepSettings: boolean) => {
-  wiping = true;
   try {
     let old: Record<string, unknown> = {};
     try { old = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') as Record<string, unknown>; } catch { old = {}; }
@@ -38,6 +37,7 @@ export const wipeData = (keepSettings: boolean) => {
 };
 
 export const startOver = (keepSettings: boolean) => {
+  wiping = true;
   wipeData(keepSettings);
   try { window.location.replace(window.location.pathname); } catch { window.location.reload(); }
 };

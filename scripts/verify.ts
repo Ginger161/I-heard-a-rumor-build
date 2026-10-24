@@ -46,6 +46,8 @@ import { computeScore, makeEntry, decodeScores, encodeEntry, encodeBoard, dailyB
 import { STORY_PACK, STORY_CHAPTERS, APPROACHES, seasonEnding } from '../src/engine/data/story';
 import { validatePack, builtInIds, registerPack, unregisterPack, newBlankDef, validateTargetDef, estimateRating, PACK_SCHEMA_VERSION } from '../src/engine/data/targetPacks';
 import type { TargetPack, TargetDef } from '../src/engine/data/targetPacks';
+import { wipeData } from '../src/engine/wipe';
+import { LICENSE_KEY } from '../src/engine/premium';
 import { PROLOGUE, SCRIPTS, allPlotEvents } from '../src/engine/season/script';
 import { CLUES, CLUE_BY_ID } from '../src/engine/season/clues';
 import { applyStoryEffects, condHolds } from '../src/engine/story';
@@ -819,6 +821,33 @@ const issueLicense = async (payload: object): Promise<string> => {
 
 const runArenaTests = async () => {
   const okFor = (c: boolean, n: string, extra = '') => ok(n, c, extra);
+  // ---- START OVER: deletes everything, keeps a licence and the founder’s mark
+  {
+    const mk = () => { const m = new Map<string, string>(); return { get length() { return m.size; }, key: (i: number) => [...m.keys()][i] ?? null, getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); }, _m: m }; };
+    const prevL = (globalThis as any).localStorage, prevS = (globalThis as any).sessionStorage;
+    const fill = () => {
+      const L = mk(), S = mk();
+      ['rumor_game_save_v9', 'rumor_meta_profile_v1', 'rumor_arena_v1', 'rumor_scores_v1', 'rumor_tour_done', 'rumor_reveals_seen', 'rumor_player_id', 'rumor_target_drafts_v1'].forEach(k => L.setItem(k, 'x'));
+      L.setItem(LICENSE_KEY, 'RUMP1.licence'); L.setItem('other_site_key', 'keep'); L.setItem('rumor_sfx_muted', '1');
+      L.setItem('rumor_settings_v1', JSON.stringify({ tutorialDone: true, seenHints: ['heat'], playerName: 'Ada', crew: 'Crew', eggFound: true, textSize: 'large', muted: true }));
+      S.setItem('rumor_score_mark', 'y'); S.setItem('unrelated', 'z');
+      (globalThis as any).localStorage = L; (globalThis as any).sessionStorage = S;
+      return { L, S };
+    };
+    let { L, S } = fill();
+    wipeData(true);
+    const st = JSON.parse(L.getItem('rumor_settings_v1') ?? '{}');
+    okFor(['rumor_game_save_v9', 'rumor_meta_profile_v1', 'rumor_arena_v1', 'rumor_scores_v1', 'rumor_tour_done', 'rumor_reveals_seen', 'rumor_player_id', 'rumor_target_drafts_v1'].every(k => L.getItem(k) === null), 'start over deletes the saved match, profile, story, Arena, scores, tips and tutorial flags');
+    okFor(L.getItem(LICENSE_KEY) === 'RUMP1.licence' && L.getItem('other_site_key') === 'keep', 'start over keeps a Gist Pass licence and never touches keys that are not the game’s');
+    okFor(S.getItem('rumor_score_mark') === null && S.getItem('unrelated') === 'z', 'start over clears the game’s session data only');
+    okFor(st.tutorialDone === false && st.seenHints.length === 0 && st.playerName === '' && st.textSize === 'large' && st.muted === true && st.eggFound === true && L.getItem('rumor_sfx_muted') === '1', 'with "keep my settings" the preferences stay, the tutorial and hints reset, the founder’s mark stays found');
+    ({ L, S } = fill());
+    wipeData(false);
+    const st2 = JSON.parse(L.getItem('rumor_settings_v1') ?? '{}');
+    okFor(Object.keys(st2).join() === 'eggFound' && st2.eggFound === true && L.getItem(LICENSE_KEY) === 'RUMP1.licence', 'without it the settings go too, but the licence and the founder’s mark still stay');
+    (globalThis as any).localStorage = prevL; (globalThis as any).sessionStorage = prevS;
+  }
+
   // ---- THE ARENA: player-made Targets, the thirty bots, the bot check, codes and fees
   {
     const mk = (over: Partial<TargetDef> = {}): TargetDef => ({

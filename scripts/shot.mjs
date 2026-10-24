@@ -35,7 +35,7 @@ else await send('Runtime.evaluate', { expression: `localStorage.clear()` });
 if (process.env.LS_FILE) { const items = JSON.parse((await import('node:fs')).readFileSync(process.env.LS_FILE, 'utf8')); await send('Runtime.evaluate', { expression: `Object.entries(${JSON.stringify(items)}).forEach(([k, v]) => localStorage.setItem(k, v))` }); }
 const nv = await send('Page.navigate', { url: base + path }); if (process.env.DEBUG) console.log(JSON.stringify(nv));
 await sleep(+(process.env.WAIT ?? 3500));
-if (pre) { const r = await send('Runtime.evaluate', { expression: pre, awaitPromise: true, returnByValue: true }); if (r.result?.result?.value !== undefined) console.log(String(r.result.result.value)); await sleep(1200); }
+if (pre) { const r = await send('Runtime.evaluate', { expression: pre, awaitPromise: true, returnByValue: true }); if (r.result?.result?.value !== undefined) console.log(String(r.result.result.value)); await sleep(+(process.env.POSTWAIT ?? 1200)); }
 const shot = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(out, Buffer.from(shot.result.data, 'base64'));
 ws.close(); proc.kill();
