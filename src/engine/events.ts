@@ -4,6 +4,7 @@ import { ZONE_IDS, ZONE_NAMES, ZoneId } from './data/zones';
 import { fillTarget, getTarget } from './data/targets';
 import { Rng } from './effects';
 import { pickFrom } from './data/copy';
+import type { PlotEvent, StoryEffects } from './season/types';
 
 // Nigerian world events and informant tips. Every event is a decision card: the clock stays stopped
 // until the player picks an option, and the option's effects are applied then.
@@ -14,6 +15,7 @@ export interface EventChoice {
   detail: string;   // Shown under the button
   cost?: number;    // Sparks
   effects: Effect[];
+  story?: StoryEffects;   // Story Mode only: what this choice does to Trust, the Inspector, the Clue Board
 }
 
 export interface EventDef {
@@ -25,6 +27,7 @@ export interface EventDef {
   minDay?: number;
   weight: number;
   zoned?: boolean;    // Picks a random geopolitical zone at spawn
+  scripted?: boolean; // A Story Mode plot beat: never drawn at random, only fires on the day its chapter schedules it
   requires?: (s: GameState) => boolean;
   choices: (zone?: ZoneId) => EventChoice[];
 }
@@ -399,6 +402,18 @@ export const SCHEMER_EVENT: EventDef = {
   ]
 };
 
+// Story Mode plot beats become ordinary decision cards (so the whole event machinery, saves and bots just work), but are never drawn at random.
+export const registerPlotEvents = (list: PlotEvent[]) => {
+  list.forEach(p => {
+    const def: EventDef = {
+      id: p.id, archetype: p.archetype ?? 'INFORMANT_TIP', stamp: p.stamp, headline: p.headline, body: p.body, weight: 0, scripted: true,
+      choices: () => p.choices.map(c => ({ id: c.id, label: c.label, detail: c.detail, cost: c.cost, effects: c.effects, story: c.story }))
+    };
+    const i = EVENTS.findIndex(e => e.id === p.id);
+    if (i >= 0) EVENTS[i] = def; else EVENTS.push(def);
+  });
+};
+
 export const getEventDef = (id: string): EventDef | undefined => [...EVENTS, SCHEMER_EVENT].find(e => e.id === id);
 
 export const findChoice = (eventId: string, choiceId: string): EventChoice | undefined => {
@@ -410,7 +425,7 @@ export const findChoice = (eventId: string, choiceId: string): EventChoice | und
 export const pickEvent = (s: GameState, rng: Rng, chance: number, cooldown: number, minDay: number): { def: EventDef; zone?: ZoneId } | null => {
   if (s.currentDay < minDay || s.currentDay - s.lastEventDay < cooldown) return null;
   if (rng() >= chance) return null;
-  const eligible = EVENTS.filter(e => !s.usedEvents.some(u => u.split(':')[0] === e.id)
+  const eligible = EVENTS.filter(e => !e.scripted && !s.usedEvents.some(u => u.split(':')[0] === e.id)
     && (e.minDay ?? 0) <= s.currentDay && (!e.requires || e.requires(s)));
   if (eligible.length === 0) return null;
   const total = eligible.reduce((a, e) => a + e.weight, 0);
@@ -419,6 +434,18 @@ export const pickEvent = (s: GameState, rng: Rng, chance: number, cooldown: numb
   for (const e of eligible) { roll -= e.weight; if (roll <= 0) { def = e; break; } }
   const zone = def.zoned ? ZONE_IDS[Math.floor(rng() * ZONE_IDS.length)] : undefined;
   return { def, zone };
+};
+
+// A Target's author can schedule news events for fixed days ("natural occurrences"). The first one that is due and not yet used fires
+// on this tick (on or after its day, so it is never lost when another card takes the tick). Random events carry on around it.
+export const scheduledEvent = (s: GameState, occurrences: { eventId: string; day: number }[] | undefined, rng: Rng): { def: EventDef; zone?: ZoneId } | null => {
+  if (!occurrences || occurrences.length === 0) return null;
+  const due = occurrences
+    .filter(o => o.day <= s.currentDay && !s.usedEvents.some(u => u.split(':')[0] === o.eventId))
+    .sort((a, b) => a.day - b.day)[0];
+  const def = due && EVENTS.find(e => e.id === due.eventId);
+  if (!def) return null;
+  return { def, zone: def.zoned ? ZONE_IDS[Math.floor(rng() * ZONE_IDS.length)] : undefined };
 };
 
 export const buildEventAlert = (def: EventDef, s: GameState, zone?: ZoneId): GameAlert => {

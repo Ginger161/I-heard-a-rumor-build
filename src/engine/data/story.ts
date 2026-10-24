@@ -2,6 +2,8 @@ import { registerPack, TargetDef, TargetPack } from './targetPacks';
 import type { AbilityDef, AbilityKind } from './targetTypes';
 import type { Branch } from './channels';
 import type { StoryApproach } from './perks';
+import { allPlotEvents, plotOccurrences } from '../season/script';
+import { registerPlotEvents } from '../events';
 
 // ===========================================================================
 // STORY MODE, SEASON 1: "THE RECEIPTS"
@@ -618,5 +620,13 @@ export const seasonEnding = (integrity: number): SeasonEnding => {
     body: ['You are one of the biggest pages in the country. People read you with a mix of delight and fear, which, Biko says, is also called "being famous".', 'There is a message in your inbox from a new name. A very short one. "I have a story for you." You can almost hear the music start.']
   };
 };
+
+// The chapters' scripted plot beats: registered as decision cards and scheduled on the Targets they belong to.
+registerPlotEvents(allPlotEvents());
+STORY_CHAPTERS.forEach(ch => ch.variants.forEach(v => {
+  const def = CAST.find(d => d.id === v.targetId);
+  const occ = plotOccurrences(ch.id);
+  if (def && occ.length) def.occurrences = occ;
+}));
 
 registerPack(STORY_PACK);

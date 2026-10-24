@@ -4,6 +4,7 @@ import { PERKS, getPerk } from './data/perks';
 import { BALANCE, STARS_TO_UNLOCK_TIER } from './balance';
 import { dailyBonus, dailyStreak } from './daily';
 import { StoryProgress, emptyStory, sanitizeStory } from './story';
+import { isWiping } from './wipe';
 
 // The persistent player profile ("MetaProfile"). Lives in its own storage slot, so a finished or reset
 // match never touches it. "Reset saved game" keeps it; "Erase progress" wipes it.
@@ -85,6 +86,7 @@ export const loadProfile = (): MetaProfile => {
 };
 
 export const saveProfile = (p: MetaProfile): void => {
+  if (isWiping()) return;
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }
 };
 
@@ -115,6 +117,8 @@ export const applyWin = (p: MetaProfile, s: GameState, believers: number): { pro
   const target = getTarget(s.activeTargetId);
   // Training Cases pay nothing and leave no trace.
   if (s.training) return { profile: p, rewards: { stars: 0, previousStars: 0, newStars: 0, breakdown: [{ label: 'Training case (no rewards)', amount: 0 }], total: 0, envelopesAfter: p.envelopes } };
+  // Arena Targets are made by players: no stars, nothing towards unlocking tiers (the first win pays a few envelopes, see the Arena).
+  if (target.kind === 'PLAYER') return { profile: p, rewards: { stars: 0, previousStars: 0, newStars: 0, breakdown: [{ label: 'Arena Target (no stars)', amount: 0 }], total: 0, envelopesAfter: p.envelopes } };
   // Assist Mode keeps the win but caps the glory: 1 star, half the envelopes, no Daily bonus.
   const stars = s.assisted ? 1 : starsFor(s);
   const previousStars = p.targetStars[target.id] ?? 0;

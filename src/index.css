@@ -177,7 +177,9 @@ html[data-layout='desktop'] .end-root > * { width: 100%; max-width: 620px; margi
 html[data-layout='desktop'] .end-root { align-items: center; }
 
 /* The room around the desktop window */
-.desk-room { background: radial-gradient(ellipse at 50% 30%, #2a2f3a 0%, #0b0e14 70%); }
+.desk-room { background: radial-gradient(ellipse at 50% 30%, var(--m-room1, #2a2f3a) 0%, var(--m-room2, #0b0e14) 70%); }
+[data-mode='story'] { --m-room1: #1b2438; --m-room2: #04060a; --m-frame: #05070b; }
+[data-mode='arena'] { --m-room1: #2d2275; --m-room2: #07041a; --m-frame: #07041a; }
 
 /* Touch screens: every button is at least 44 x 44 px (the usual finger-size guideline). Text links keep their look but get
    a taller row. Add data-compact to a button that must stay small on purpose. */
@@ -185,3 +187,71 @@ html[data-layout='desktop'] .end-root { align-items: center; }
   button, [role="button"], select, summary, input[type="checkbox"], input[type="radio"] { min-height: 44px; min-width: 44px; }
   button[data-compact] { min-height: 0; min-width: 0; }
 }
+
+/* =====================================================================================================================
+   GAME MODES LOOK DIFFERENT. Each mode sets a palette (CSS variables) and a texture; screens that use them follow the mode.
+     arcade  = the tabloid: warm newsprint, ink, crimson, halftone dots
+     story   = the thriller: night-blue noir, blood red and street-light amber, film grain, scanlines and a heavy vignette
+     arena   = the competition: deep indigo, neon cyan and magenta, a hex grid and sharp corners
+   The mode is set as data-mode on the app frame (see App.tsx and ui/modeTheme.ts). The defaults below are the arcade look.
+   ===================================================================================================================== */
+:root, [data-mode='arcade'] {
+  --m-bg: #EFEBE0; --m-surface: #F4F1EA; --m-surface2: #FFFFFF; --m-sunk: #E6D5B8;
+  --m-ink: #1A1A1A; --m-soft: #5B564B; --m-line: #1A1A1A;
+  --m-accent: #8B0000; --m-accent-ink: #FFFFFF; --m-accent2: #FDE68A; --m-accent2-ink: #1A1A1A;
+  --m-header: #F4F1EA; --m-header-ink: #1A1A1A; --m-map: #EADFCB; --m-glow: rgba(139,0,0,0);
+  --m-disabled: #D4CFC4; --m-btn-ink-bg: #1A1A1A; --m-btn-ink-fg: #F4F1EA; --m-btn-paper-bg: #FFFFFF; --m-btn-paper-fg: #1A1A1A; --m-btn-crimson-bg: #8B0000;
+  --m-label: #1A1A1A; --m-label-halo: #F4F1EA; --m-state-line: #1A1A1A;
+  --z-SW: #D9EBD9; --z-SE: #E4D9F0; --z-SS: #CFE6EC; --z-NC: #E3EAD0; --z-NE: #D8DCF0; --z-NW: #E6DFD6; --z-none: #F4F1EA;
+}
+[data-mode='story'] {
+  --m-bg: #0A0D14; --m-surface: #121826; --m-surface2: #1A2233; --m-sunk: #0E131D;
+  --m-ink: #E9EDF5; --m-soft: #9AA6BA; --m-line: #2F3B57;
+  --m-accent: #E11D48; --m-accent-ink: #FFFFFF; --m-accent2: #F59E0B; --m-accent2-ink: #1A1206;
+  --m-header: #0E131D; --m-header-ink: #E9EDF5; --m-map: #0B1220; --m-glow: rgba(225,29,72,.35);
+  --m-disabled: #1B2233; --m-btn-ink-bg: #E9EDF5; --m-btn-ink-fg: #0A0D14; --m-btn-paper-bg: #1A2233; --m-btn-paper-fg: #E9EDF5; --m-btn-crimson-bg: #E11D48;
+  --m-label: #E9EDF5; --m-label-halo: #0B1220; --m-state-line: #3A4766;
+  --z-SW: #1E2A3A; --z-SE: #261F3A; --z-SS: #1A3038; --z-NC: #232C26; --z-NE: #1F2540; --z-NW: #2A2623; --z-none: #151C2C;
+}
+[data-mode='arena'] {
+  --m-bg: #0F0A24; --m-surface: #1B1640; --m-surface2: #261E5A; --m-sunk: #140E35;
+  --m-ink: #F1EEFF; --m-soft: #A79FD6; --m-line: #4B3FA8;
+  --m-accent: #22D3EE; --m-accent-ink: #04222A; --m-accent2: #E879F9; --m-accent2-ink: #2A0630;
+  --m-header: #140E35; --m-header-ink: #F1EEFF; --m-map: #120B30; --m-glow: rgba(34,211,238,.35);
+  --m-disabled: #2A2366; --m-btn-ink-bg: #22D3EE; --m-btn-ink-fg: #04222A; --m-btn-paper-bg: #261E5A; --m-btn-paper-fg: #F1EEFF; --m-btn-crimson-bg: #C026D3;
+  --m-label: #F1EEFF; --m-label-halo: #120B30; --m-state-line: #5B4FC9;
+  --z-SW: #1F3A4A; --z-SE: #3A2A66; --z-SS: #14414F; --z-NC: #2B3A5C; --z-NE: #322A70; --z-NW: #3B2A58; --z-none: #1B1640;
+}
+/* Page and frame backgrounds (behind everything) */
+.mode-page { background-color: var(--m-bg); color: var(--m-ink); }
+/* Textures: put one of these on a screen's root. They only paint the background, so they never get in the way of a tap. */
+.tex-arcade { background-color: var(--m-bg); background-image: radial-gradient(rgba(26,26,26,.075) 1px, transparent 1.3px); background-size: 6px 6px; }
+.tex-story {
+  background-color: var(--m-bg);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(225,29,72,.16), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(245,158,11,.10), transparent 50%),
+    linear-gradient(rgba(255,255,255,.028) 50%, transparent 50%);
+  background-size: 100% 100%, 100% 100%, 100% 3px;
+}
+.tex-arena {
+  background-color: var(--m-bg);
+  background-image:
+    linear-gradient(135deg, rgba(34,211,238,.10), transparent 38%, rgba(232,121,249,.12)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%234B3FA8' stroke-opacity='.38' stroke-width='1.2'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%234B3FA8' stroke-opacity='.38' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 56px 100px;
+}
+/* The film look for the thriller: grain, scanlines and a vignette laid over a screen (pointer-events none). */
+/* (every element that uses fx-film is already positioned: relative or absolute) */
+.fx-film::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 60;
+  background:
+    radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 160px 160px; opacity: .55; mix-blend-mode: overlay;
+}
+/* Arena: sharp clipped corners on cards and buttons */
+[data-mode='arena'] .clip-card { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); border-radius: 0 !important; }
+html[data-motion='reduced'] .fx-film::after { opacity: .3; }
+
+.scene-shake { animation: shake 0.45s ease-in-out 2; }

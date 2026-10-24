@@ -1,3 +1,4 @@
+import { startOver } from '../../engine/wipe';
 import React, { useEffect, useState } from 'react';
 import { BrutalButton, PaperGrain } from './common';
 import { sfx, useNowPlaying } from '../audio';
@@ -56,6 +57,39 @@ const Slider: React.FC<{ label: string; value: number; onChange: (v: number) => 
     <span className="w-8 text-right text-[10px] font-mono">{Math.round(value * 100)}</span>
   </label>
 );
+
+// Delete everything and begin again as a brand-new player. Needs the words START OVER typed, so it can never be an accident.
+const StartOver: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [keep, setKeep] = useState(true);
+  const ready = typed.trim().toUpperCase() === 'START OVER';
+  if (!open) return <BrutalButton tone="crimson" className="py-2" onClick={() => setOpen(true)}>🗑 Start over from scratch…</BrutalButton>;
+  return (
+    <div className="border-[3px] border-[#8B0000] rounded-lg p-3 bg-[#FEE2E2] text-[#1A1A1A]">
+      <div className="text-[12px] font-black text-[#8B0000] mb-1">Delete everything and start again?</div>
+      <div className="text-[11px] font-sans leading-snug">This cannot be undone. It deletes, on this device:</div>
+      <ul className="list-disc pl-4 text-[11px] font-sans leading-snug my-1">
+        <li>stars, envelopes, perks and your archive of front pages</li>
+        <li>Story Mode: chapters, choices, Trust, the Inspector and the Clue Board</li>
+        <li>your Arena Targets, the shelf and your results</li>
+        <li>leaderboard scores, the saved match, tips and the tutorial</li>
+      </ul>
+      <div className="text-[11px] font-sans leading-snug">Kept: a Gist Pass licence, if you have one. Tip: use “Export code” above first if you might want your progress back.</div>
+      <label className="flex items-center gap-2 mt-2 min-h-[44px] text-[12px] font-bold cursor-pointer">
+        <input type="checkbox" checked={keep} onChange={e => setKeep(e.target.checked)} className="w-5 h-5 accent-[#8B0000]" />
+        Keep my settings (sound, text size, layout)
+      </label>
+      <div className="text-[10px] font-black uppercase tracking-wider mt-1">Type START OVER to confirm</div>
+      <input value={typed} onChange={e => setTyped(e.target.value)} aria-label="Type START OVER to confirm" autoCapitalize="characters" autoComplete="off"
+        className="w-full mt-1 border-2 border-[#1A1A1A] rounded-md px-3 py-2.5 text-[14px] font-mono bg-white min-h-[44px]" placeholder="START OVER" />
+      <div className="flex gap-2 mt-2">
+        <BrutalButton tone="crimson" className="flex-1 py-2" disabled={!ready} onClick={() => startOver(keep)}>Delete everything</BrutalButton>
+        <BrutalButton tone="paper" className="flex-1 py-2" onClick={() => { setOpen(false); setTyped(''); }}>Keep my game</BrutalButton>
+      </div>
+    </div>
+  );
+};
 
 export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onReplayTutorial, onImportProgress, onEraseProgress }) => {
   const s = useSettings();
@@ -208,7 +242,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
             />
             {msg && <div className="text-[10px] font-bold text-[#8B0000]" role="status">{msg}</div>}
             {!confirmErase ? (
-              <BrutalButton tone="paper" className="py-2" onClick={() => setConfirmErase(true)}>Erase all progress…</BrutalButton>
+              <BrutalButton tone="paper" className="py-2" onClick={() => setConfirmErase(true)}>Erase stars &amp; envelopes only…</BrutalButton>
             ) : (
               <div className="border-2 border-dashed border-[#8B0000] rounded-lg p-3 bg-[#FEE2E2]">
                 <div className="text-[11px] font-bold text-[#8B0000] mb-2">This wipes stars, envelopes, perks and the archive. It cannot be undone.</div>
@@ -218,6 +252,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
                 </div>
               </div>
             )}
+            <StartOver />
           </Section>
 
           <Section title="Daily reminders">

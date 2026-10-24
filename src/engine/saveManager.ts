@@ -5,6 +5,7 @@ import { findChoice, getEventDef } from './events';
 import { getTarget } from './data/targets';
 import { NIGERIA_STATES } from './data/nigeriaData';
 import { TARGETS, SCANDAL_CATEGORIES } from './data/targets';
+import { isWiping } from './wipe';
 
 
 // Bump the suffix whenever GameState changes shape so stale saves are discarded, never migrated.
@@ -51,6 +52,7 @@ export const sanitizeState = (input: GameState): GameState => {
   s.assisted = !!s.assisted;
   s.training = !!s.training;
   s.storyId = typeof s.storyId === 'string' ? s.storyId : null;
+  s.storyChoices = Array.isArray(s.storyChoices) ? s.storyChoices.filter(x => typeof x === 'string').slice(0, 40) : [];
   const ch = s.challenge as unknown as { id?: unknown; by?: unknown; score?: unknown } | null | undefined;
   s.challenge = ch && typeof ch.id === 'string' && typeof ch.by === 'string' && typeof ch.score === 'number' ? { id: ch.id.slice(0, 24), by: ch.by.slice(0, 20), score: Math.max(0, Math.min(9999, ch.score)) } : null;
 
@@ -88,6 +90,7 @@ export const sanitizeState = (input: GameState): GameState => {
 
 export const SaveManager = {
   save: (state: GameState): void => {
+    if (isWiping()) return;
     try {
       // Transient map events are never persisted.
       const serializable: GameState = { ...state, flightEvents: [], newlyInfectedIds: [], chatter: null };

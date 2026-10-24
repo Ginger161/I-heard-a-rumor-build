@@ -1,0 +1,28 @@
+{
+  "name": "i-heard-a-rumor-trailer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audio": "node scripts/make-mix.mjs",
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "render:portrait": "remotion render src/index.ts Trailer-9x16 out/trailer-9x16.mp4 --port=3417 --concurrency=3",
+    "render:landscape": "remotion render src/index.ts Trailer-16x9 out/trailer-16x9.mp4 --port=3417 --concurrency=3",
+    "render:all": "npm run render:portrait && npm run render:landscape",
+    "stills": "node scripts/stills.mjs",
+    "vo": "node scripts/make-vo.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "@remotion/google-fonts": "4.0.538",
+    "@svg-maps/nigeria": "^2.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

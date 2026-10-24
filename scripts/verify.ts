@@ -13,7 +13,7 @@ import { applyEffects } from '../src/engine/effects';
 import { BALANCE } from '../src/engine/balance';
 import { TARGETS, TIERS, targetsInTier, describeTarget, getTarget } from '../src/engine/data/targets';
 import { CHANNELS_DATA } from '../src/engine/data/channels';
-import { EVENTS, buildEventAlert } from '../src/engine/events';
+import { EVENTS, buildEventAlert, pickEvent } from '../src/engine/events';
 import {
   applyWin, bribeTarget, buyPerk, buyTier, emptyProfile, equipPerk, isTargetUnlocked, isTierUnlocked, loadProfile, starsFor, starsInTier
 } from '../src/engine/profile';
@@ -46,6 +46,15 @@ import { computeScore, makeEntry, decodeScores, encodeEntry, encodeBoard, dailyB
 import { STORY_PACK, STORY_CHAPTERS, APPROACHES, seasonEnding } from '../src/engine/data/story';
 import { validatePack, builtInIds, registerPack, unregisterPack, newBlankDef, validateTargetDef, estimateRating, PACK_SCHEMA_VERSION } from '../src/engine/data/targetPacks';
 import type { TargetPack, TargetDef } from '../src/engine/data/targetPacks';
+import { PROLOGUE, SCRIPTS, allPlotEvents } from '../src/engine/season/script';
+import { CLUES, CLUE_BY_ID } from '../src/engine/season/clues';
+import { applyStoryEffects, condHolds } from '../src/engine/story';
+import { STRATEGIES, STRATEGIES_30, STRATEGY_TIPS } from '../src/engine/bots';
+import { abilityEffects } from '../src/engine/alerts';
+import type { AbilityDef, AbilityKind } from '../src/engine/data/targetTypes';
+import { creationFee, decodeTarget, encodeTarget } from '../src/engine/arena';
+import { RATING_KNOTS, ratingFromD } from '../src/engine/data/ratingCurve';
+import { CHECK_ID, FAIR_FLOOR, describeChanges, runBotCheck, suggestEase } from '../src/engine/botCheck';
 import { recordChapter, emptyStory, chapterUnlocked, repBand, perkIdFor, sanitizeStory, seasonComplete } from '../src/engine/story';
 import { perkEffects, storyPerkId, parseStoryPerk } from '../src/engine/data/perks';
 import { targetsInFolder } from '../src/engine/data/targets';
@@ -477,7 +486,7 @@ ok('ids and priorities never change with the variant (tests and queue logic depe
 ok('four Ground Zero variants', new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(sd => pickCopy('SEED', sd, { State: 'Kano', Target: 'X' })!.headline)).size === 4);
 ok('GIST pools: 3 variants per mood, zone-flavored', Object.values(GIST).every(p => p.length >= 3) && pickGist('EARLY', 'SW', 1, 'lagos') !== pickGist('EARLY', 'NW', 1, 'kano'));
 ok('24 tips and 8 taglines', TIPS.length >= 24 && TAGLINES.length >= 8);
-ok('24 events (14 + 10) plus the Schemer bait, each with a free choice', EVENTS.length === 24 && [...EVENTS, SCHEMER_EVENT].every(e => e.choices('NW').some(c => !c.cost)), EVENTS.filter(e => !e.choices('NW').some(c => !c.cost)).map(e => e.id).join(','));
+ok('24 random events (14 + 10) plus the Schemer bait, and every event (scripted ones too) has a free choice', EVENTS.filter(e => !e.scripted).length === 24 && [...EVENTS, SCHEMER_EVENT].every(e => e.choices('NW').some(c => !c.cost)), EVENTS.filter(e => !e.choices('NW').some(c => !c.cost)).map(e => e.id).join(','));
 ok('events read differently across runs', new Set([0, 1, 2, 3, 4, 5].map(sd => buildEventAlert(EVENTS.find(e => e.id === 'fuel_protests')!, { ...started(), copySeed: sd }).body)).size >= 2);
 
 // ---- Daily case ----
@@ -753,7 +762,140 @@ const issueLicense = async (payload: object): Promise<string> => {
   const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, priv, Buffer.from(body));
   return `RUMP1.${body}.${Buffer.from(sig).toString('base64url')}`;
 };
+
+// ---- THE STORY SCRIPT: scenes, clues, plot beats, and what a finished chapter does to Trust and the clue board
+{
+  const scenes = [PROLOGUE, ...Object.values(SCRIPTS).flatMap(sc => [sc.pre, sc.won, sc.lost].filter((x): x is NonNullable<typeof x> => !!x))];
+  const beats = scenes.flatMap(sc => sc.beats.map(b => ({ sc: sc.id, b })));
+  const settable = new Set<string>();
+  const optionIds = new Set<string>();
+  const addFx = (fx?: { flags?: string[] }) => fx?.flags?.forEach(f => settable.add(f));
+  scenes.forEach(sc => addFx(sc.onEnd));
+  beats.forEach(({ b }) => { if (b.t === 'choice') b.options.forEach(o => { addFx(o.effects); optionIds.add(`${b.id}:${o.id}`); }); });
+  allPlotEvents().forEach(p => p.choices.forEach(c => addFx(c.story)));
+
+  ok('there are 24 clues, with unique ids C01 to C24', CLUES.length === 24 && new Set(CLUES.map(c => c.id)).size === 24 && CLUES.every((c, i) => c.id === `C${String(i + 1).padStart(2, '0')}` && c.detail.length > 30));
+  ok('every scene is non-empty and has a unique id', scenes.every(sc => sc.beats.length > 0) && new Set(scenes.map(sc => sc.id)).size === scenes.length);
+  ok('every clue a scene pins exists on the board', beats.every(({ b }) => b.t !== 'clue' || !!CLUE_BY_ID[b.id]), beats.filter(({ b }) => b.t === 'clue' && !CLUE_BY_ID[b.id]).map(x => x.sc).join());
+  ok('Act 1 pins clues C01 to C07 exactly once each', ['C01', 'C02', 'C03', 'C04', 'C05', 'C06', 'C07'].every(id => beats.filter(({ b }) => b.t === 'clue' && b.id === id).length === 1));
+  ok('every choice has unique option ids and at least two options', beats.every(({ b }) => b.t !== 'choice' || (new Set(b.options.map(o => o.id)).size === b.options.length && b.options.length >= 2)));
+  ok('a timed choice names a fallback that exists', beats.every(({ b }) => b.t !== 'choice' || !b.timer || b.options.some(o => o.id === b.fallback)));
+  ok('every flag a beat tests for can be set by some choice', beats.every(({ b }) => !b.when || [b.when.flag, b.when.notFlag].every(f => !f || settable.has(f))), beats.filter(({ b }) => b.when && [b.when.flag, b.when.notFlag].some(f => f && !settable.has(f))).map(x => x.sc).join());
+  ok('every choice a beat tests for exists', beats.every(({ b }) => !b.when?.choice || optionIds.has(`${b.when.choice[0]}:${b.when.choice[1]}`)));
+  ok('scripted chapters are real chapters, and plot beats fall on playable days', Object.keys(SCRIPTS).every(id => !!STORY_CHAPTERS.find(c => c.id === id)) && allPlotEvents().every(p => p.day >= 4 && p.day <= 30 && p.choices.some(c => !c.cost)));
+  ok('plot beats are decision cards that are never drawn at random', allPlotEvents().every(p => EVENTS.find(e => e.id === p.id)?.scripted === true));
+  const drawn = new Set<string>();
+  for (let i = 0; i < 400; i++) { const st = { ...started(), currentDay: 12 + (i % 10), lastEventDay: 0, usedEvents: [] as string[] }; const pk = pickEvent(st, fixed((i % 97) / 97), 1, 0, 0); if (pk) drawn.add(pk.def.id); }
+  ok('random play never draws a plot beat', allPlotEvents().every(p => !drawn.has(p.id)));
+  ok('each chapter schedules its plot beats on the Target it belongs to', STORY_CHAPTERS.filter(c => SCRIPTS[c.id]?.plot).every(c => c.variants.every(v => (getTarget(v.targetId).occurrences ?? []).some(o => SCRIPTS[c.id].plot!.some(p => p.id === o.eventId)))));
+
+  // effects and conditions
+  const base0 = emptyStory();
+  const fx = applyStoryEffects(base0, { trust: 99, coker: -99, integrity: 99, flags: ['a', 'a'], clues: ['C01', 'C01', 'NOPE'] }, ['x', 'y']);
+  ok('story effects stay inside their limits and never duplicate', fx.trust === 10 && fx.coker === 0 && fx.integrity === 12 && fx.flags.length === 1 && fx.clues.length === 1 && fx.choices.x === 'y');
+  ok('conditions on flags, clues, Trust and choices work', condHolds(fx, { flag: 'a', clue: 'C01', trustGte: 10, choice: ['x', 'y'] }) && !condHolds(fx, { notFlag: 'a' }) && !condHolds(fx, { cokerGte: 1 }) && condHolds(fx, undefined));
+  const old = sanitizeStory({ picks: {}, results: {}, integrity: 3, prologueSeen: true });
+  ok('a save from before the thriller layer loads with sensible defaults', old.trust === 5 && old.coker === 0 && old.flags.length === 0 && old.clues.length === 0 && old.integrity === 3 && old.prologueSeen);
+  ok('a damaged story block is cleaned, not trusted', (() => { const d = sanitizeStory({ trust: 'x', coker: 99, flags: [1, 'ok', 'x'.repeat(80)], clues: ['C01', 'ZZ'], choices: { a: 'b', c: 4 }, scenesSeen: 'no' }); return d.trust === 5 && d.coker === 10 && d.flags.join() === 'ok' && d.clues.join() === 'C01' && d.choices.a === 'b' && !('c' in d.choices) && d.scenesSeen.length === 0; })());
+
+  // a finished chapter applies the choices made in its plot beats (once)
+  let m = Actions.plantSeed(Actions.startMatch('story_ex_boyfriend', 'FINANCIAL', perkIdFor(emptyStory(), 'truth'), 'CLEAR_SKIES', { storyId: 'c01' }), 'kano');
+  m = { ...m, storyChoices: ['plot_c01_oracle:trace'], status: 'WON', copySeed: 424242, currentDay: 15 } as GameState;
+  const prof0 = emptyProfile();
+  const done1 = recordChapter(prof0, m);
+  ok('winning a chapter applies what you chose in its plot beats', done1.story.trust === 6 && done1.story.flags.includes('traced_oracle'), JSON.stringify([done1.story.trust, done1.story.flags]));
+  ok('the same win is not applied twice', JSON.stringify(recordChapter(done1, m).story) === JSON.stringify(done1.story));
+  // choosing a plot card during a real match records the choice
+  let live = Actions.dismissTopAlert(Actions.collectSpark(Actions.plantSeed(Actions.startMatch('story_ex_boyfriend', 'FINANCIAL', perkIdFor(emptyStory(), 'truth'), 'CLEAR_SKIES', { storyId: 'c01' }), 'kano'), seedSparkId('kano')));
+  let fired = false;
+  for (let i = 0; i < 14 && live.status === 'PLAYING'; i++) {
+    live = SimulationEngine.processTick(live, fixed(0.97));
+    const card = live.notificationQueue.find(a => a.eventId === 'plot_c01_oracle');
+    if (card) { fired = live.currentDay >= 8; live = { ...live, notificationQueue: [card] }; live = Actions.chooseOption(live, 'ignore', fixed(0.5)); break; }
+    live = { ...live, notificationQueue: [] };
+  }
+  ok('the chapter\'s plot beat fires on its day and the choice is recorded', fired && live.storyChoices.includes('plot_c01_oracle:ignore'));
+}
+
+const runArenaTests = async () => {
+  const okFor = (c: boolean, n: string, extra = '') => ok(n, c, extra);
+  // ---- THE ARENA: player-made Targets, the thirty bots, the bot check, codes and fees
+  {
+    const mk = (over: Partial<TargetDef> = {}): TargetDef => ({
+      ...newBlankDef(), id: 'arena_test_one', kind: 'PLAYER', fullName: 'Chief Wahala "The Mouth" Obi', shortName: 'Chief Wahala', title: 'Big Man of Nowhere',
+      personality: 'Says anything. Means less. Owns a lot of generators.', passiveName: 'Generator Money', passiveFlavor: 'Everybody owes him a favour and a litre of diesel.', ...over
+    });
+    // free words: anything the player writes is accepted; only the structure is checked
+    const wild = mk({ fullName: 'Whoever Real Person Is', scandals: [{ category: 'FINANCIAL', title: 'Looted the billions and ran off with the minister’s wife' }] });
+    okFor(validateTargetDef(wild, { builtInIds: builtInIds() }).errors.length === 0, 'Arena Targets may use any words (real names, crimes and all): only the structure is checked');
+    okFor(validateTargetDef({ ...wild, kind: 'FICTIONAL', fullName: 'Aliko Dangote' }, { builtInIds: builtInIds() }).errors.length > 0, 'official Targets still refuse real names');
+    okFor(validateTargetDef(mk({ mods: { heatRate: 9 } }), { builtInIds: builtInIds() }).errors.length > 0, 'a dial outside the tested range is refused');
+    okFor(validateTargetDef(mk({ occurrences: [{ eventId: 'nope', day: 8 }] }), { builtInIds: builtInIds() }).errors.length > 0, 'a scheduled event that does not exist is refused');
+    okFor(validateTargetDef(mk({ occurrences: [{ eventId: 'power_outage', day: 8 }, { eventId: 'fuel_protests', day: 12 }] }), { builtInIds: builtInIds() }).errors.length === 0, 'two scheduled news events are accepted');
+
+    // thirty bots, all different
+    okFor(STRATEGIES_30.length === 30, 'there are thirty bot plans');
+    okFor(new Set(STRATEGIES_30.map(x => x.name)).size === 30, 'every bot plan has its own name');
+    okFor(new Set(STRATEGIES_30.map(x => JSON.stringify([x.lanes, x.quiet, x.exploit, x.evidence, x.defend, x.seed]))).size === 30, 'no two bot plans are identical');
+    okFor(STRATEGIES_30.every(x => !!STRATEGY_TIPS[x.name]), 'every bot plan has a tip');
+    okFor(STRATEGIES_30.slice(0, 10).map(x => x.name).join() === STRATEGIES.map(x => x.name).join(), 'the original ten plans are untouched (the official Targets were tuned with them)');
+
+    // the new moves do what they say
+    const ab = (kind: AbilityKind, strength: number, extra: Partial<AbilityDef> = {}): AbilityDef => ({ kind, every: 8, start: 7, strength, stamp: 's', headline: 'h', line: 'l', ...extra });
+    const base0 = started('godfather', 'FINANCIAL', 'kano');
+    const hit = (a: AbilityDef) => applyEffects({ ...base0, sparks: 50, investigationProgress: 40 }, abilityEffects(a, base0), fixed(0.5), 'x').state;
+    const dBefore = Object.values(base0.states).reduce((n, st) => n + st.doubt, 0);
+    okFor(Object.values(hit(ab('DOUBT_WAVE', 10)).states).reduce((n, st) => n + st.doubt, 0) > dBefore, 'Smear Wave raises Doubt');
+    okFor(hit(ab('EVIDENCE_RAID', 15)).investigationProgress === 25, 'Evidence Raid sets Investigation back');
+    okFor(hit(ab('ACCOUNT_FREEZE', 20)).sparks === 30, 'Account Freeze seizes Sparks');
+    okFor(hit(ab('ROADBLOCK', 3)).timedEffects.some(t => t.kind === 'HIGHWAY_MULT' && t.mult === 0.5), 'Roadblocks halve land-border spread');
+    okFor(hit(ab('LANE_JAM', 3, { branch: 'PRESS' })).timedEffects.some(t => t.kind === 'BRANCH_MULT' && t.branch === 'PRESS'), 'Channel Jam hits the chosen lane');
+    okFor(hit(ab('REGION_LOCK', 3, { zone: 'NE' })).timedEffects.some(t => t.kind === 'ZONE_FRICTION' && t.zone === 'NE'), 'Region Lockdown hits the chosen region');
+
+    // scheduled natural occurrences fire on their day
+    registerPack({ schema: 1, packId: 'verify_arena', name: 'v', author: 'v', version: 1, targets: [mk({ id: 'arena_test_two', occurrences: [{ eventId: 'fuel_protests', day: 6 }] })] });
+    let occ = Actions.plantSeed(Actions.startMatch('arena_test_two', 'FINANCIAL'), 'kano');
+    occ = Actions.dismissTopAlert(Actions.collectSpark(occ, seedSparkId('kano')));
+    let sawEvent = false;
+    for (let i = 0; i < 12 && occ.status === 'PLAYING'; i++) {
+      occ = SimulationEngine.processTick(occ, fixed(0.9));
+      if (occ.notificationQueue.some(a => a.eventId === 'fuel_protests')) { sawEvent = occ.currentDay >= 6; break; }
+      occ = { ...occ, notificationQueue: [] };
+    }
+    okFor(sawEvent, 'a scheduled news event appears on or after its day');
+    unregisterPack('verify_arena', false);
+
+    // codes and fees
+    const code = await encodeTarget(mk());
+    const back = await decodeTarget(code);
+    okFor(!!back.def && back.def.fullName === mk().fullName && back.def.kind === 'PLAYER' && /^s_/.test(back.def.id), 'a Target survives being turned into a code and back');
+    okFor((await decodeTarget(code)).def?.id === back.def?.id, 'the same Target always gets the same id');
+    okFor((await decodeTarget('RUMT1.not-a-real-code')).def === null && (await decodeTarget('hello')).def === null, 'garbage is not accepted as a Target');
+    const tampered = await decodeTarget(await encodeTarget(mk({ mods: { heatRate: 1.5 } })).then(c => c.replace(/.$/, c.endsWith('A') ? 'B' : 'A')));
+    okFor(tampered.def === null || validateTargetDef(tampered.def, { builtInIds: builtInIds() }).errors.length === 0, 'a damaged code is refused or still valid, never half-valid');
+    okFor(creationFee(mk(), { difficulty: 30 }) === 50 && creationFee(mk({ abilities: [mk().abilities[0], { ...mk().abilities[0] }] }), { difficulty: 30 }) === 55, 'the publishing fee is 20 + difficulty + 5 per extra power');
+    okFor(RATING_KNOTS.every((k, i) => i === 0 || (k[0] > RATING_KNOTS[i - 1][0] && k[1] >= RATING_KNOTS[i - 1][1])), 'the rating curve only ever rises');
+    okFor(ratingFromD(0) <= 400 && ratingFromD(100) >= 3300 && ratingFromD(20) < ratingFromD(40), 'ratings run from easy to brutal');
+
+    // the bot check
+    const easy = await runBotCheck(mk(), { runs: 3 });
+    okFor(easy.ok && easy.plans.length === 30 && easy.tips.length >= 2, 'the bot check plays thirty plans and gives tips', JSON.stringify(easy.errors));
+    okFor(easy.plans.every((p, i) => i === 0 || easy.plans[i - 1].win >= p.win), 'plans are listed best first');
+    const brutal = mk({ tier: 5, mods: { doubtFlat: 60, doubtRate: 2.2, heatRate: 2, coverUpRate: 2, days: -14, counterHeat: 15, forgeryRisk: 0.4, staleRate: 1.5 },
+      abilities: [ab('INJUNCTION', 5, { every: 3 }), ab('HEAT_SURGE', 18, { every: 3 }), ab('COUNTER_STORY', 16, { every: 3 })], ai: { ...mk().ai, defenseStyle: 'IRON_FIST', temperament: 'THE_BULLY' } });
+    const hard = await runBotCheck(brutal, { runs: 3 });
+    okFor(hard.ok && hard.verdict === 'too_hard' && hard.best < FAIR_FLOOR, 'an impossible Target is dropped as too hard', `best ${hard.best}`);
+    okFor(hard.difficulty > easy.difficulty && hard.rating > easy.rating, 'a harder Target gets a higher difficulty and rating');
+    const fix = await suggestEase(brutal);
+    okFor(!!fix && fix.report.best >= FAIR_FLOOR + 8 && describeChanges(brutal, fix.def).length > 0, 'a too-hard Target gets an eased version that is fair, with the changes listed', fix ? `factor ${fix.factor} best ${fix.report.best}` : 'no fix');
+    okFor(!(await runBotCheck({ ...mk(), shortName: '' }, { runs: 2 })).ok, 'a Target with a missing name is refused with errors, not played');
+    okFor(TARGETS.every(x => x.id !== CHECK_ID), 'the bot check leaves nothing behind in the roster');
+  }
+
+};
+
 void (async () => {
+  await runArenaTests();
   let haveKey = true;
   try { await issueLicense({ v: 1, id: 'probe', plan: 'forever', exp: 0, note: '', at: 1 }); } catch { haveKey = false; }
   if (!haveKey) { console.log('(licence tests skipped: private/license-private.jwk is not on this machine)'); return; }

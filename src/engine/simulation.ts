@@ -2,7 +2,7 @@ import { FlightEvent, GameAlert, GameState, GameStatus, HistoryLogEntry, SparkBu
 import { AlertFactory, abilityEffects, buildAbilityAlert, milestoneEffect } from './alerts';
 import { BALANCE } from './balance';
 import { Rng, applyEffects, spawnSpinBubbles } from './effects';
-import { buildEventAlert, pickEvent } from './events';
+import { buildEventAlert, pickEvent, scheduledEvent } from './events';
 import { STYLE_MULTIPLIERS, getTarget, temperamentMods } from './data/targets';
 import {
   clamp, computeMasterVariables, heatMultiplier, isInfected, nationalBelieverPct, spinMultiplier, whisperBounty
@@ -258,7 +258,7 @@ export const SimulationEngine = {
     next.peakHeat = Math.max(prev.peakHeat, next.heat);
     next.peakCoverUp = Math.max(prev.peakCoverUp, next.coverUp);
 
-    const picked = pickEvent(next, rng, BALANCE.eventChance, BALANCE.eventCooldown, BALANCE.eventMinDay);
+    const picked = scheduledEvent(next, target.occurrences, rng) ?? pickEvent(next, rng, BALANCE.eventChance, BALANCE.eventCooldown, BALANCE.eventMinDay);
     const eventAlert = picked ? buildEventAlert(picked.def, next, picked.zone) : null;
 
     const winner = AlertFactory.evaluateTickTriggers(next, eventAlert);

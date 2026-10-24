@@ -8,7 +8,8 @@ import { SPOTLIGHT } from './targets/spotlight';
 import { AI_PROFILES } from './aiProfiles';
 import { PARODY, USE_PARODY_NAMES } from './parody';
 import { GENERATED_RATINGS, RATING_RANGES } from './ratings';
-import { AbilityDef, Folder, ScandalDef, TargetArchetype, TargetBase, Tier } from './targetTypes';
+import { AbilityDef, DefenseStyle, Folder, ScandalDef, TargetArchetype, TargetBase, Tier } from './targetTypes';
+import { ZONE_NAMES } from './zones';
 
 export type { AbilityDef, Folder, ScandalDef, SilhouetteKind, TargetArchetype, TargetMods, Tier, AiProfile, DefenseStyle, Temperament, TargetKind, CreatorInfo } from './targetTypes';
 export type TargetId = string;
@@ -111,6 +112,12 @@ const describeAbility = (a: AbilityDef): string => {
     case 'HEAT_SURGE': return `${cadence}: security agencies add +${a.strength}% Heat.`;
     case 'COUNTER_STORY': return `${cadence}: a counter-story adds +${a.strength}% Cover-Up.`;
     case 'BOT_SWARM': return `${cadence}: a bot swarm spawns ${a.strength} PR Spin bubbles.`;
+    case 'DOUBT_WAVE': return `${cadence}: a smear wave adds +${a.strength}% Doubt in every state.`;
+    case 'EVIDENCE_RAID': return `${cadence}: files go missing and your Investigation drops ${a.strength}%.`;
+    case 'ACCOUNT_FREEZE': return `${cadence}: your accounts are frozen and ${a.strength} ⚡ are seized.`;
+    case 'ROADBLOCK': return `${cadence}: roadblocks halve land-border spread for ${a.strength} days.`;
+    case 'LANE_JAM': return `${cadence}: your ${a.branch ?? 'SOCIAL'} channels run at 60% for ${a.strength} days.`;
+    case 'REGION_LOCK': return `${cadence}: the ${ZONE_NAMES[a.zone ?? 'SW']} spreads at half speed for ${a.strength} days.`;
   }
 };
 
@@ -119,6 +126,9 @@ export const STYLE_TEXT = {
   IRON_FIST: 'Iron Fist: Heat rises 40% faster, and PR Spin bubbles are rarer.',
   LAWYER_UP: 'Lawyer Up: injunctions last 1 day longer and come 15% more often. Heat rises 10% slower.',
   DISTRACTOR: 'Distractor: distractions hit 30% harder, Spin bubbles are rarer, and the story goes stale 10% faster.',
+  CYBER_SQUAD: 'Cyber Squad: PR Spin bubbles are 30% more common, but Heat rises 15% faster.',
+  OLD_MONEY: 'Old Money: injunctions last 1 day longer and Heat rises 15% slower, but distractions hit 15% softer.',
+  STREET_ARMY: 'Street Army: Spin bubbles are 10% more common and Heat rises 10% slower, but the story goes stale 15% faster.',
   BALANCED: ''
 } as const;
 
@@ -128,6 +138,8 @@ export const TEMPERAMENT_TEXT = {
   THE_SHOWMAN: 'The Showman: moves come 25% more often, but each hits 25% softer.',
   THE_PARANOID: 'The Paranoid: your genuine evidence costs 50% more Heat, but its Cover-Up grows 15% slower.',
   THE_SCHEMER: 'The Schemer: at 30% Believers it plants a too-good-to-be-true bombshell. Verify it, or pay for it.',
+  THE_BULLY: 'The Bully: moves come 15% more often and hit 15% harder, and your genuine evidence costs 20% more Heat.',
+  THE_GHOST: 'The Ghost: rarely acts, but each move hits 35% harder. Cover-Up grows 10% slower.',
   STEADY: ''
 } as const;
 
@@ -166,11 +178,14 @@ export interface StyleMods {
   injunctionEvery: number; // Multiplier on days between injunctions (lower = more often)
 }
 const SM = (o: Partial<StyleMods>): StyleMods => ({ heat: 1, spin: 1, stale: 1, distraction: 1, injunctionDays: 0, injunctionEvery: 1, ...o });
-export const STYLE_MULTIPLIERS: Record<'SPIN_DOCTOR' | 'IRON_FIST' | 'LAWYER_UP' | 'DISTRACTOR' | 'BALANCED', StyleMods> = {
+export const STYLE_MULTIPLIERS: Record<DefenseStyle, StyleMods> = {
   SPIN_DOCTOR: SM({ heat: 0.8, spin: 1.5 }),
   IRON_FIST: SM({ heat: 1.4, spin: 0.6 }),
   LAWYER_UP: SM({ heat: 0.9, injunctionDays: 1, injunctionEvery: 0.85 }),
   DISTRACTOR: SM({ spin: 0.8, stale: 1.1, distraction: 1.3 }),
+  CYBER_SQUAD: SM({ spin: 1.3, heat: 1.15 }),
+  OLD_MONEY: SM({ heat: 0.85, distraction: 0.85, injunctionDays: 1 }),
+  STREET_ARMY: SM({ spin: 1.1, heat: 0.9, stale: 1.15 }),
   BALANCED: SM({})
 };
 
@@ -183,6 +198,8 @@ export interface TemperamentMods {
 const TM = (o: Partial<TemperamentMods>): TemperamentMods => ({ abilityEvery: 1, abilityStrength: 1, evidenceHeat: 1, coverUp: 1, ...o });
 export const TEMPERAMENT_MODS: Record<string, TemperamentMods> = {
   THE_SHOWMAN: TM({ abilityEvery: 0.75, abilityStrength: 0.75 }),
-  THE_PARANOID: TM({ evidenceHeat: 1.5, coverUp: 0.85 })
+  THE_PARANOID: TM({ evidenceHeat: 1.5, coverUp: 0.85 }),
+  THE_BULLY: TM({ abilityEvery: 0.85, abilityStrength: 1.15, evidenceHeat: 1.2 }),
+  THE_GHOST: TM({ abilityEvery: 1.3, abilityStrength: 1.35, coverUp: 0.9 })
 };
 export const temperamentMods = (t: TargetArchetype): TemperamentMods => TEMPERAMENT_MODS[t.ai.temperament] ?? TM({});

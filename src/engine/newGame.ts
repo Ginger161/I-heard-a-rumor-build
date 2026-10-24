@@ -94,6 +94,7 @@ export const createMatchState = (
     abilityNext: target.abilities.map(a => a.start),
     timedEffects: [],
     usedEvents: [],
+    storyChoices: [],
     lastEventDay: 0,
     backfires: 0,
     winRewards: null,

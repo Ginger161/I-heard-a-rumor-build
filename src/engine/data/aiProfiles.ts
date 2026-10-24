@@ -112,6 +112,16 @@ const POOLS: Record<Temperament, Record<keyof Pool, string[]>> = {
     onEvidenceDropped: ['Just as planned. Carry on.', 'They found it. How kind of them.', 'This was always going to be the question. I have the answer ready.', 'Let them think they are winning.', 'Everything has a price. Even this.'],
     onBackfire: ['Oh, did the forgery not hold? What a shame.', 'The plant bloomed beautifully.', 'I only needed one wrong step. Thank you.', 'And so the trap closes.', 'Never trust a perfect document.']
   },
+  THE_BULLY: {
+    onChannelBought: ['Another one? I will crush that one too.', 'Do you know who you are messing with?', 'Shut that channel down. Today.', 'Small people, big mouths.', 'I will remember this name.'],
+    onEvidenceDropped: ['You will regret posting that.', 'Say it to my face. I dare you.', 'That file will cost you everything.', 'Delete it, or I delete you.', 'I do not forget. I do not forgive.'],
+    onBackfire: ['Ha! Fool. You thought you could try me?', 'On your knees now, forger.', 'That is what happens to liars.', 'Learn from this. If you can.', 'Next time, think twice. Or do not. I enjoy this.']
+  },
+  THE_GHOST: {
+    onChannelBought: ['...', 'I have noticed. Nothing more.', 'Interesting. Quietly interesting.', 'Let them talk. I will be elsewhere.', 'No comment. Never any comment.'],
+    onEvidenceDropped: ['Where did it come from? I will find out. Silently.', 'It changes nothing. Yet.', 'A file. Files can be lost.', 'Say nothing. Wait.', 'Gone by morning, I think.'],
+    onBackfire: ['Forged. How unfortunate. Goodbye.', 'I never even had to move.', 'It destroys itself, the lie.', 'Silence is the best answer.', 'And they walked into it themselves.']
+  },
   STEADY: {
     onChannelBought: ['Another channel. They keep multiplying.', 'This is getting noisy.', 'Somebody is paying for this. Who?', 'They have friends in the press now.', 'Things are getting louder.'],
     onEvidenceDropped: ['That document is out of context.', 'They are throwing everything at me.', 'I need to speak to my lawyers.', 'This is harder than I thought.', 'We will get through this. We always do.'],

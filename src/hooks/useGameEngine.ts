@@ -18,9 +18,11 @@ import {
   MetaProfile, applyWin, bribeTarget, buyPerk, buyTier, eraseProfile, equipPerk, importProfile, loadProfile, saveProfile
 } from '../engine/profile';
 import { nationalBelieverPct } from '../engine/selectors';
-import { choosePick, markPrologueSeen, perkIdFor, recordChapter, variantFor } from '../engine/story';
+import { addClue, applyStoryEffects, choosePick, emptyStory, markPrologueSeen, markSceneSeen, perkIdFor, recordChapter, variantFor } from '../engine/story';
+import type { StoryEffects } from '../engine/season/types';
 import { getChapter } from '../engine/data/story';
 import type { StoryApproach } from '../engine/data/perks';
+import { ARENA_WIN_REWARD, recordArenaMatch } from '../engine/arena';
 
 export const TICK_MS = BALANCE.tickMs;
 
@@ -72,13 +74,25 @@ export const useGameEngine = () => {
 
   // Leaderboards: a win becomes a score once, after its rewards are stored. Training cases never count.
   useEffect(() => {
-    if (gameState.status !== 'WON' || !gameState.winRewards || gameState.training) return;
+    if (gameState.status !== 'WON' || !gameState.winRewards || gameState.training || getTarget(gameState.activeTargetId).kind === 'PLAYER') return;
     const mark = `${gameState.copySeed}:${gameState.currentDay}`;
     try { if (sessionStorage.getItem('rumor_score_mark') === mark) return; sessionStorage.setItem('rumor_score_mark', mark); } catch { /* storage unavailable */ }
     const st = getSettings();
     const entry = makeEntry(gameState, gameState.winRewards.stars || starsFor(gameState), { pid: playerId(), name: st.playerName, crew: st.crew });
     setScores(localScoreStore.add([entry]).entries);
   }, [gameState]);
+
+  // The Arena: a finished match against a player-made Target is recorded (plays, wins, best day). The first win against each pays a few envelopes.
+  // Arena matches never give stars and never count towards unlocking tiers.
+  useEffect(() => {
+    if (gameState.status === 'PLAYING' || gameState.status === 'LOBBY' || gameState.training || !gameState.activeTargetId) return;
+    const t = getTarget(gameState.activeTargetId);
+    if (t.kind !== 'PLAYER') return;
+    const mark = `${gameState.copySeed}:${gameState.currentDay}:${gameState.status}`;
+    try { if (sessionStorage.getItem('rumor_arena_mark') === mark) return; sessionStorage.setItem('rumor_arena_mark', mark); } catch { /* storage unavailable */ }
+    const reward = recordArenaMatch(t.id, gameState.status === 'WON', Math.min(gameState.currentDay, gameState.dayBudget));
+    if (reward > 0) commitProfile({ ...profileRef.current, envelopes: Math.min(1e6, profileRef.current.envelopes + reward) });
+  }, [gameState, commitProfile]);
 
   // Story Mode: record a finished chapter (reputation, unlocks). Safe to run on every render: a match is recorded once.
   useEffect(() => {
@@ -144,6 +158,20 @@ export const useGameEngine = () => {
   // The first screen already asked "which state you dey?", so the rumour is planted there and play starts at the first spark.
   const startFirstRumor = useCallback((stateId: string) => setGameState(Actions.plantSeed(trainingMatch(), stateId)), []);
 
+  // The Arena: no perks, and the Target's own news climate if its maker chose one. Fair for everyone.
+  const startArenaMatch = useCallback((targetId: string) => {
+    const t = getTarget(targetId);
+    setGameState(Actions.startMatch(t.id, t.scandals[0].category, null, t.climateId ?? climateRef.current, { assisted: getSettings().assist }));
+    rerollClimate();
+  }, [rerollClimate]);
+  // Spending Brown Envelopes (publishing a Target). Returns false, and spends nothing, if there are not enough.
+  const spendEnvelopes = useCallback((n: number): boolean => {
+    if (n <= 0) return true;
+    if (profileRef.current.envelopes < n) return false;
+    commitProfile({ ...profileRef.current, envelopes: profileRef.current.envelopes - n });
+    return true;
+  }, [commitProfile]);
+
   // Story Mode: start a chapter with the chosen approach. The Target's first scandal is the story's grievance.
   const startStory = useCallback((chapterId: string, approach: StoryApproach) => {
     const ch = getChapter(chapterId);
@@ -153,6 +181,13 @@ export const useGameEngine = () => {
     const t = getTarget(variant.targetId);
     setGameState(Actions.startMatch(t.id, t.scandals[0].category, perkIdFor(story, approach), variant.climateId, { storyId: ch.id, assisted: getSettings().assist }));
   }, []);
+  // The thriller layer: choices in scenes and plot beats, clues pinned to the board, scenes already seen.
+  const storyApply = useCallback((fx?: StoryEffects, choice?: [string, string]) => {
+    if (!fx && !choice) return;
+    commitProfile({ ...profileRef.current, story: applyStoryEffects(profileRef.current.story ?? emptyStory(), fx, choice) });
+  }, [commitProfile]);
+  const storyClue = useCallback((id: string) => commitProfile({ ...profileRef.current, story: addClue(profileRef.current.story ?? emptyStory(), id) }), [commitProfile]);
+  const storySceneSeen = useCallback((id: string) => commitProfile({ ...profileRef.current, story: markSceneSeen(profileRef.current.story ?? emptyStory(), id) }), [commitProfile]);
   const pickStoryVariant = useCallback((chapterId: string, targetId: string) => commitProfile(choosePick(profileRef.current, chapterId, targetId)), [commitProfile]);
   const seeStoryPrologue = useCallback(() => commitProfile(markPrologueSeen(profileRef.current)), [commitProfile]);
 
@@ -212,6 +247,11 @@ export const useGameEngine = () => {
     startDaily,
     startTraining,
     startFirstRumor,
+    startArenaMatch,
+    storyApply,
+    storyClue,
+    storySceneSeen,
+    spendEnvelopes,
     scores,
     grantEnvelopes,
     startChallenge,

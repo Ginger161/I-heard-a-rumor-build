@@ -29,19 +29,19 @@ interface BrutalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const TONES: Record<NonNullable<BrutalButtonProps['tone']>, string> = {
-  ink: 'bg-[#1A1A1A] text-[#F4F1EA]',
-  paper: 'bg-white text-[#1A1A1A]',
-  crimson: 'bg-[#8B0000] text-white',
+  ink: 'bg-[var(--m-btn-ink-bg)] text-[var(--m-btn-ink-fg)]',
+  paper: 'bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)]',
+  crimson: 'bg-[var(--m-btn-crimson-bg)] text-white',
   green: 'bg-[#065F46] text-white'
 };
 
 export const BrutalButton: React.FC<BrutalButtonProps> = ({ tone = 'ink', className = '', disabled, children, ...rest }) => (
   <button
     disabled={disabled}
-    className={`py-3 px-4 font-black text-[11px] uppercase tracking-widest border-2 border-[#1A1A1A] rounded-lg transition-all ${
+    className={`clip-card py-3 px-4 font-black text-[11px] uppercase tracking-widest border-2 border-[var(--m-line)] rounded-lg transition-all ${
       disabled
-        ? 'bg-[#D4CFC4] text-slate-500 opacity-60 cursor-not-allowed border-dashed'
-        : `${TONES[tone]} shadow-[3px_3px_0px_#1A1A1A] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none cursor-pointer`
+        ? 'bg-[var(--m-disabled)] text-[var(--m-soft)] opacity-60 cursor-not-allowed border-dashed'
+        : `${TONES[tone]} shadow-[3px_3px_0px_var(--m-line)] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none cursor-pointer`
     } ${className}`}
     {...rest}
   >

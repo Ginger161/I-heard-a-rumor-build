@@ -26,17 +26,18 @@ export const StoryHero: React.FC<{ profile: MetaProfile; onOpen: () => void; wid
   return (
     <button
       onClick={() => { sfx.play('click'); onOpen(); }}
-      className={`relative w-full text-left bg-[#1A1A1A] text-[#F4F1EA] border-4 border-[#1A1A1A] rounded-2xl shadow-[5px_5px_0px_#8B0000] cursor-pointer active:translate-x-[3px] active:translate-y-[3px] active:shadow-[2px_2px_0px_#8B0000] overflow-hidden ${wide ? 'p-3.5' : 'p-4'}`}
+      data-mode="story"
+      className={`fx-film tex-story relative w-full text-left text-[var(--m-ink)] border-4 border-[var(--m-line)] rounded-2xl shadow-[5px_5px_0px_var(--m-accent)] cursor-pointer active:translate-x-[3px] active:translate-y-[3px] active:shadow-[2px_2px_0px_var(--m-accent)] overflow-hidden ${wide ? 'p-3.5' : 'p-4'}`}
       aria-label={`Story Mode: ${cta}`}
     >
       <TapeStrip className="-top-1 left-6 rotate-[-5deg]" />
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] font-black uppercase tracking-[0.28em] text-[#FDE68A]">📖 Story Mode • Season 1</div>
-        <div className="text-[10px] font-sans font-black uppercase tracking-wider text-[#F4F1EA]/60 whitespace-nowrap">{won}/{STORY_CHAPTERS.length}{storyStars(story) > 0 ? ` • ${storyStars(story)}★` : ''}</div>
+        <div className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--m-accent2)]">🎬 Story Mode • Season 1</div>
+        <div className="text-[10px] font-sans font-black uppercase tracking-wider text-[var(--m-ink)]/60 whitespace-nowrap">{won}/{STORY_CHAPTERS.length}{storyStars(story) > 0 ? ` • ${storyStars(story)}★` : ''}</div>
       </div>
 
       <div className="flex gap-3.5 items-center mt-2.5">
-        <div className={`flex-shrink-0 ${wide ? 'w-[84px] h-[104px]' : 'w-[104px] h-[128px]'} bg-[#D9CBB0] border-[3px] border-[#F4F1EA] rounded-lg overflow-hidden rotate-[-2deg] shadow-[3px_3px_0px_#8B0000]`}>
+        <div className={`flex-shrink-0 ${wide ? 'w-[84px] h-[104px]' : 'w-[104px] h-[128px]'} bg-[#D9CBB0] border-[3px] border-[var(--m-ink)] rounded-lg overflow-hidden rotate-[-2deg] shadow-[3px_3px_0px_var(--m-accent)]`}>
           {!picked && ch.variants.length > 1 ? (
             // The player has not chosen yet who it was: both faces share the frame.
             <div className="w-full h-full flex">
@@ -50,19 +51,19 @@ export const StoryHero: React.FC<{ profile: MetaProfile; onOpen: () => void; wid
         </div>
         <div className="min-w-0">
           <div className={`font-serif font-black uppercase leading-[0.95] tracking-tight ${wide ? 'text-[26px]' : 'text-[34px]'}`}>The Receipts</div>
-          <div className="text-[12px] font-sans leading-snug text-[#F4F1EA]/80 mt-1.5">
+          <div className="text-[12px] font-sans leading-snug text-[var(--m-ink)]/80 mt-1.5">
             {fresh ? '13 chapters • 4 acts • every one personal' : done ? 'Season complete. See who you became.' : <>Act {ch.act} • {act.name}</>}
           </div>
           {!fresh && !done && (
-            <div className="mt-1.5 text-[13px] font-black leading-tight text-[#FDE68A]">Ch {idx + 1}: {ch.title}<span className="block font-sans font-semibold text-[11px] text-[#F4F1EA]/70">{ch.kicker}</span></div>
+            <div className="mt-1.5 text-[13px] font-black leading-tight text-[var(--m-accent2)]">Ch {idx + 1}: {ch.title}<span className="block font-sans font-semibold text-[11px] text-[var(--m-ink)]/70">{ch.kicker}</span></div>
           )}
         </div>
       </div>
 
       {/* the hook: what the story is, without giving anything away */}
       {fresh && (
-        <p className="mt-3 text-[13px] font-sans leading-snug text-[#F4F1EA]/90">
-          You run <b className="text-[#FDE68A]">The Receipts</b>, Lagos's most feared anonymous gist page. Your ex. Your boss. Your own family. Every one of them, when cornered, posts the same tearful apology, signed <i>“Peace and light.”</i> Somebody is writing their lines. <b className="text-[#FDE68A]">Find out who.</b>
+        <p className="mt-3 text-[13px] font-sans leading-snug text-[var(--m-ink)]/90">
+          You run <b className="text-[var(--m-accent2)]">The Receipts</b>, Lagos's most feared anonymous gist page. Your ex. Your boss. Your own family. Every one of them, when cornered, posts the same tearful apology, signed <i>“Peace and light.”</i> Somebody is writing their lines. <b className="text-[var(--m-accent2)]">Find out who.</b>
         </p>
       )}
 
@@ -71,11 +72,11 @@ export const StoryHero: React.FC<{ profile: MetaProfile; onOpen: () => void; wid
         {STORY_CHAPTERS.map((c, i) => {
           const w = !!story.results[c.id]?.won;
           const cur = !done && i === idx;
-          return <span key={c.id} className={`flex-1 h-2 rounded-full border border-[#F4F1EA]/30 ${w ? 'bg-[#34D399]' : cur ? 'bg-[#FDE68A] animate-pulse' : 'bg-[#F4F1EA]/15'}`} />;
+          return <span key={c.id} className={`flex-1 h-2 rounded-full border border-[var(--m-ink)]/30 ${w ? 'bg-[#34D399]' : cur ? 'bg-[var(--m-accent2)] animate-pulse' : 'bg-[var(--m-ink)]/15'}`} />;
         })}
       </div>
 
-      <div className="mt-3.5 w-full min-h-[52px] rounded-xl border-2 border-[#1A1A1A] bg-[#FDE68A] text-[#1A1A1A] font-serif font-black text-[19px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[3px_3px_0px_#8B0000]">
+      <div className="mt-3.5 w-full min-h-[52px] rounded-xl border-2 border-[var(--m-line)] bg-[var(--m-accent)] text-white font-serif font-black text-[19px] uppercase tracking-wide flex items-center justify-center gap-2 shadow-[3px_3px_0px_rgba(0,0,0,.5)]">
         {cta} <span aria-hidden>▶</span>
       </div>
     </button>

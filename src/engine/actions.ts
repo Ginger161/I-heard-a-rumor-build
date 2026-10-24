@@ -133,6 +133,7 @@ export const Actions = {
     next = applyEffects(next, choice.effects, rng, `${s.currentDay}c${choiceId}`).state;
     next = {
       ...next,
+      storyChoices: choice.story ? [...(next.storyChoices ?? []), `${top.eventId}:${choiceId}`].slice(-40) : next.storyChoices ?? [],
       historyLog: appendHistory(next.historyLog, { day: Math.min(s.currentDay, s.dayBudget), headline: top.headline, impact: choice.label })
     };
     return finalize(next);

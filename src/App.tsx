@@ -12,6 +12,8 @@ import { FounderReveal } from './ui/components/FounderReveal';
 import { OWNER, EggSource, maybeFax, onEgg, startEggListeners, triggerEgg } from './ui/egg';
 import { getSettings, updateSettings, useSettings } from './ui/settings';
 import { ColdOpen } from './ui/screens/ColdOpen';
+import { ArenaScreen } from './ui/screens/ArenaScreen';
+import { ModeContext, modeFor } from './ui/modeTheme';
 import { loadLicense } from './engine/premium';
 import { usePremium } from './ui/usePremium';
 import { initReminders, setAppBadge, syncReminderTags } from './ui/notify';
@@ -54,8 +56,9 @@ export default function App() {
 
 function Game() {
   const engine = useGameEngine();
-  const { gameState, startMatch, resetAll, returnToDossier, profile, unlockAll, resetProgress, climateId, daily, startDaily, bribe, buyTierFiles, buyPerk, equipPerk, startTraining, startFirstRumor, importProgress, startStory, pickStoryVariant, seeStoryPrologue, scores, startChallenge, importCode, grantEnvelopes } = engine;
-  const [screen, setScreen] = useState<'dossier' | 'story' | 'boards'>('dossier');
+  const { gameState, startArenaMatch, spendEnvelopes, startMatch, resetAll, returnToDossier, profile, unlockAll, resetProgress, climateId, daily, startDaily, bribe, buyTierFiles, buyPerk, equipPerk, startTraining, startFirstRumor, importProgress, startStory, pickStoryVariant, seeStoryPrologue, storyApply, storyClue, storySceneSeen, scores, startChallenge, importCode, grantEnvelopes } = engine;
+  const [screen, setScreen] = useState<'dossier' | 'story' | 'boards' | 'arena'>('dossier');
+  const [arenaCode, setArenaCode] = useState<string | null>(null);   // a ?t= link that was opened
   const [incoming, setIncoming] = useState<Challenge | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [egg, setEgg] = useState<{ source: EggSource; reward: boolean } | null>(null);
@@ -94,6 +97,15 @@ function Game() {
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search);
+      const targetCode = q.get('t');
+      if (targetCode) {
+        // A shared Arena Target: open the Arena with the code ready to add.
+        setArenaCode(targetCode);
+        setScreen('arena');
+        q.delete('t');
+        window.history.replaceState(null, '', window.location.pathname + (q.toString() ? `?${q.toString()}` : ''));
+        return;
+      }
       const code = q.get('s') ? `?s=${q.get('s')}` : q.get('c') ? `?c=${q.get('c')}` : '';
       if (!code) return;
       const r = importCode(code);
@@ -138,6 +150,9 @@ function Game() {
   const desktop = useLayout() === 'desktop';
 
   const lobby = gameState.status === 'LOBBY';
+  // Each mode has its own look: arcade is the tabloid, story the thriller, arena the competition (ui/modeTheme.ts, index.css).
+  const mode = modeFor({ lobby, screen, storyId: gameState.storyId, playerTarget: !lobby && getTarget(gameState.activeTargetId).kind === 'PLAYER' });
+  useEffect(() => { document.documentElement.dataset.mode = mode; }, [mode]);
   const storyScreen = (
     <StoryScreen
       profile={profile}
@@ -145,7 +160,11 @@ function Game() {
       onStart={startStory}
       onPick={pickStoryVariant}
       onPrologueSeen={seeStoryPrologue}
+      api={{ apply: storyApply, clue: storyClue, seen: storySceneSeen }}
     />
+  );
+  const arenaScreen = (
+    <ArenaScreen envelopes={profile.envelopes} spendEnvelopes={spendEnvelopes} initialCode={arenaCode} onBack={() => { setScreen('dossier'); setArenaCode(null); }} onPlay={startArenaMatch} />
   );
   const boardsScreen = (
     <BoardsScreen
@@ -155,7 +174,11 @@ function Game() {
     />
   );
   const content = lobby ? (
-    screen === 'boards' ? (
+    screen === 'arena' ? (
+      desktop
+        ? <div className="flex-1 min-h-0 flex justify-center bg-[#EFEBE0]"><div className="w-full max-w-[640px] flex flex-col border-x-4 border-[#1A1A1A] shadow-2xl">{arenaScreen}</div></div>
+        : arenaScreen
+    ) : screen === 'boards' ? (
       desktop
         ? <div className="flex-1 min-h-0 flex justify-center bg-[#EFEBE0]"><div className="w-full max-w-[820px] flex flex-col border-x-4 border-[#1A1A1A] shadow-2xl">{boardsScreen}</div></div>
         : boardsScreen
@@ -166,7 +189,7 @@ function Game() {
     ) : brandNew ? (
       <ColdOpen onStart={startFirstRumor} onSkip={() => updateSettings({ tutorialDone: true })} />
     ) : (
-      <DossierScreen wide={desktop} profile={profile} climateId={climateId} daily={daily} onStartDaily={startDaily} unlockAll={unlockAll || !!premium} onStart={startMatch} onReset={resetAll} onEraseProgress={resetProgress} onBribe={bribe} onBuyTier={buyTierFiles} onBuyPerk={buyPerk} onEquipPerk={equipPerk} onStartTraining={startTraining} onImportProgress={importProgress} onOpenStory={() => setScreen('story')} onOpenBoards={() => setScreen('boards')} />
+      <DossierScreen wide={desktop} profile={profile} climateId={climateId} daily={daily} onStartDaily={startDaily} unlockAll={unlockAll || !!premium} onStart={startMatch} onReset={resetAll} onEraseProgress={resetProgress} onBribe={bribe} onBuyTier={buyTierFiles} onBuyPerk={buyPerk} onEquipPerk={equipPerk} onStartTraining={startTraining} onImportProgress={importProgress} onOpenStory={() => setScreen('story')} onOpenBoards={() => setScreen('boards')} onOpenArena={() => setScreen('arena')} />
     )
   ) : (
     <>
@@ -180,7 +203,7 @@ function Game() {
             const next = targetsInTier(1).find(t => t.id !== gameState.activeTargetId);
             return next ? { target: next, onPlay: () => { updateSettings({ tutorialDone: true }); startMatch(next.id, next.scandals[0].category); } } : undefined;
           })() : undefined}
-          onNewInvestigation={() => { if (inStory) setEpilogue(true); else { if (gameState.training && gameState.status === 'WON') updateSettings({ tutorialDone: true }); returnToDossier(); } }}
+          onNewInvestigation={() => { if (inStory) setEpilogue(true); else { if (gameState.training && gameState.status === 'WON') updateSettings({ tutorialDone: true }); if (getTarget(gameState.activeTargetId).kind === 'PLAYER') setScreen('arena'); returnToDossier(); } }}
         />
       )}
       {over && inStory && epilogue && (
@@ -188,6 +211,7 @@ function Game() {
           gameState={gameState}
           profile={profile}
           onDone={() => { setEpilogue(false); returnToDossier(); setScreen('story'); }}
+          api={{ apply: storyApply, clue: storyClue, seen: storySceneSeen }}
           onRetry={() => { const p = parseStoryPerk(gameState.perkId); setEpilogue(false); if (p && gameState.storyId) { setScreen('story'); startStory(gameState.storyId, p.approach); } }}
         />
       )}
@@ -203,9 +227,13 @@ function Game() {
     </>
   );
 
-  return desktop ? (
-    <div className="app-h w-screen desk-room overflow-hidden select-none text-slate-100 flex flex-col font-sans relative">{content}{overlays}</div>
-  ) : (
-    <div className="app-h app-safe w-full max-w-[440px] mx-auto relative overflow-hidden select-none shadow-2xl bg-[#0B0E14] text-slate-100 flex flex-col font-sans">{content}{overlays}</div>
+  return (
+    <ModeContext.Provider value={mode}>
+      {desktop ? (
+        <div data-mode={mode} className="app-h w-screen desk-room overflow-hidden select-none text-slate-100 flex flex-col font-sans relative">{content}{overlays}</div>
+      ) : (
+        <div data-mode={mode} className="app-h app-safe w-full max-w-[440px] mx-auto relative overflow-hidden select-none shadow-2xl bg-[var(--m-frame,#0B0E14)] text-slate-100 flex flex-col font-sans">{content}{overlays}</div>
+      )}
+    </ModeContext.Provider>
   );
 }

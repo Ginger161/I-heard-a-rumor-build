@@ -44,9 +44,9 @@ const lerpColor = (a: string, b: string, t: number): string => {
 
 // Spec §4A choropleth: heard tints pale amber -> warm orange, believers tint light crimson -> blood red at 60%.
 const stateFill = (s: StateNode | undefined): string => {
-  if (!s) return '#F4F1EA';
+  if (!s) return 'var(--z-none)';
   // Nobody has heard it yet: the region's own pale colour. The spread then paints amber and red over it.
-  if (s.heard === 0 && s.believers === 0) return ZONE_TINT[s.region as ZoneId] || '#F4F1EA';
+  if (s.heard === 0 && s.believers === 0) return s.region ? `var(--z-${s.region})` : 'var(--z-none)';
   const heardPct = s.heard / s.population;
   const believerPct = s.believers / s.population;
   const heardColor = lerpColor('#FEF3C7', '#F59E0B', heardPct / 0.5);
@@ -235,10 +235,10 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
               const jadedRatio = s && s.population ? s.jaded / s.population : 0;
               const awareness = s && s.population ? (s.heard + s.believers) / s.population : 0;
 
-              let stroke = '#1A1A1A';
+              let stroke = 'var(--m-state-line)';
               let strokeWidth = 1;
               if (isStart) { stroke = '#B45309'; strokeWidth = 2.5; }
-              if (isSelected) { strokeWidth = 3; if (!isStart) stroke = '#1A1A1A'; }
+              if (isSelected) { strokeWidth = 3; if (!isStart) stroke = 'var(--m-ink)'; }
               if (isPulsing) { stroke = '#F59E0B'; strokeWidth = 3; }
               const isFlash = flashId === dataId;
               if (isFlash) { stroke = '#B91C1C'; strokeWidth = 3; }
@@ -284,8 +284,8 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                 fontSize={l.fontUnits}
                 fontWeight={800}
                 fontFamily="ui-sans-serif, system-ui, sans-serif"
-                fill={l.forced ? '#8B0000' : '#1A1A1A'}
-                stroke="#F4F1EA"
+                fill={l.forced ? 'var(--m-accent2)' : 'var(--m-label)'}
+                stroke="var(--m-label-halo)"
                 strokeWidth={l.fontUnits * 0.32}
                 strokeLinejoin="round"
                 paintOrder="stroke"
@@ -299,7 +299,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
           {AIRPORT_HUBS.map(id => {
             const c = getStateCentroid(id);
             return (
-              <text key={`hub_${id}`} x={c.x} y={c.y + 4} fontSize="11" textAnchor="middle" fill="#1A1A1A" opacity="0.55" pointerEvents="none">
+              <text key={`hub_${id}`} x={c.x} y={c.y + 4} fontSize="11" textAnchor="middle" fill="var(--m-label)" opacity="0.55" pointerEvents="none">
                 ✈
               </text>
             );
@@ -380,7 +380,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
         data-tour="find-state"
         onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); setFinderOpen(true); }}
-        className="absolute bottom-3 left-3 z-20 h-11 px-3 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-[12px] font-sans flex items-center gap-1.5 active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+        className="absolute bottom-3 left-3 z-20 h-11 px-3 bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)] border-2 border-[var(--m-line)] shadow-[2px_2px_0px_var(--m-line)] rounded-lg font-black text-[12px] font-sans flex items-center gap-1.5 active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
       >
         <span aria-hidden>📍</span> Find a state
       </button>
@@ -404,21 +404,21 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
       <div className="absolute top-3 right-3 flex flex-col gap-2 z-20" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
         <button
           onClick={() => zoomBy(1.4)}
-          className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+          className="w-10 h-10 bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)] border-2 border-[var(--m-line)] shadow-[2px_2px_0px_var(--m-line)] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Zoom in"
         >
           +
         </button>
         <button
           onClick={() => zoomBy(1 / 1.4)}
-          className="w-10 h-10 bg-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+          className="w-10 h-10 bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)] border-2 border-[var(--m-line)] shadow-[2px_2px_0px_var(--m-line)] rounded-lg font-black text-xl flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Zoom out"
         >
           -
         </button>
         <button
           onClick={() => reset()}
-          className="w-10 h-10 bg-[#1A1A1A] text-white border-2 border-[#1A1A1A] shadow-[2px_2px_0px_rgba(0,0,0,0.3)] rounded-lg font-black text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
+          className="w-10 h-10 bg-[var(--m-btn-ink-bg)] text-[var(--m-btn-ink-fg)] border-2 border-[var(--m-line)] shadow-[2px_2px_0px_rgba(0,0,0,0.3)] rounded-lg font-black text-sm flex items-center justify-center active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer"
           aria-label="Reset view"
         >
           ■

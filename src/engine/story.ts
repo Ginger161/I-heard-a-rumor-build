@@ -3,6 +3,9 @@ import type { MetaProfile } from './profile';
 import { starsFor } from './profile';
 import { APPROACHES, STORY_CHAPTERS, StoryChapter, StoryVariant, chapterIndex, getChapter, seasonEnding } from './data/story';
 import { RepBand, StoryApproach, parseStoryPerk, storyPerkId } from './data/perks';
+import { CLUE_BY_ID } from './season/clues';
+import { plotChoiceStory } from './season/script';
+import type { Cond, StoryEffects } from './season/types';
 
 // Story Mode progress and rules. The chapters (text and cast) live in data/story.ts; this file decides what is unlocked,
 // what reputation does, and how a finished match is recorded.
@@ -22,9 +25,55 @@ export interface StoryProgress {
   integrity: number;                        // Reputation: how honest you have been (-12..12)
   lastRecorded: string | null;              // Guards against recording one match twice
   prologueSeen: boolean;
+  // The thriller layer
+  trust: number;                            // Biko's Trust, 0 to 10 (starts at 5)
+  coker: number;                            // How close Inspector Coker is, 0 to 10 (starts at 0)
+  flags: string[];                          // Facts the story remembers
+  clues: string[];                          // Clue ids on the board
+  choices: Record<string, string>;          // choice id -> option id
+  scenesSeen: string[];                     // Scenes already played (so a cold open is only shown once)
 }
 
-export const emptyStory = (): StoryProgress => ({ picks: {}, results: {}, integrity: 0, lastRecorded: null, prologueSeen: false });
+export const emptyStory = (): StoryProgress => ({ picks: {}, results: {}, integrity: 0, lastRecorded: null, prologueSeen: false, trust: 5, coker: 0, flags: [], clues: [], choices: {}, scenesSeen: [] });
+
+export const TRUST_MAX = 10;
+export const COKER_MAX = 10;
+const clampN = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+const uniq = (a: string[]) => [...new Set(a)];
+
+/** Applies a choice's or scene's effects to the story. Pure. */
+export const applyStoryEffects = (p: StoryProgress, fx: StoryEffects | undefined, choice?: [string, string]): StoryProgress => {
+  if (!fx && !choice) return p;
+  const f = fx ?? {};
+  return {
+    ...p,
+    trust: clampN(p.trust + (f.trust ?? 0), 0, TRUST_MAX),
+    coker: clampN(p.coker + (f.coker ?? 0), 0, COKER_MAX),
+    integrity: clampN(p.integrity + (f.integrity ?? 0), INTEGRITY_MIN, INTEGRITY_MAX),
+    flags: f.flags ? uniq([...p.flags, ...f.flags]).slice(-200) : p.flags,
+    clues: f.clues ? uniq([...p.clues, ...f.clues.filter(c => !!CLUE_BY_ID[c])]) : p.clues,
+    choices: choice ? { ...p.choices, [choice[0]]: choice[1] } : p.choices
+  };
+};
+
+export const addClue = (p: StoryProgress, id: string): StoryProgress => (CLUE_BY_ID[id] && !p.clues.includes(id) ? { ...p, clues: [...p.clues, id] } : p);
+
+/** Does a beat's condition hold for this story? */
+export const condHolds = (p: StoryProgress, c: Cond | undefined): boolean => {
+  if (!c) return true;
+  if (c.flag && !p.flags.includes(c.flag)) return false;
+  if (c.notFlag && p.flags.includes(c.notFlag)) return false;
+  if (c.clue && !p.clues.includes(c.clue)) return false;
+  if (c.notClue && p.clues.includes(c.notClue)) return false;
+  if (c.trustGte !== undefined && p.trust < c.trustGte) return false;
+  if (c.trustLt !== undefined && p.trust >= c.trustLt) return false;
+  if (c.cokerGte !== undefined && p.coker < c.cokerGte) return false;
+  if (c.cokerLt !== undefined && p.coker >= c.cokerLt) return false;
+  if (c.choice && p.choices[c.choice[0]] !== c.choice[1]) return false;
+  return true;
+};
+
+export const markSceneSeen = (p: StoryProgress, id: string): StoryProgress => (p.scenesSeen.includes(id) ? p : { ...p, scenesSeen: [...p.scenesSeen, id].slice(-120) });
 
 export const INTEGRITY_MIN = -12;
 export const INTEGRITY_MAX = 12;
@@ -83,10 +132,14 @@ export const recordChapter = (profile: MetaProfile, s: GameState): MetaProfile =
     integrity += approachDelta(perk.approach) - Math.min(2, s.backfires);
     integrity = Math.max(INTEGRITY_MIN, Math.min(INTEGRITY_MAX, integrity));
   }
+  // What the player chose during the match's plot beats counts the first time the chapter is won.
+  let after: StoryProgress = { ...story, integrity };
+  if (won && !prev?.won) (s.storyChoices ?? []).forEach(k => { const i = k.lastIndexOf(':'); after = applyStoryEffects(after, plotChoiceStory(k.slice(0, i), k.slice(i + 1))); });
+  integrity = after.integrity;
   const result: ChapterResult = won
     ? { won: true, stars: Math.max(prev?.stars ?? 0, stars), approach: prev?.won ? prev.approach : perk.approach, backfires: s.backfires, day: Math.min(s.currentDay, s.dayBudget), targetId: s.activeTargetId, attempts: (prev?.attempts ?? 0) + 1 }
     : { won: !!prev?.won, stars: prev?.stars ?? 0, approach: prev?.approach ?? perk.approach, backfires: prev?.backfires ?? 0, day: prev?.day ?? 0, targetId: prev?.targetId ?? s.activeTargetId, attempts: (prev?.attempts ?? 0) + 1 };
-  return { ...profile, story: { ...story, integrity, results: { ...story.results, [ch.id]: result }, lastRecorded: key } };
+  return { ...profile, story: { ...after, integrity, results: { ...story.results, [ch.id]: result }, lastRecorded: key } };
 };
 
 export const markPrologueSeen = (profile: MetaProfile): MetaProfile => ({ ...profile, story: { ...(profile.story ?? emptyStory()), prologueSeen: true } });
@@ -116,7 +169,13 @@ export const sanitizeStory = (raw: unknown): StoryProgress => {
   return {
     ...base, picks, results,
     integrity: Math.max(INTEGRITY_MIN, Math.min(INTEGRITY_MAX, Math.round(Number(r.integrity) || 0))),
-    prologueSeen: !!r.prologueSeen
+    prologueSeen: !!r.prologueSeen,
+    trust: clampN(Number.isFinite(Number(r.trust)) && r.trust !== undefined && r.trust !== null ? Math.round(Number(r.trust)) : 5, 0, TRUST_MAX),
+    coker: clampN(Number.isFinite(Number(r.coker)) ? Math.round(Number(r.coker)) : 0, 0, COKER_MAX),
+    flags: Array.isArray(r.flags) ? uniq(r.flags.filter((x): x is string => typeof x === 'string' && x.length <= 40)).slice(0, 200) : [],
+    clues: Array.isArray(r.clues) ? uniq(r.clues.filter((x): x is string => typeof x === 'string' && !!CLUE_BY_ID[x])) : [],
+    choices: Object.fromEntries(Object.entries(r.choices && typeof r.choices === 'object' ? r.choices : {}).filter(([k, v]) => typeof v === 'string' && k.length <= 40 && (v as string).length <= 40).slice(0, 200)),
+    scenesSeen: Array.isArray(r.scenesSeen) ? uniq(r.scenesSeen.filter((x): x is string => typeof x === 'string' && x.length <= 40)).slice(-120) : []
   };
 };
 

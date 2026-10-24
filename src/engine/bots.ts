@@ -65,6 +65,70 @@ export const STRATEGIES: Strategy[] = [
   { name: 'fortress', blurb: 'Defence first: block every counter-move, then win slowly with Press and Elite.', lanes: { STREET: 1.2, SOCIAL: 0.8, PRESS: 1.5, ELITE: 1.2 }, quiet: 0.5, exploit: false, evidence: { cover: 35, doubt: 45, fresh: 45, forge: false }, defend: 'proactive', seed: 'fct' }
 ];
 
+// The other twenty plans. The first ten above are the ones every built-in Target was tuned with, so they stay exactly as they were;
+// the Arena's bot check uses all thirty, so a player-made Target is tested against a much wider range of ways to play.
+const P = (name: string, blurb: string, lanes: [number, number, number, number], quiet: number, exploit: boolean, ev: [number, number, number], forge: boolean, defend: Strategy['defend'], seed: string): Strategy =>
+  ({ name, blurb, lanes: { STREET: lanes[0], SOCIAL: lanes[1], PRESS: lanes[2], ELITE: lanes[3] }, quiet, exploit, evidence: { cover: ev[0], doubt: ev[1], fresh: ev[2], forge }, defend, seed });
+
+export const EXTRA_STRATEGIES: Strategy[] = [
+  P('street_king', 'Only the street: motor parks, markets and barbers, nothing else.', [2.8, 0.4, 0.8, 0.3], 0.1, false, [50, 55, 30], false, 'reactive', 'kaduna'),
+  P('press_baron', 'Press first and leak early: let the newspapers carry it.', [0.6, 0.2, 2.8, 1.2], 0.4, false, [20, 35, 60], false, 'proactive', 'fct'),
+  P('elite_whisper', 'Go through the elite: secretariats, pulpits and clubs, quietly.', [0.5, 0.2, 1.6, 2.6], 0.6, false, [25, 40, 55], false, 'proactive', 'fct'),
+  P('social_storm', 'All social media, all the time. Evidence only in a crisis.', [1, 3, 0.4, 0.2], 0, false, [60, 60, 25], false, 'reactive', 'lagos'),
+  P('allrounder', 'A bit of everything, steady and sensible.', [1, 1, 1, 1], 0.2, false, [35, 45, 45], false, 'reactive', 'oyo'),
+  P('lagos_launch', 'Start in Lagos, spread wide, buy defence early.', [1.2, 1.6, 1.2, 1], 0.2, false, [35, 45, 45], false, 'proactive', 'lagos'),
+  P('northern_push', 'Start in the north and push down through the middle.', [2, 0.6, 1.4, 0.6], 0.3, false, [30, 45, 50], false, 'reactive', 'kaduna'),
+  P('delta_route', 'Start in the Niger Delta, press and elite channels with defence.', [1.2, 0.8, 1.6, 1.2], 0.4, false, [30, 40, 50], false, 'proactive', 'rivers'),
+  P('eastern_wave', 'Start in the south-east and fan out with street and social.', [1.6, 1.2, 1.2, 0.8], 0.2, false, [35, 45, 45], false, 'reactive', 'enugu'),
+  P('border_run', 'Start in the far north-west and run the land borders.', [1.8, 1, 1.2, 0.4], 0.3, false, [40, 50, 40], false, 'reactive', 'sokoto'),
+  P('exploit_loud', 'Find the weak lane and hit it hard, noise be damned.', [1, 1, 1, 1], 0, true, [40, 45, 40], false, 'reactive', 'kano'),
+  P('exploit_proof', 'Weak lane plus proof: press and elite where it hurts, evidence early.', [1, 0.6, 1.6, 1.4], 0.3, true, [25, 40, 55], false, 'proactive', 'fct'),
+  P('exploit_viral', 'Weak lane plus virality: street and social, accept the Heat.', [1.4, 1.8, 0.8, 0.5], 0, true, [45, 45, 35], false, 'reactive', 'lagos'),
+  P('forger_press', 'Forge evidence early, then let the press carry the story.', [1, 0.6, 1.8, 1.2], 0.2, false, [20, 25, 50], true, 'reactive', 'fct'),
+  P('forger_quiet', 'Forge quietly: low profile, defences up, fake files when Doubt bites.', [1.2, 0.4, 1.4, 1.2], 0.7, false, [25, 30, 50], true, 'proactive', 'oyo'),
+  P('forger_blitz', 'Everything fast and fake: viral spread, forged files at once.', [2, 2, 0.5, 0.3], 0, false, [15, 20, 45], true, 'reactive', 'lagos'),
+  P('turtle', 'Never be noticed: quiet channels, defences first, patience.', [1, 0.3, 1.6, 1.6], 0.9, false, [30, 40, 50], false, 'proactive', 'fct'),
+  P('early_proof', 'Leak every real file as soon as it unlocks.', [1, 0.3, 2, 1.8], 0.5, false, [15, 30, 65], false, 'proactive', 'fct'),
+  P('late_proof', 'Save the evidence for a real crisis, spend on channels first.', [1.4, 1, 1.4, 1.2], 0.2, false, [60, 60, 25], false, 'reactive', 'kano'),
+  P('gambler', 'Go viral from the south and gamble on forged files.', [1.4, 2.2, 0.6, 0.3], 0, false, [15, 20, 50], true, 'reactive', 'rivers')
+];
+
+export const STRATEGIES_30: Strategy[] = [...STRATEGIES, ...EXTRA_STRATEGIES];
+
+// What a human should take from each plan, in one line. The bot check shows these for the plans that beat a Target.
+export const STRATEGY_TIPS: Record<string, string> = {
+  blitz: 'Go fast: buy Street and Social channels first and keep tapping sparks. Patch the damage with evidence later.',
+  proof: 'Build Press and Elite channels first and leak real evidence early. It is slower, but people believe it.',
+  quiet: 'Stay under the radar. Skip loud channels and buy Defence before Heat becomes a problem.',
+  wildfire: 'Go viral on Social first. Accept the Heat and use evidence to patch Doubt.',
+  exploit: 'Read the case file: build the lane they are weak to and avoid the lane they resist.',
+  forger: 'Forge evidence early to crush Doubt, and accept the risk of being exposed.',
+  stealth: 'Quiet plus the weak lane: stay low and build the channels this Target is weak to.',
+  sprint: 'Street and Press together, real evidence early, defence only when it is needed.',
+  guarded: 'Go loud on Street and Social, but buy protection early so counter-moves do not hurt.',
+  fortress: 'Defence first: block every counter-move, then win slowly with Press and Elite.',
+  street_king: 'Stick to Street channels (motor parks, markets, barbers) and win on volume.',
+  press_baron: 'Press channels first, and leak evidence as soon as it is ready.',
+  elite_whisper: 'Work through Elite channels (secretariats, pulpits, clubs) and keep the noise down.',
+  social_storm: 'Pour everything into Social channels. Keep evidence for a real crisis.',
+  allrounder: 'A balanced build works: a bit of every lane, defence when Heat climbs.',
+  lagos_launch: 'Plant the rumour in Lagos, spread wide and buy defence early.',
+  northern_push: 'Plant the rumour in the north (Kaduna) and push down through the middle.',
+  delta_route: 'Plant it in the Niger Delta (Rivers), use Press and Elite channels and keep defences up.',
+  eastern_wave: 'Plant it in the south-east (Enugu) and fan out with Street and Social channels.',
+  border_run: 'Plant it in the far north-west (Sokoto) and run the land borders.',
+  exploit_loud: 'Hit the Target weak lane hard and ignore the noise.',
+  exploit_proof: 'Weak lane plus proof: Press and Elite where it hurts, and leak evidence early.',
+  exploit_viral: 'Weak lane plus virality: Street and Social, and accept the Heat.',
+  forger_press: 'Forge evidence early, then let the press carry the story.',
+  forger_quiet: 'Forge quietly: low profile, defences up, fake files when Doubt bites.',
+  forger_blitz: 'Everything fast and fake: viral spread and forged files straight away.',
+  turtle: 'Never be noticed. Quiet channels, defences first, and plenty of patience.',
+  early_proof: 'Leak every real file the moment it unlocks.',
+  late_proof: 'Spend on channels first and keep the evidence for a real crisis.',
+  gambler: 'Go viral from the south and gamble on forged files.'
+};
+
 // How well a decent human executes a plan (taps most bubbles, reads the event cards).
 export const HUMAN: Skill = { name: 'human', pCollect: 0.85, smartBuy: true, evidence: 'late', defend: 'late', smartEvents: true, seedHub: true };
 
@@ -85,7 +149,7 @@ const scoreEffects = (effects: Effect[], cost: number): number => {
 export const play = (targetId: string, skill: Skill, seed: number, perkId: string | null = null, strategy?: Strategy) => {
   const rng = mulberry32(seed);
   const target = getTarget(targetId);
-  let s: GameState = Actions.startMatch(targetId, target.scandals[0].category, perkId);
+  let s: GameState = Actions.startMatch(targetId, target.scandals[0].category, perkId, target.climateId);
   const seedState = strategy ? strategy.seed : skill.seedHub ? 'kano' : ['oyo', 'ekiti', 'benue', 'borno'][seed % 4];
   s = Actions.plantSeed(s, seedState);
   s = Actions.collectSpark(s, `spark_first_${seedState}`);

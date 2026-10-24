@@ -176,6 +176,7 @@ export interface GameState {
   abilityNext: number[];                  // Next day each Target ability fires
   timedEffects: TimedEffect[];
   usedEvents: string[];
+  storyChoices: string[];                 // Story Mode: the plot-beat choices made this run, as 'eventId:choiceId'
   lastEventDay: number;
   backfires: number;                      // Exposed forgeries this run (3-star condition)
   winRewards: WinRewards | null;          // Set once, when a victory has been recorded in the profile

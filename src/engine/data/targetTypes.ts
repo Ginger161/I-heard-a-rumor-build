@@ -31,7 +31,10 @@ export interface TargetMods {
   staleRate?: number;                                // Multiplies Freshness decay (short attention spans)
 }
 
-export type AbilityKind = 'INJUNCTION' | 'DISTRACTION' | 'HEAT_SURGE' | 'COUNTER_STORY' | 'BOT_SWARM';
+// The first five are the original moves. The rest (DOUBT_WAVE onwards) are the extra moves players can give their own Targets.
+export type AbilityKind =
+  | 'INJUNCTION' | 'DISTRACTION' | 'HEAT_SURGE' | 'COUNTER_STORY' | 'BOT_SWARM'
+  | 'DOUBT_WAVE' | 'EVIDENCE_RAID' | 'ACCOUNT_FREEZE' | 'ROADBLOCK' | 'LANE_JAM' | 'REGION_LOCK';
 
 // An active move the Target makes on a schedule (days).
 export interface AbilityDef {
@@ -39,8 +42,11 @@ export interface AbilityDef {
   every: number;      // Days between uses (+/-1 jitter)
   start: number;      // First possible day
   strength: number;   // INJUNCTION: days frozen | DISTRACTION: Freshness lost | HEAT_SURGE: Heat |
-                      // COUNTER_STORY: Cover-Up gained | BOT_SWARM: Spin bubbles spawned
-  branch?: Branch;    // INJUNCTION only: restrict to one lane
+                      // COUNTER_STORY: Cover-Up gained | BOT_SWARM: Spin bubbles spawned | DOUBT_WAVE: Doubt added everywhere |
+                      // EVIDENCE_RAID: Investigation lost | ACCOUNT_FREEZE: Sparks seized | ROADBLOCK: days land-border spread halves |
+                      // LANE_JAM: days a lane runs at 60% | REGION_LOCK: days a region spreads at half speed
+  branch?: Branch;    // INJUNCTION and LANE_JAM: the lane it hits
+  zone?: ZoneId;      // REGION_LOCK: the region it locks down
   stamp: string;      // Alert stamp text
   headline: string;
   line: string;       // Alert body (supports {Target})
@@ -50,14 +56,18 @@ export interface AbilityDef {
 // SPIN_DOCTOR: 1.5x PR Spin bubbles, Heat 20% slower | IRON_FIST: Heat 40% faster, fewer Spin bubbles.
 // LAWYER_UP: injunctions last +1 day and come 15% more often, Heat 10% slower.
 // DISTRACTOR: distractions hit 30% harder, Spin bubbles are rarer, the story goes stale 10% faster.
-export type DefenseStyle = 'SPIN_DOCTOR' | 'IRON_FIST' | 'LAWYER_UP' | 'DISTRACTOR' | 'BALANCED';
+// CYBER_SQUAD: Spin 30% more common, Heat 15% faster | OLD_MONEY: injunctions +1 day, Heat 15% slower, distractions 15% softer |
+// STREET_ARMY: Spin 10% more common, Heat 10% slower, the story goes stale 15% faster.
+export type DefenseStyle = 'SPIN_DOCTOR' | 'IRON_FIST' | 'LAWYER_UP' | 'DISTRACTOR' | 'BALANCED' | 'CYBER_SQUAD' | 'OLD_MONEY' | 'STREET_ARMY';
 // THE_CRASHOUT: rants early (15% Believers): you gain +10% Velocity for a while, but 2 Spin bubbles spawn.
 // THE_STOIC: skips the early counter-offensives and saves one massive ambush for 55% Believers.
 // STEADY: the standard counter-offensives at 20/45/70%.
 // THE_SHOWMAN: moves come 25% more often but hit 25% softer.
 // THE_PARANOID: your genuine evidence costs 50% more Heat, but its Cover-Up grows 15% slower.
 // THE_SCHEMER: at 30% Believers it plants a too-good-to-be-true bombshell for you to fall for.
-export type Temperament = 'THE_CRASHOUT' | 'THE_STOIC' | 'THE_SHOWMAN' | 'THE_PARANOID' | 'THE_SCHEMER' | 'STEADY';
+// THE_BULLY: moves 15% more often and 15% harder, your genuine evidence costs 20% more Heat.
+// THE_GHOST: rarely acts, but each move hits 35% harder, and Cover-Up grows 10% slower.
+export type Temperament = 'THE_CRASHOUT' | 'THE_STOIC' | 'THE_SHOWMAN' | 'THE_PARANOID' | 'THE_SCHEMER' | 'STEADY' | 'THE_BULLY' | 'THE_GHOST';
 
 export interface ChatterLines {
   onStart: string;
@@ -91,7 +101,8 @@ export interface TargetBase {
   abilities: AbilityDef[];
 }
 
-export type TargetKind = 'FICTIONAL' | 'PARODY' | 'CREATOR' | 'STORY';
+// PLAYER: made by a player in the Arena. Structure is checked, the words are the player's own.
+export type TargetKind = 'FICTIONAL' | 'PARODY' | 'CREATOR' | 'STORY' | 'PLAYER';
 
 // A real creator appears only with their permission; the reference is kept with the Target.
 export interface CreatorInfo {
@@ -106,11 +117,17 @@ export interface TargetArchetype extends TargetBase {
   avatar?: { imageUrl?: string; accent?: string };   // Optional portrait and colour; the silhouette is the fallback
   creator?: CreatorInfo;
   packId?: string;                                   // Set for Targets that came from a content pack
+  occurrences?: Occurrence[];                        // News events the Target's author scheduled for fixed days
+  climateId?: string;                                // The news climate this Target always plays in (otherwise random)
+  author?: string;                                   // PLAYER Targets: who made it
   parody: boolean;    // Re-skinned by data/parody.ts: comic scandals, flavor and evidence copy
   folder: Folder;     // Which dossier folder tab the Target lives in (tier = mechanics, folder = display/unlock)
   prRating: number;   // Chess.com-style difficulty rating
   ai: AiProfile;
 }
+
+// A natural occurrence scheduled by a Target's author: this news event, on or after this day.
+export interface Occurrence { eventId: string; day: number }
 
 export const sc = (category: ScandalCategory, title: string): ScandalDef => ({ category, title });
 

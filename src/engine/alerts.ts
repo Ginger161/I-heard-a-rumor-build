@@ -100,6 +100,12 @@ export const abilityEffects = (a: AbilityDef, state: Pick<GameState, 'defensePur
     case 'HEAT_SURGE': return [{ kind: 'heat', amount: state.defensePurchases['proxy_relay'] > 0 ? Math.ceil(strength / 2) : strength }];
     case 'COUNTER_STORY': return [{ kind: 'coverUp', amount: strength }];
     case 'BOT_SWARM': return [{ kind: 'spin', count: strength }];
+    case 'DOUBT_WAVE': return [{ kind: 'doubtAll', amount: strength }];
+    case 'EVIDENCE_RAID': return [{ kind: 'investigation', amount: -strength }];
+    case 'ACCOUNT_FREEZE': return [{ kind: 'sparks', amount: -strength }];
+    case 'ROADBLOCK': return [{ kind: 'timed', effectKind: 'HIGHWAY_MULT', days: strength, mult: 0.5, label: 'Roadblocks' }];
+    case 'LANE_JAM': return [{ kind: 'timed', effectKind: 'BRANCH_MULT', days: strength, mult: 0.6, label: 'Jammed', branch: a.branch ?? 'SOCIAL' }];
+    case 'REGION_LOCK': return [{ kind: 'timed', effectKind: 'ZONE_FRICTION', days: strength, mult: 0.5, label: 'Lockdown', zone: a.zone ?? 'SW' }];
   }
 };
 
@@ -110,7 +116,13 @@ const abilitySubtext = (a: AbilityDef, target: TargetArchetype, state: Pick<Game
     DISTRACTION: `-${s} Story Freshness`,
     HEAT_SURGE: `+${state.defensePurchases['proxy_relay'] > 0 ? Math.ceil(s / 2) : s}% Heat`,
     COUNTER_STORY: `+${s}% Cover-Up`,
-    BOT_SWARM: `${s} Spin Bubbles: shatter them!`
+    BOT_SWARM: `${s} Spin Bubbles: shatter them!`,
+    DOUBT_WAVE: `+${s}% Doubt everywhere`,
+    EVIDENCE_RAID: `-${s}% Investigation`,
+    ACCOUNT_FREEZE: `-${s} ⚡ seized`,
+    ROADBLOCK: `Border spread halved for ${s} days`,
+    LANE_JAM: `${a.branch ?? 'Social'} channels at 60% for ${s} days`,
+    REGION_LOCK: `${ZONE_NAMES[a.zone ?? 'SW']} at half speed for ${s} days`
   };
   return [base[a.kind], ...notes].join(' • ');
 };

@@ -1,9 +1,12 @@
 import type { Branch, ScandalCategory } from './channels';
+import { EVENTS } from '../events';
+import { CLIMATES } from './climates';
+import { ZONE_IDS } from './zones';
 import { buildAiProfile } from './aiProfiles';
 import { RATING_RANGES } from './ratings';
 import { SCANDAL_CATEGORIES, SPOTLIGHT_IDS, TARGETS } from './targets';
 import type {
-  AbilityDef, AbilityKind, ChatterLines, CreatorInfo, DefenseStyle, Folder, ScandalDef, SilhouetteKind,
+  AbilityDef, AbilityKind, ChatterLines, CreatorInfo, DefenseStyle, Folder, Occurrence, ScandalDef, SilhouetteKind,
   TargetArchetype, TargetKind, TargetMods, Temperament, Tier
 } from './targetTypes';
 
@@ -41,6 +44,9 @@ export interface TargetDef {
     chatter: Partial<ChatterLines> & Pick<ChatterLines, 'onStart' | 'onCritical'>;
   };
   prRating?: number;              // Optional manual difficulty rating; otherwise estimated from the tier and power
+  occurrences?: Occurrence[];     // News events scheduled for fixed days (up to 4)
+  climateId?: string;             // The news climate this Target always plays in
+  author?: string;                // PLAYER Targets: the maker's name
   creator?: CreatorInfo;          // Required for kind CREATOR: written permission on record
   tags?: string[];
 }
@@ -55,11 +61,11 @@ export interface TargetPack {
 }
 
 export const SILHOUETTES: SilhouetteKind[] = ['agbada', 'suit', 'cap', 'gele', 'robe', 'hoodie', 'uniform', 'crown', 'mic', 'glasses'];
-export const DEFENSE_STYLES: DefenseStyle[] = ['BALANCED', 'SPIN_DOCTOR', 'IRON_FIST', 'LAWYER_UP', 'DISTRACTOR'];
-export const TEMPERAMENTS: Temperament[] = ['STEADY', 'THE_CRASHOUT', 'THE_STOIC', 'THE_SHOWMAN', 'THE_PARANOID', 'THE_SCHEMER'];
+export const DEFENSE_STYLES: DefenseStyle[] = ['BALANCED', 'SPIN_DOCTOR', 'IRON_FIST', 'LAWYER_UP', 'DISTRACTOR', 'CYBER_SQUAD', 'OLD_MONEY', 'STREET_ARMY'];
+export const TEMPERAMENTS: Temperament[] = ['STEADY', 'THE_CRASHOUT', 'THE_STOIC', 'THE_SHOWMAN', 'THE_PARANOID', 'THE_SCHEMER', 'THE_BULLY', 'THE_GHOST'];
 export const BRANCHES: Branch[] = ['STREET', 'SOCIAL', 'PRESS', 'ELITE'];
-export const ABILITY_KINDS: AbilityKind[] = ['INJUNCTION', 'DISTRACTION', 'HEAT_SURGE', 'COUNTER_STORY', 'BOT_SWARM'];
-export const TARGET_KINDS: TargetKind[] = ['FICTIONAL', 'PARODY', 'CREATOR', 'STORY'];
+export const ABILITY_KINDS: AbilityKind[] = ['INJUNCTION', 'DISTRACTION', 'HEAT_SURGE', 'COUNTER_STORY', 'BOT_SWARM', 'DOUBT_WAVE', 'EVIDENCE_RAID', 'ACCOUNT_FREEZE', 'ROADBLOCK', 'LANE_JAM', 'REGION_LOCK'];
+export const TARGET_KINDS: TargetKind[] = ['FICTIONAL', 'PARODY', 'CREATOR', 'STORY', 'PLAYER'];
 
 // What each ability strength means, and the range a Target may use (keeps authors inside the tested envelope).
 export const ABILITY_RANGE: Record<AbilityKind, { min: number; max: number; unit: string }> = {
@@ -67,7 +73,13 @@ export const ABILITY_RANGE: Record<AbilityKind, { min: number; max: number; unit
   DISTRACTION: { min: 5, max: 30, unit: 'Freshness lost' },
   HEAT_SURGE: { min: 4, max: 18, unit: '% Heat added' },
   COUNTER_STORY: { min: 4, max: 16, unit: '% Cover-Up added' },
-  BOT_SWARM: { min: 1, max: 6, unit: 'Spin bubbles spawned' }
+  BOT_SWARM: { min: 1, max: 6, unit: 'Spin bubbles spawned' },
+  DOUBT_WAVE: { min: 3, max: 14, unit: '% Doubt added in every state' },
+  EVIDENCE_RAID: { min: 5, max: 25, unit: '% Investigation lost' },
+  ACCOUNT_FREEZE: { min: 5, max: 30, unit: '⚡ seized' },
+  ROADBLOCK: { min: 2, max: 6, unit: 'days land-border spread is halved' },
+  LANE_JAM: { min: 2, max: 6, unit: 'days a lane runs at 60%' },
+  REGION_LOCK: { min: 2, max: 6, unit: 'days a region spreads at half speed' }
 };
 
 const MOD_RANGE: Record<string, [number, number]> = {
@@ -90,7 +102,8 @@ const text = (v: unknown, max: number): v is string => typeof v === 'string' && 
 export const threatScore = (def: Pick<TargetDef, 'abilities' | 'mods' | 'ai'>): number => {
   let s = 0;
   def.abilities.forEach(a => {
-    const per = a.strength * (a.kind === 'INJUNCTION' ? 3 : a.kind === 'BOT_SWARM' ? 2.5 : a.kind === 'DISTRACTION' ? 0.5 : 1);
+    const weight: Partial<Record<AbilityKind, number>> = { INJUNCTION: 3, BOT_SWARM: 2.5, DISTRACTION: 0.5, DOUBT_WAVE: 0.8, EVIDENCE_RAID: 0.3, ACCOUNT_FREEZE: 0.2, ROADBLOCK: 1.5, LANE_JAM: 1.5, REGION_LOCK: 1.2 };
+    const per = a.strength * (weight[a.kind] ?? 1);
     s += per / Math.max(3, a.every);
   });
   const m = def.mods;
@@ -115,7 +128,7 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
 
   if (!ID_RE.test(def.id ?? '')) e('id must be snake_case (3-41 characters, lowercase letters, digits, underscores).');
   if (opts.builtInIds?.has(def.id)) e(`id "${def.id}" is already used by built-in content.`);
-  if (!TARGET_KINDS.includes(def.kind)) e('kind must be FICTIONAL, PARODY, CREATOR or STORY.');
+  if (!TARGET_KINDS.includes(def.kind)) e('kind must be FICTIONAL, PARODY, CREATOR, STORY or PLAYER.');
   if (!inRange(def.tier, 1, 5) || !Number.isInteger(def.tier)) e('tier must be a whole number from 1 to 5.');
   if (def.folder !== undefined && def.folder !== 'SPOTLIGHT' && !(inRange(def.folder, 1, 5) && Number.isInteger(def.folder))) e('folder must be SPOTLIGHT or 1-5.');
 
@@ -183,11 +196,29 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
     if (!inRange(a.every, 3, 14)) e(`${n}: "every" must be 3-14 days.`);
     if (!inRange(a.start, 3, 20)) e(`${n}: "start" must be day 3-20.`);
     if (a.branch !== undefined && !BRANCHES.includes(a.branch)) e(`${n}: branch is invalid.`);
-    if (a.branch && a.kind !== 'INJUNCTION') w(`${n}: branch only applies to injunctions.`);
+    if (a.branch && a.kind !== 'INJUNCTION' && a.kind !== 'LANE_JAM') w(`${n}: branch only applies to injunctions and lane jams.`);
+    if (a.zone !== undefined && !ZONE_IDS.includes(a.zone)) e(`${n}: zone is invalid.`);
+    if (a.zone && a.kind !== 'REGION_LOCK') w(`${n}: zone only applies to region locks.`);
     if (!text(a.stamp, 36)) e(`${n}: stamp text is required (max 36 characters).`);
     if (!text(a.headline, 70)) e(`${n}: headline is required (max 70 characters).`);
     if (!text(a.line, 220)) e(`${n}: body line is required (max 220 characters).`);
   });
+
+  // Natural occurrences and climate (the world the Target plays in)
+  if (def.occurrences !== undefined) {
+    if (!Array.isArray(def.occurrences) || def.occurrences.length > 4) e('occurrences: at most 4 scheduled events.');
+    else {
+      const ids = new Set<string>();
+      def.occurrences.forEach((o, i) => {
+        if (!EVENTS.some(ev => ev.id === o?.eventId)) e(`Occurrence ${i + 1}: unknown event.`);
+        else if (ids.has(o.eventId)) e(`Occurrence ${i + 1}: each event can be scheduled once.`);
+        ids.add(o?.eventId);
+        if (!inRange(o?.day, 4, 30) || !Number.isInteger(o.day)) e(`Occurrence ${i + 1}: day must be a whole number from 4 to 30.`);
+      });
+    }
+  }
+  if (def.climateId !== undefined && !CLIMATES.some(c => c.id === def.climateId)) e('climateId is not a known news climate.');
+  if (def.author !== undefined && !text(def.author, 40)) e('author must be 40 characters or fewer.');
 
   // People: permission and safety
   if (def.kind === 'CREATOR') {
@@ -213,7 +244,7 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
     const [lo, hi] = band[def.tier];
     if (score < lo) w(`Looks gentle for tier ${def.tier} (threat ${score}); consider a lower tier or stronger abilities.`);
     if (score > hi) w(`Looks harsh for tier ${def.tier} (threat ${score}); consider a higher tier or softer abilities.`);
-    if (def.prRating !== undefined && !inRange(def.prRating, RATING_RANGES[folder][0], RATING_RANGES[folder][1])) w(`prRating is outside the ${RATING_RANGES[folder][0]}-${RATING_RANGES[folder][1]} range of its folder.`);
+    if (def.kind !== 'PLAYER' && def.prRating !== undefined && !inRange(def.prRating, RATING_RANGES[folder][0], RATING_RANGES[folder][1])) w(`prRating is outside the ${RATING_RANGES[folder][0]}-${RATING_RANGES[folder][1]} range of its folder.`);
     if (def.abilities.length === 1 && def.tier >= 3) w('Tier 3+ Targets usually have 2-3 abilities.');
     if (def.kind === 'CREATOR' && def.tier > 3) w('Featured creators work best as Spotlight or tiers 1-3 so new players meet them.');
   }
@@ -264,12 +295,15 @@ export const defToArchetype = (def: TargetDef, packId: string): TargetArchetype 
     mods: { ...def.mods },
     abilities: def.abilities.map(a => ({ ...a })),
     kind: def.kind,
-    storyOnly: !!def.storyOnly,
+    storyOnly: !!def.storyOnly || def.kind === 'PLAYER',   // player Targets are played from the Arena, not listed in the Dossier folders
     avatar: { imageUrl: def.avatar.imageUrl, accent: def.avatar.accent },
     creator: def.creator,
     packId,
     // Personal-life, parody and creator Targets use the comic gist voice and comic endings, never arrests.
-    parody: def.kind !== 'FICTIONAL',
+    parody: def.kind !== 'FICTIONAL' && def.kind !== 'PLAYER',
+    occurrences: def.occurrences?.map(o => ({ ...o })),
+    climateId: def.climateId,
+    author: def.author,
     folder,
     ai,
     prRating: def.prRating ?? estimateRating(def)

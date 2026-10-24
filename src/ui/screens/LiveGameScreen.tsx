@@ -11,6 +11,7 @@ import { PaperGrain, SparkCounter } from '../components/common';
 import { PolaroidChatter } from '../components/PolaroidChatter';
 import { RumorCard } from '../components/RumorCard';
 import { Reveal, useReveals } from '../components/Reveal';
+import { MODE_META, useMode } from '../modeTheme';
 import { accentOf } from '../theme';
 import { moodOf, targetEmotion } from '../mood';
 import { getClimate } from '../../engine/data/climates';
@@ -18,22 +19,22 @@ import { useSettings } from '../settings';
 import { LiveOverlays, useLiveShared } from '../live/shared';
 
 const PILL =
-  'flex-1 h-9 rounded-lg border-2 border-[#1A1A1A] shadow-[2px_2px_0px_#1A1A1A] flex items-center justify-center text-xs font-bold font-sans active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all';
+  'flex-1 h-9 rounded-lg border-2 border-[var(--m-line)] shadow-[2px_2px_0px_var(--m-line)] flex items-center justify-center text-xs font-bold font-sans active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all';
 
 const Meter: React.FC<{ label: string; value: number; color: string; danger?: boolean }> = ({ label, value, color, danger }) => (
   <div className="flex-1 min-w-0">
-    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60 leading-none mb-0.5">
+    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-[var(--m-ink)]/60 leading-none mb-0.5">
       <span>{label}</span>
       <span className={danger ? 'text-[#B91C1C]' : ''}>{Math.round(value)}%</span>
     </div>
-    <div className={`h-2 rounded-full border border-[#1A1A1A] bg-white overflow-hidden ${danger ? 'animate-pulse' : ''}`}>
+    <div className={`h-2 rounded-full border border-[var(--m-line)] bg-[var(--m-surface2)] overflow-hidden ${danger ? 'animate-pulse' : ''}`}>
       <div className="h-full transition-all duration-500" style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }} />
     </div>
   </div>
 );
 
-const DOCK_ON = 'shadow-[3px_3px_0px_#1A1A1A] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none cursor-pointer';
-const DOCK_OFF = 'bg-[#D4CFC4] text-slate-500 opacity-60 cursor-not-allowed';
+const DOCK_ON = 'shadow-[3px_3px_0px_var(--m-line)] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none cursor-pointer';
+const DOCK_OFF = 'bg-[var(--m-disabled)] text-[var(--m-soft)] opacity-60 cursor-not-allowed';
 
 // The phone design: a portrait frame with a top HUD, the map, an inspection card and a bottom dock. Desks open over the map.
 export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => {
@@ -44,6 +45,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   const { openModal } = shared;
   const unlocked = gameState.hasPoppedFirstSpark;
   const target = getTarget(gameState.activeTargetId);
+  const mode = useMode();
   const believers = nationalBelieverPct(gameState.states);
   const ticking = canTick(gameState);
 
@@ -82,8 +84,8 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
         data-tour={modal === 'CHANNELS_DESK' ? 'dock-channels' : undefined}
         disabled={!unlocked}
         onClick={() => openModal(modal)}
-        className={`w-full py-3 font-black text-[11px] tracking-widest uppercase border-2 border-[#1A1A1A] rounded-lg transition-all ${
-          unlocked ? `${tone === 'ink' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-[#1A1A1A]'} ${DOCK_ON}` : DOCK_OFF
+        className={`w-full py-3 font-black text-[11px] tracking-widest uppercase border-2 border-[var(--m-line)] rounded-lg transition-all ${
+          unlocked ? `${tone === 'ink' ? 'bg-[var(--m-btn-ink-bg)] text-[var(--m-btn-ink-fg)]' : 'bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)]'} ${DOCK_ON}` : DOCK_OFF
         }`}
       >
         {label}
@@ -92,7 +94,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   );
 
   return (
-    <div ref={rootRef} className="w-full h-full flex flex-col bg-[#F4F1EA] text-[#1A1A1A] font-serif overflow-hidden select-none relative transition-[filter] duration-1000" style={{ filter: settings.vignette ? mood.filter : 'none' }}>
+    <div ref={rootRef} className={`w-full h-full flex flex-col ${MODE_META[mode].tex} ${mode === 'story' ? 'fx-film' : ''} text-[var(--m-ink)] font-serif overflow-hidden select-none relative transition-[filter] duration-1000`} style={{ filter: settings.vignette ? mood.filter : 'none' }}>
       <PaperGrain className="z-50" />
 
       {/* MOOD OVERLAY: heat vignette, momentum glow and icy edge. Pure decoration; never blocks a tap. */}
@@ -107,7 +109,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
       />
 
       {/* ZONE 1: TOP BAR */}
-      <div className="flex-shrink-0 bg-[#F4F1EA] border-b-2 px-3 pt-2 pb-3 flex flex-col gap-2 z-10 transition-colors duration-700" style={{ borderColor: mood.accent }}>
+      <div className="flex-shrink-0 bg-[var(--m-header)] text-[var(--m-header-ink)] border-b-2 px-3 pt-2 pb-3 flex flex-col gap-2 z-10 transition-colors duration-700" style={{ borderColor: mood.accent }}>
         <RumorCard
           gameState={gameState}
           variant="strip"
@@ -115,11 +117,11 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
           right={!lite ? <span data-tour="climate" className="whitespace-nowrap truncate" title={climate.blurb}>{climate.icon} {climate.name}</span> : undefined}
         />
         <div data-tour="hud" className="flex items-center justify-between gap-2">
-          <button onClick={() => openModal('HISTORY_LOG')} className={`${PILL} bg-white`}>
+          <button onClick={() => openModal('HISTORY_LOG')} className={`${PILL} bg-[var(--m-surface2)] text-[var(--m-ink)]`}>
             DAY {Math.min(gameState.currentDay, gameState.dayBudget)}/{gameState.dayBudget}
           </button>
-          <button onClick={() => openModal('BELIEVERS_INFO')} className={`${PILL} bg-white`}>
-            👥 {believers.toFixed(1)}%{lite && <span className="text-[#1A1A1A]/45 font-bold">&nbsp;/ 75</span>}
+          <button onClick={() => openModal('BELIEVERS_INFO')} className={`${PILL} bg-[var(--m-surface2)] text-[var(--m-ink)]`}>
+            👥 {believers.toFixed(1)}%{lite && <span className="text-[var(--m-ink)]/45 font-bold">&nbsp;/ 75</span>}
           </button>
           <Reveal id="heat" on={reveal === 'heat'} onDone={dismissReveal} className="flex-1">
             <button
@@ -139,7 +141,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
             <Meter label="Story Freshness" value={gameState.freshness} color="#D97706" danger={gameState.freshness <= 25} />
           </button>
           {!showMeters && (
-            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-sans font-bold text-[#1A1A1A]/70 text-center leading-tight pointer-events-none">🎯 Get 75% of Nigeria to believe it before the days run out.</div>
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-sans font-bold text-[var(--m-ink)]/70 text-center leading-tight pointer-events-none">🎯 Get 75% of Nigeria to believe it before the days run out.</div>
           )}
         </Reveal>
         {(activeEffects.length > 0 || frozenCount > 0) && (
@@ -157,7 +159,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
       </div>
 
       {/* ZONE 2: MAP */}
-      <div className="flex-1 min-h-0 relative overflow-hidden border-b-2 border-[#1A1A1A] transition-colors duration-[2000ms]" id="map-container" data-tour="map" style={{ backgroundColor: mood.mapBg }}>
+      <div className="flex-1 min-h-0 relative overflow-hidden border-b-2 border-[var(--m-line)] transition-colors duration-[2000ms]" id="map-container" data-tour="map" style={{ backgroundColor: mode === 'arcade' ? mood.mapBg : 'var(--m-map)' }}>
         <NigeriaMapCanvas
           gameState={gameState}
           ticking={ticking}
@@ -197,8 +199,8 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
           onClick={() => (gameState.isPaused ? resume() : pause())}
           disabled={!unlocked}
           aria-label={gameState.isPaused ? 'Resume' : 'Pause'}
-          className={`w-12 flex-shrink-0 flex items-center justify-center border-2 border-[#1A1A1A] rounded-lg transition-all ${
-            unlocked ? `bg-white text-[#1A1A1A] ${DOCK_ON}` : DOCK_OFF
+          className={`w-12 flex-shrink-0 flex items-center justify-center border-2 border-[var(--m-line)] rounded-lg transition-all ${
+            unlocked ? `bg-[var(--m-btn-paper-bg)] text-[var(--m-btn-paper-fg)] ${DOCK_ON}` : DOCK_OFF
           }`}
         >
           <span className="font-black">{gameState.isPaused ? '▶' : 'II'}</span>

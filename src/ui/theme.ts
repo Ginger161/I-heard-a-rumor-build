@@ -8,6 +8,8 @@ export const TEMPERAMENT_ACCENT: Record<string, string> = {
   THE_SHOWMAN: '#B45309',
   THE_PARANOID: '#166534',
   THE_SCHEMER: '#6B21A8',
+  THE_BULLY: '#991B1B',
+  THE_GHOST: '#475569',
   STEADY: '#1A1A1A'
 };
 

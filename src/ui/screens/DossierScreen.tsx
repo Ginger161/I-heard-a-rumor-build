@@ -44,6 +44,7 @@ interface DossierProps {
   onOpenStory: () => void;
   onImportProgress: (raw: unknown) => boolean;
   onOpenBoards?: () => void;
+  onOpenArena?: () => void;
   wide?: boolean;   // desktop: a three-pane layout (your desk, the roster, the case file)
 }
 
@@ -126,7 +127,7 @@ const DeskAside: React.FC<{ profile: MetaProfile; onOpenPerks: () => void; onOpe
 };
 
 export const DossierScreen: React.FC<DossierProps> = ({
-  profile, climateId, daily, onStartDaily, unlockAll, onStart, onReset, onEraseProgress, onBribe, onBuyTier, onBuyPerk, onEquipPerk, onStartTraining, onImportProgress, onOpenStory, onOpenBoards, wide = false
+  profile, climateId, daily, onStartDaily, unlockAll, onStart, onReset, onEraseProgress, onBribe, onBuyTier, onBuyPerk, onEquipPerk, onStartTraining, onImportProgress, onOpenStory, onOpenBoards, onOpenArena, wide = false
 }) => {
   const settings = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -181,6 +182,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
             {wide && <button onClick={() => setGuideOpen(true)} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">📖 Field Guide</button>}
             <button onClick={() => setConfirm('save')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">New Investigation / Reset saved game</button>
             <button onClick={() => setConfirm('progress')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">Erase progress</button>
+            <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">Start over from scratch…</button>
           </>
         )}
         {confirm !== 'none' && (
@@ -195,7 +197,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
   );
 
   return (
-    <div className="relative flex-1 min-h-0 bg-[#EFEBE0] text-[#1A1A1A] font-serif flex flex-col select-none overflow-hidden">
+    <div className="relative flex-1 min-h-0 tex-arcade text-[#1A1A1A] font-serif flex flex-col select-none overflow-hidden">
       <PaperGrain />
 
       {/* MASTHEAD */}
@@ -242,6 +244,16 @@ export const DossierScreen: React.FC<DossierProps> = ({
             </div>
             {!dailyDone && <span className="text-[11px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-2.5 py-1.5 whitespace-nowrap">Play +{dailyBonus(streak)}✉️</span>}
           </button>
+
+          {onOpenArena && (
+            <button onClick={() => { sfx.play('click'); onOpenArena(); }} data-mode="arena" className="tex-arena w-full mt-2 text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 min-h-[52px] shadow-[2px_2px_0px_var(--m-accent)] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+              <div className="min-w-0">
+                <div className="text-[9px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
+                <div className="text-[13px] font-black leading-tight">Build a Target. Beat your friends' Targets.</div>
+              </div>
+              <span className="text-[16px]">▶</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -271,6 +283,17 @@ export const DossierScreen: React.FC<DossierProps> = ({
           )}
         </div>
       </div>
+      {onOpenArena && (
+        <div className="relative flex-shrink-0 px-3 pt-2">
+          <button onClick={() => { sfx.play('click'); onOpenArena(); }} data-mode="arena" className="tex-arena w-full text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 shadow-[2px_2px_0px_var(--m-accent)] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+            <div className="min-w-0">
+              <div className="text-[8px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
+              <div className="text-[11px] font-black leading-tight">Build a Target. Beat your friends' Targets.</div>
+            </div>
+            <span>▶</span>
+          </button>
+        </div>
+      )}
       </>)}
 
       {wide && <DeskAside profile={profile} onOpenPerks={() => setSheet('perks')} onOpenArchive={() => setSheet('archive')} onOpenPremium={() => setSheet('premium')} supporter={!!premium} onOpenBoards={onOpenBoards} onGuide={() => setGuideOpen(true)} onTraining={onStartTraining} />}

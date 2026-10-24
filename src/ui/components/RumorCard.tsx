@@ -22,11 +22,11 @@ export const RumorCard: React.FC<{ gameState: GameState; variant: 'strip' | 'car
     <button
       onClick={onOpen}
       aria-label="The rumour you are spreading. Open the case file."
-      className="w-full text-left flex items-start gap-2 bg-[#1A1A1A] text-[#F4F1EA] rounded-lg px-2.5 py-1.5 cursor-pointer active:opacity-80"
+      className="w-full text-left flex items-start gap-2 bg-[var(--m-sunk)] text-[var(--m-ink)] border border-[var(--m-line)] rounded-lg px-2.5 py-1.5 cursor-pointer active:opacity-80"
     >
       <span aria-hidden className="text-base leading-none mt-0.5">📰</span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2 text-[9px] font-black uppercase tracking-widest text-[#FDE68A]">
+        <div className="flex items-center justify-between gap-2 text-[9px] font-black uppercase tracking-widest text-[var(--m-accent2)]">
           <span className="truncate">The rumour • {target.shortName}</span>
           {right}
         </div>
