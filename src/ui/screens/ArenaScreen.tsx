@@ -83,7 +83,7 @@ export const ArenaScreen: React.FC<Props> = ({ envelopes, spendEnvelopes, onPlay
           {TEMPLATES.map(t => (
             <button key={t.name} onClick={() => { sfx.play('click'); setView({ kind: 'create', def: t.make(author) }); }} className={`${CARD} text-left p-3 cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none min-h-[56px]`}>
               <div className="font-serif font-black text-[17px] leading-tight">{t.name}</div>
-              <div className="text-[12px] font-sans text-[var(--m-ink)]/70 leading-snug">{t.blurb}</div>
+              <div className="text-[12px] font-sans text-[var(--m-ink)]/72 leading-snug">{t.blurb}</div>
             </button>
           ))}
         </div>
@@ -101,11 +101,11 @@ export const ArenaScreen: React.FC<Props> = ({ envelopes, spendEnvelopes, onPlay
           <div className="w-14 h-[70px] flex-shrink-0 bg-[#2B2470] border-2 border-[var(--m-line)] rounded-md overflow-hidden"><Avatar target={t} emotion={r?.wins ? 'DEFEATED' : 'SMUG'} className="w-full h-full" /></div>
           <div className="min-w-0 flex-1">
             <div className="font-black text-[14px] leading-tight truncate">{e.def.fullName || 'Untitled'}</div>
-            <div className="text-[11px] font-sans text-[var(--m-ink)]/65 truncate">{e.def.title}{e.def.author ? ` • by ${e.def.author}` : ''}</div>
+            <div className="text-[11px] font-sans text-[var(--m-ink)]/72 truncate">{e.def.title}{e.def.author ? ` • by ${e.def.author}` : ''}</div>
             <div className="flex flex-wrap gap-1 mt-1 items-center">
               <RatingChip e={e} />
               {mine && <span className="text-[10px] font-sans font-black px-1.5 py-0.5 rounded-sm border border-[var(--m-line)] bg-[var(--m-surface2)]">{e.published ? 'PUBLISHED' : 'DRAFT'}</span>}
-              {r && <span className="text-[10px] font-sans font-bold text-[var(--m-ink)]/60">{r.wins}/{r.plays} won{r.bestDay ? ` • best day ${r.bestDay}` : ''}</span>}
+              {r && <span className="text-[10px] font-sans font-bold text-[var(--m-ink)]/72">{r.wins}/{r.plays} won{r.bestDay ? ` • best day ${r.bestDay}` : ''}</span>}
             </div>
           </div>
         </div>
@@ -121,16 +121,16 @@ export const ArenaScreen: React.FC<Props> = ({ envelopes, spendEnvelopes, onPlay
         {mine && e.published && (
           <div className="flex gap-3 mt-1">
             <button onClick={() => { sfx.play('click'); setOpen(isOpen ? null : e.def.id); }} className="min-h-[44px] text-[12px] font-black uppercase underline cursor-pointer">💡 Tips</button>
-            <button onClick={() => { sfx.play('click'); setConfirmDelete(e.def.id); }} className="min-h-[44px] text-[12px] font-black uppercase underline text-[var(--m-accent)] cursor-pointer">🗑 Delete</button>
+            <button onClick={() => { sfx.play('click'); setConfirmDelete(e.def.id); }} className="min-h-[44px] text-[12px] font-black uppercase underline text-[var(--m-accent-text)] cursor-pointer">🗑 Delete</button>
           </div>
         )}
         {isOpen && (
           <div className="mt-1.5 bg-[var(--m-surface2)] border-2 border-[var(--m-line)]/30 rounded-md p-2.5">
             {e.check ? (
               <>
-                <div className="text-[11px] font-black uppercase tracking-wider text-[var(--m-accent)] mb-1">How to beat {e.def.shortName}</div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-[var(--m-accent-text)] mb-1">How to beat {e.def.shortName}</div>
                 <ul className="list-disc pl-4 text-[12px] font-sans leading-snug flex flex-col gap-1">{e.check.tips.map(x => <li key={x}>{x}</li>)}</ul>
-                <div className="text-[11px] font-sans text-[var(--m-ink)]/60 mt-1.5">Difficulty {Math.round(e.check.difficulty)}/100 • best bot plan won {e.check.best}%.</div>
+                <div className="text-[11px] font-sans text-[var(--m-ink)]/72 mt-1.5">Difficulty {Math.round(e.check.difficulty)}/100 • best bot plan won {e.check.best}%.</div>
               </>
             ) : <div className="text-[12px] font-sans">Test it in the Creator to get tips.</div>}
           </div>
@@ -157,21 +157,21 @@ export const ArenaScreen: React.FC<Props> = ({ envelopes, spendEnvelopes, onPlay
         </div>
 
         <div className={`${CARD} p-3`}>
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--m-ink)]/65 mb-1">Got a Target code or link?</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--m-ink)]/72 mb-1">Got a Target code or link?</div>
           <textarea value={code} onChange={ev => setCode(ev.target.value)} placeholder="Paste it here" className="w-full bg-[var(--m-surface2)] border-2 border-[var(--m-line)] rounded-md px-3 py-2 text-[13px] font-mono h-[64px] resize-none outline-none focus:border-[var(--m-accent)]" />
           <div className="mt-2"><BrutalButton tone="ink" disabled={!code.trim() || !!busy} onClick={addFromCode}>{busy ?? '➕ Add to my shelf'}</BrutalButton></div>
-          <div className="text-[11px] font-sans text-[var(--m-ink)]/60 mt-1.5">Every Target is tested again on your phone before it is added. Beat one for the first time: +{ARENA_WIN_REWARD} ✉️.</div>
+          <div className="text-[11px] font-sans text-[var(--m-ink)]/72 mt-1.5">Every Target is tested again on your phone before it is added. Beat one for the first time: +{ARENA_WIN_REWARD} ✉️.</div>
         </div>
-        {note && <div role="status" className={`border-2 rounded-lg px-3 py-2 text-[13px] font-bold ${note.good ? 'border-[#065F46] bg-[#ECFDF5] text-[#065F46]' : 'border-[#8B0000] bg-[#FEF2F2] text-[#1A1A1A] text-[var(--m-accent)]'}`}>{note.text}</div>}
+        {note && <div role="status" className={`border-2 rounded-lg px-3 py-2 text-[13px] font-bold ${note.good ? 'border-[#065F46] bg-[#ECFDF5] text-[#065F46]' : 'border-[#8B0000] bg-[#FEF2F2] text-[#1A1A1A] text-[var(--m-accent-text)]'}`}>{note.text}</div>}
 
         <div>
           <div className="text-[11px] font-black uppercase tracking-[0.2em] mb-1.5">My Targets ({arena.mine.length})</div>
-          {arena.mine.length === 0 ? <div className="text-[12px] font-sans text-[var(--m-ink)]/60 border-2 border-dashed border-[var(--m-line)]/30 rounded-lg p-3">Nothing yet. Create your first Target above.</div>
+          {arena.mine.length === 0 ? <div className="text-[12px] font-sans text-[var(--m-ink)]/72 border-2 border-dashed border-[var(--m-line)]/30 rounded-lg p-3">Nothing yet. Create your first Target above.</div>
             : <div className="flex flex-col gap-2.5">{arena.mine.map(e => <Row key={e.def.id} e={e} mine />)}</div>}
         </div>
         <div>
           <div className="text-[11px] font-black uppercase tracking-[0.2em] mb-1.5">From friends ({arena.shelf.length})</div>
-          {arena.shelf.length === 0 ? <div className="text-[12px] font-sans text-[var(--m-ink)]/60 border-2 border-dashed border-[var(--m-line)]/30 rounded-lg p-3">Targets your friends send you show up here.</div>
+          {arena.shelf.length === 0 ? <div className="text-[12px] font-sans text-[var(--m-ink)]/72 border-2 border-dashed border-[var(--m-line)]/30 rounded-lg p-3">Targets your friends send you show up here.</div>
             : <div className="flex flex-col gap-2.5">{arena.shelf.map(e => <Row key={e.def.id} e={e} mine={false} />)}</div>}
         </div>
       </div>

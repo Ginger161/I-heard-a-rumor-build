@@ -1,11 +1,12 @@
 import { FlightEvent, GameAlert, GameState, GameStatus, HistoryLogEntry, SparkBubble, SpinBubbleData, StateNode } from './types';
-import { AlertFactory, abilityEffects, buildAbilityAlert, milestoneEffect } from './alerts';
+import { AlertFactory, abilityEffects, buildAbilityAlert, dominantBranch, milestoneEffect } from './alerts';
 import { BALANCE } from './balance';
 import { Rng, applyEffects, spawnSpinBubbles } from './effects';
 import { buildEventAlert, pickEvent, scheduledEvent } from './events';
+import { TRAINING_OCCURRENCES } from './data/trainingEvents';
 import { STYLE_MULTIPLIERS, getTarget, temperamentMods } from './data/targets';
 import {
-  clamp, computeMasterVariables, heatMultiplier, isInfected, nationalBelieverPct, spinMultiplier, whisperBounty
+  clamp, computeMasterVariables, exposureMultiplier, heatMultiplier, isInfected, nationalBelieverPct, spinMultiplier, whisperBounty
 } from './selectors';
 import { perkEffects } from './data/perks';
 import { getClimate } from './data/climates';
@@ -178,13 +179,28 @@ export const SimulationEngine = {
         s.jaded += burnedOut;
       }
 
+      // Tipping point: once a state is really talking, it pays one more bubble (the more the news spreads, the more bubbles there are)
+      if (!s.tipped && s.hasSpawnedFirstWhisper && (s.heard + s.believers + s.jaded) / s.population >= BALANCE.tippingAwareness) {
+        s.tipped = true;
+        sparks.push({
+          id: `spark_tip_${s.id}_${day}`,
+          kind: 'FAST',
+          stateId: s.id,
+          amount: Math.max(2, Math.round(whisperBounty(s.population) * BALANCE.tippingFactor * bountyMult)),
+          offsetX: jitter(rng, 12),
+          offsetY: jitter(rng, 12),
+          ticksRemaining: 3
+        });
+        history.push({ day: Math.min(day, prev.dayBudget), headline: `${s.name} is talking`, impact: 'People there are repeating it. A bubble pops up.' });
+      }
+
       // Deterministic First Whisper spark, sized by the state's population
       if (!s.hasSpawnedFirstWhisper) {
         sparks.push({
           id: `spark_first_${s.id}_${day}`,
           kind: 'WHISPER',
           stateId: s.id,
-          amount: Math.max(1, Math.round(whisperBounty(s.population) * bountyMult)),
+          amount: Math.max(1, Math.round(whisperBounty(s.population) * BALANCE.whisperShare * bountyMult)),
           offsetX: jitter(rng, 10),
           offsetY: jitter(rng, 10),
           ticksRemaining: 3
@@ -198,7 +214,10 @@ export const SimulationEngine = {
     // ---- Stage 5: stochastic sparks, ambient Spin, Heat, Investigation, Cover-Up, Freshness ----
     const infectedStates = Object.values(states).filter(isInfected);
     if (sparks.length < BALANCE.maxSparksOnBoard && infectedStates.length > 0) {
-      const chance = Math.min(BALANCE.stochasticMax, BALANCE.stochasticBase + vars.notoriety * BALANCE.stochasticPerNotoriety);
+      // The drip over time: denser in the first days (when little has spread yet), and denser still in the guided first case.
+      const earlyScale = day <= BALANCE.earlyDays && !prev.training ? BALANCE.earlySmall : 1;
+      const dense = (day <= BALANCE.earlyDays ? BALANCE.earlyDrip : 1) * (prev.training && day <= BALANCE.earlyDays + 2 ? BALANCE.trainingDrip : 1);
+      const chance = Math.min(day <= BALANCE.earlyDays ? 0.95 : BALANCE.stochasticMax, (BALANCE.stochasticBase + vars.notoriety * BALANCE.stochasticPerNotoriety) * dense);
       if (rng() < chance) {
         const host = infectedStates[Math.floor(rng() * infectedStates.length)];
         const golden = rng() < BALANCE.goldenChance;
@@ -209,12 +228,25 @@ export const SimulationEngine = {
           id: `spark_rng_${host.id}_${day}_${Math.floor(rng() * 100000)}`,
           kind: golden ? 'GOLDEN' : fat ? 'FAT' : 'FAST',
           stateId: host.id,
-          amount: Math.max(1, Math.round(base * (golden ? BALANCE.goldenMultiplier : 1) * bountyMult)),
+          amount: Math.max(1, Math.round(base * (golden ? BALANCE.goldenMultiplier : 1) * bountyMult * earlyScale)),
           offsetX: jitter(rng, 15),
           offsetY: jitter(rng, 15),
           ticksRemaining: golden ? 3 : fat ? 4 : 2
         });
       }
+    }
+
+    // A board is never left empty: after all of the above, small bubbles drift up to the floor. The guided first case keeps 3 on the board
+    // (a person pops them in seconds and then waits for the next tick, so a beginner always has something to tap); other cases keep 1.
+    const minBoard = prev.training && day <= BALANCE.trainingMinUntilDay ? BALANCE.trainingMinBubbles : (BALANCE.emptyGuard ? 1 : 0);
+    for (let n = 0; sparks.length < minBoard && infectedStates.length > 0 && n < 5; n++) {
+      const host = infectedStates[Math.floor(rng() * infectedStates.length)];
+      const [lo, hi] = BALANCE.fastSpark;
+      sparks.push({
+        id: `spark_rng_${host.id}_${day}_${Math.floor(rng() * 100000)}`, kind: 'FAST', stateId: host.id,
+        amount: Math.max(1, Math.round((lo + Math.floor(rng() * (hi - lo + 1))) * bountyMult * (day <= BALANCE.earlyDays && !prev.training ? BALANCE.earlySmall : 1))),
+        offsetX: jitter(rng, 15), offsetY: jitter(rng, 15), ticksRemaining: 3
+      });
     }
 
     // Ambient Spin grows with the Target's cover-up
@@ -225,7 +257,7 @@ export const SimulationEngine = {
 
     const proxyMultiplier = hasDefense('proxy_relay') ? 0.75 : 1;
     const heatGain = Math.max(BALANCE.heatFloor, vars.notoriety * BALANCE.heatPerNotoriety * proxyMultiplier)
-      * heatMultiplier(prev);
+      * heatMultiplier(prev) * exposureMultiplier(prev.states);
     const investigationProgress = Math.min(100, prev.investigationProgress + BALANCE.investigationBase + (hasDefense('whistleblower') ? BALANCE.whistleblowerBonus : 0));
 
     const believerShare = nationalBelieverPct(states) / 100;
@@ -258,7 +290,7 @@ export const SimulationEngine = {
     next.peakHeat = Math.max(prev.peakHeat, next.heat);
     next.peakCoverUp = Math.max(prev.peakCoverUp, next.coverUp);
 
-    const picked = scheduledEvent(next, target.occurrences, rng) ?? pickEvent(next, rng, BALANCE.eventChance, BALANCE.eventCooldown, BALANCE.eventMinDay);
+    const picked = scheduledEvent(next, target.occurrences ?? (prev.training ? TRAINING_OCCURRENCES : undefined), rng) ?? pickEvent(next, rng, BALANCE.eventChance, BALANCE.eventCooldown, BALANCE.eventMinDay);
     const eventAlert = picked ? buildEventAlert(picked.def, next, picked.zone) : null;
 
     const winner = AlertFactory.evaluateTickTriggers(next, eventAlert);
@@ -268,12 +300,13 @@ export const SimulationEngine = {
       if (winner.signature && winner.abilityIndex !== undefined) {
         // Signature move: the strongest ability, once, at double strength.
         const base = target.abilities[winner.abilityIndex];
-        const ability = { ...base, strength: base.strength * BALANCE.signatureStrength, stamp: `SIGNATURE MOVE // ${base.stamp}` };
+        const ability = { ...base, ...(base.mirror ? { branch: dominantBranch(next.unlockedChannels) } : {}), strength: base.strength * BALANCE.signatureStrength, stamp: `SIGNATURE MOVE // ${base.stamp}` };
         const result = applyEffects(next, abilityEffects(ability, next), rng, `${day}sig`);
         next = { ...result.state, triggeredMilestones: [...result.state.triggeredMilestones, 'SIGNATURE'] };
         alert = buildAbilityAlert(target, ability, next, result.notes);
       } else if (winner.abilityIndex !== undefined) {
-        const ability = target.abilities[winner.abilityIndex];
+        const baseAbility = target.abilities[winner.abilityIndex];
+        const ability = baseAbility.mirror ? { ...baseAbility, branch: dominantBranch(next.unlockedChannels) } : baseAbility;
         const result = applyEffects(next, abilityEffects(ability, next), rng, `${day}ab${winner.abilityIndex}`);
         next = result.state;
         alert = buildAbilityAlert(target, ability, next, result.notes);

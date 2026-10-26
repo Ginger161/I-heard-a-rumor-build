@@ -8,6 +8,7 @@ import type { ChapterScript, Scene } from './types';
 export const PROLOGUE: Scene = {
   id: 'prologue',
   beats: [
+    { t: 'cold', text: 'A glimpse ahead.', time: 'This has not happened yet. It will.' },
     { t: 'cold', text: '6:06 PM.', time: 'Lagos. A Tuesday you will remember for the rest of your life.' },
     { t: 'narr', text: 'Your phone buzzes once. Not a call. A screenshot, in the format everyone in this city has learned to recognise.' },
     { t: 'doc', kind: 'draft', title: 'NOTES  •  STATEMENT', lines: [
@@ -36,7 +37,7 @@ export const PROLOGUE: Scene = {
       { id: 'hide', label: 'Delete it. Tell nobody.', hint: 'Some things you keep to yourself.', effects: { trust: -1, flags: ['prologue_hidden'] } },
       { id: 'keep', label: 'Screenshot it. Say nothing.', hint: 'Keep the evidence. Keep the secret.', effects: { flags: ['prologue_kept'] } }
     ] },
-    { t: 'cold', text: 'Eleven days earlier.', time: 'Rewind.' }
+    { t: 'cold', text: 'Now, go back.', time: 'Eleven days earlier. This is where it starts.' }
   ]
 };
 

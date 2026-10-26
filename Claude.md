@@ -618,3 +618,12 @@ One Target, scandal, climate and **random seed** per calendar day, identical for
 - **Reminders** (`ui/notify.ts`): OneSignal web push, opt-in only, loaded only after opt-in, its worker in the `/push/` scope. Off ("coming soon") until `VITE_ONESIGNAL_APP_ID`.
   Tags streak / daily_done / last_played for segmentation; app-icon badge while the Daily Case is waiting.
 - **Launch guide**: `docs/LAUNCH.md` (hosting, env vars, Studio lock, reminders, payments, checklist). `public/_headers`, `privacy.html`, `terms.html` (templates).
+
+---
+
+## 16. HEAT V2, THE 16-CHAPTER STORY, PREMIUM EPISODES AND CAMPAIGNS
+
+- **Heat v2** (`balance.ts`, `selectors.ts`): Heat is not a bank account. Defenses cannot take Heat below `heatFloorShare` (40%, cap 40) of your PEAK Heat (the DSS keeps a file); each defense you have already bought makes the next 8% dearer; a Burner SIM scrubs less each time (18, 15, 13); a spreading story draws more eyes (`exposureMultiplier`: daily Heat x (1 + 0.12 x believer share)); each verified file you leak cuts Doubt 5% less than the last. Measured with the bots: about -2 points on Tier 1 and -5 to -6 on Tiers 2-3. The floor closes the "buy everything and sit at zero" exploit and barely moves the bots, because they never zero their Heat.
+- **Story Mode** is 16 chapters in 5 acts (`season/act1.ts` to `act5.ts`), with six endings chosen by the finale (`ENDINGS` in `act5.ts`) and a hidden coda. See `docs/STORY_ENGINE.md`.
+- **Premium Gist** (`season/premiumScripts.ts`, `PREMIUM_EPISODES` in `data/story.ts`): three bonus episodes outside the season ("Lecture Hall 4" after Chapter 8, "Year Zero" after Chapter 11, "The Oracle" after Chapter 12), gated by the Gist Pass. Finishing one adds lines to the finale and endings; "Year Zero" hides the bonus clue C25 (never counts towards the 24).
+- **Campaigns** (`docs/CAMPAIGNS.md`): spread something good. 15 campaigns in five kinds (health, awareness, civic, marketing, myth-busting) on the same engine, with the numbers renamed (adopters, skepticism, opposition, backlash) and their own alerts, proof, protection and events. `npm run simulate:campaigns` balances them.

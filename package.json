@@ -10,6 +10,7 @@
     "verify": "esbuild scripts/verify.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/verify.cjs --log-level=warning && node node_modules/.cache/verify.cjs",
     "simulate": "esbuild scripts/simulate.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/simulate.cjs --log-level=warning && node node_modules/.cache/simulate.cjs",
     "rate": "esbuild scripts/rate.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/rate.cjs --log-level=warning && node node_modules/.cache/rate.cjs",
+    "simulate:campaigns": "esbuild scripts/campaignSim.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/campaignsim.cjs --log-level=warning && node node_modules/.cache/campaignsim.cjs",
     "simulate:story": "esbuild scripts/storySim.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/storysim.cjs --log-level=warning && node node_modules/.cache/storysim.cjs",
     "build:studio": "tsc --noEmit && vite build --mode studio --outDir dist-studio",
     "egg:hash": "node scripts/eggHash.mjs",

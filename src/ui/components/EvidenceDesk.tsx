@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { GameState } from '../../engine/types';
 import { EvidenceItem, FORGERY_EVIDENCE, VERIFIED_EVIDENCE, getEvidenceVariant } from '../../engine/data/evidence';
 import { fillTarget, getTarget } from '../../engine/data/targets';
-import { nationalAverageDoubt } from '../../engine/selectors';
+import { CAMPAIGN_EVIDENCE } from '../../engine/data/campaignCopy';
+import { campaignize, vocabFor } from '../../engine/campaigns';
+import { evidenceCostFor, evidenceFadeFor, nationalAverageDoubt } from '../../engine/selectors';
 import { FORGERY_BASE_BACKFIRE, FORGERY_HIGH_DOUBT_BACKFIRE } from '../../engine/actions';
 import { BrutalButton, PaperGrain, SparkCounter } from './common';
 
@@ -33,7 +35,10 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
   const avgDoubt = nationalAverageDoubt(gameState.states);
   const backfireRisk = Math.round((FORGERY_BASE_BACKFIRE + (avgDoubt > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0) + (target.mods.forgeryRisk ?? 0)) * 100);
   const totalJaded = Object.values(gameState.states).reduce((a, s) => a + s.jaded, 0);
-  const items = tab === 'VERIFIED' ? VERIFIED_EVIDENCE : FORGERY_EVIDENCE;
+  const V = vocabFor(gameState.activeTargetId);
+  const noForgery = !!target.mods.noForgery;
+  const fade = evidenceFadeFor(gameState);
+  const items = tab === 'VERIFIED' ? VERIFIED_EVIDENCE : noForgery ? [] : FORGERY_EVIDENCE;
 
   return (
     <>
@@ -45,7 +50,7 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
         {/* HEADER */}
         <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex-shrink-0 border-b-4 border-[#8B0000]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-base font-black tracking-widest uppercase font-serif">Evidence Locker</span>
+            <span className="text-base font-black tracking-widest uppercase font-serif">{V.evidenceDesk}</span>
             <div className="flex items-center gap-3">
               <SparkCounter value={gameState.sparks} className="text-xs" />
               {!docked && <button
@@ -58,7 +63,7 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
             </div>
           </div>
           <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-            <span>Investigation Progress</span>
+            <span>{V.campaign ? 'Proof gathered' : 'Investigation Progress'}</span>
             <span>{Math.floor(progress)}%</span>
           </div>
           <div className="relative w-full h-3 bg-black border border-white/30 rounded-sm overflow-hidden">
@@ -76,7 +81,7 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
                   tab === t ? 'bg-[#EADCC8] text-[#1A1A1A]' : 'bg-[#2B2B2B] text-slate-400'
                 }`}
               >
-                {t === 'VERIFIED' ? 'Verified Dossier Files' : 'Fabricated Forgeries'}
+                {t === 'VERIFIED' ? V.verified : V.hype}
               </button>
             ))}
           </div>
@@ -84,22 +89,38 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
 
         {/* CONTENT */}
         <div className="relative flex-1 overflow-y-auto no-scrollbar p-3 flex flex-col gap-3">
-          {tab === 'VERIFIED' && totalJaded > 0 && (
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[#475569] bg-[#E2E8F0] border-2 border-dashed border-[#64748B] rounded-lg px-3 py-2">
-              {Math.round(totalJaded).toLocaleString()} citizens are Gist-Fatigued. Hard evidence wakes them up.
+          {tab === 'VERIFIED' && fade < 1 && (
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#92400E] bg-[#FEF3C7] border-2 border-[#92400E] rounded-lg px-3 py-2">
+              Evidence fatigue: people have seen files before. Each new verified file cuts Doubt {Math.round((1 - fade) * 100)}% less.
             </div>
           )}
-          {tab === 'FORGERY' && (
+          {tab === 'VERIFIED' && totalJaded > 0 && (
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#475569] bg-[#E2E8F0] border-2 border-dashed border-[#64748B] rounded-lg px-3 py-2">
+              {Math.round(totalJaded).toLocaleString()} {V.campaign ? 'people are tired of hearing the slogan. Fresh proof wakes them up.' : 'citizens are Gist-Fatigued. Hard evidence wakes them up.'}
+            </div>
+          )}
+          {tab === 'VERIFIED' && target.mods.evidenceCost !== undefined && target.mods.evidenceCost < 1 && (
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#065F46] bg-[#D1FAE5] border-2 border-[#065F46] rounded-lg px-3 py-2">
+              In a room full of liars the truth is cheap: genuine evidence costs {Math.round((1 - target.mods.evidenceCost) * 100)}% less here.
+            </div>
+          )}
+          {tab === 'FORGERY' && noForgery && (
+            <div className="text-[11px] font-bold text-[#8B0000] bg-[#FEE2E2] border-2 border-[#8B0000] rounded-lg px-3 py-3">
+              Forgeries are not an option in this case. Everyone here can spot a lie, so only real evidence will work.
+            </div>
+          )}
+          {tab === 'FORGERY' && !noForgery && (
             <div className="text-[10px] font-bold uppercase tracking-wider text-[#8B0000] bg-[#FEE2E2] border-2 border-[#8B0000] rounded-lg px-3 py-2">
-              ⚠ Forgery backfire risk right now: {backfireRisk}%{avgDoubt > 55 ? ' (skeptical streets: +35%)' : ''}. If exposed: +20% Doubt, +25% Heat, +15% Cover-Up.
+              ⚠ {V.campaign ? 'Exaggeration' : 'Forgery'} backfire risk right now: {backfireRisk}%{avgDoubt > 55 ? ' (skeptical streets: +35%)' : ''}. If exposed: {campaignize('+20% Doubt, +25% Heat, +15% Cover-Up.', V)}
             </div>
           )}
 
           {items.map(item => {
-            const variant = getEvidenceVariant(item, category, target.parody, target.storyOnly);
+            const variant = V.campaign ? { name: CAMPAIGN_EVIDENCE[item.id]?.name ?? item.name, flavor: [(CAMPAIGN_EVIDENCE[item.id]?.flavor ?? '').replace('{Cause}', V.cause)] } : getEvidenceVariant(item, category, target.parody, target.storyOnly);
             const dropped = gameState.droppedEvidence.includes(item.id);
             const unlocked = progress >= item.requiredInvestigation;
-            const canAfford = gameState.sparks >= item.cost;
+            const cost = evidenceCostFor(gameState, item);
+            const canAfford = gameState.sparks >= cost;
 
             return (
               <div
@@ -117,12 +138,12 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {item.tier && <span className="text-[8px] font-black bg-[#1A1A1A] text-[#FDE68A] px-1.5 py-0.5 rounded-sm tracking-wider">TIER {item.tier}</span>}
-                      {item.isFabricated && <span className="text-[8px] font-black bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm tracking-wider">FABRICATED</span>}
+                      {item.tier && <span className="text-[10px] font-black bg-[#1A1A1A] text-[#FDE68A] px-1.5 py-0.5 rounded-sm tracking-wider">TIER {item.tier}</span>}
+                      {item.isFabricated && <span className="text-[10px] font-black bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm tracking-wider">FABRICATED</span>}
                     </div>
                     <h3 className="font-bold text-sm text-[#1A1A1A] font-serif leading-tight mt-1">{unlocked ? variant.name : '▮▮▮▮▮ CLASSIFIED ▮▮▮▮▮'}</h3>
                   </div>
-                  <span className="bg-[#FEF3C7] text-[#B45309] font-black text-xs px-2 py-1 rounded border-2 border-[#1A1A1A] flex-shrink-0">{item.cost} ⚡</span>
+                  <span className="bg-[#FEF3C7] text-[#92400E] font-black text-xs px-2 py-1 rounded border-2 border-[#1A1A1A] flex-shrink-0">{cost} ⚡</span>
                 </div>
 
                 {unlocked ? (
@@ -131,20 +152,20 @@ export const EvidenceDesk: React.FC<EvidenceDeskProps> = ({ gameState, onClose, 
                       {variant.flavor.map(f => fillTarget(f, target)).join(' ')}
                     </p>
                     <div className="flex gap-1.5 flex-wrap">
-                      {effectChips(item).map(chip => (
-                        <span key={chip} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm border ${chip.includes('Heat') && !chip.includes('Cover') ? 'text-[#8B0000] border-[#8B0000]' : 'text-[#065F46] border-[#065F46]'}`}>
+                      {effectChips(item).map(c0 => V.campaign ? campaignize(c0, V).replace(/Jaded/g, 'Fatigued').replace(/Heard/g, 'Aware') : c0).map(chip => (
+                        <span key={chip} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${chip.includes('Heat') && !chip.includes('Cover') ? 'text-[#8B0000] border-[#8B0000]' : 'text-[#065F46] border-[#065F46]'}`}>
                           {chip}
                         </span>
                       ))}
                     </div>
                     {!dropped && (
                       <BrutalButton tone={item.isFabricated ? 'crimson' : 'ink'} disabled={!canAfford} onClick={() => onLeak(item.id)} className="py-2.5">
-                        {canAfford ? (item.isFabricated ? `Leak Forgery (${item.cost} ⚡)` : `Leak Evidence (${item.cost} ⚡)`) : 'Insufficient Sparks'}
+                        {canAfford ? (V.campaign ? (item.isFabricated ? `Share the Bold Claim (${cost} ⚡)` : `Share Proof (${cost} ⚡)`) : (item.isFabricated ? `Leak Forgery (${cost} ⚡)` : `Leak Evidence (${cost} ⚡)`)) : 'Insufficient Sparks'}
                       </BrutalButton>
                     )}
                   </>
                 ) : (
-                  <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/50">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">
                     🔒 Requires {item.requiredInvestigation}% Investigation ({Math.floor(progress)}% now)
                   </div>
                 )}

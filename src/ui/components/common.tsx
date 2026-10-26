@@ -18,7 +18,7 @@ export const TapeStrip: React.FC<{ className?: string }> = ({ className = '' }) 
 
 // Clout / Spark counter tape (spec §1).
 export const SparkCounter: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => (
-  <div className={`relative bg-[#FDE68A] text-[#B45309] font-black px-3 py-1.5 border-2 border-[#1A1A1A] rotate-1 shadow-[2px_2px_0px_rgba(0,0,0,0.15)] ${className}`}>
+  <div className={`relative bg-[#FDE68A] text-[#92400E] font-black px-3 py-1.5 border-2 border-[#1A1A1A] rotate-1 shadow-[2px_2px_0px_rgba(0,0,0,0.15)] ${className}`}>
     <TapeStrip className="-top-2.5 left-1/2 -translate-x-1/2 rotate-[-4deg]" />
     {value} ⚡
   </div>

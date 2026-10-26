@@ -26,7 +26,7 @@ const colorOf = (from: string): string => (from === 'oracle' ? '#F59E0B' : CAST_
 
 const MOOD_RING: Record<Mood, string> = { NEUTRAL: '#94A3B8', CONFIDENT: '#34D399', SMUG: '#F59E0B', ANGRY: '#EF4444', WORRIED: '#38BDF8', PANIC: '#F43F5E', DEFEATED: '#64748B', LAUGH: '#FBBF24' };
 
-const TAP = 'text-[10px] font-black uppercase tracking-[0.3em] text-[var(--m-ink)]/45 animate-pulse';
+const TAP = 'text-[10px] font-black uppercase tracking-[0.3em] text-[var(--m-ink)]/72 animate-hint';
 
 // ---- one beat at a time ----------------------------------------------------------------------------------------------------
 const Typewriter: React.FC<{ text: string; speed?: number; onDone?: () => void; skip?: boolean }> = ({ text, speed = 22, onDone, skip }) => {
@@ -82,7 +82,7 @@ const Bubble: React.FC<{ m: ChatMsg; targetId?: string | null }> = ({ m, targetI
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} animate-pop-in`}>
       <div className={`max-w-[84%] px-3 py-2 rounded-2xl ${mine ? 'rounded-br-sm bg-[#0F766E] text-white' : 'rounded-bl-sm bg-[var(--m-surface2)] text-[var(--m-ink)] border'} `} style={mine ? undefined : { borderColor: c }}>
-        {!mine && <div className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{ color: c }}>{nameOf(String(m.from), targetId)}</div>}
+        {!mine && <div className="text-[10px] font-black uppercase tracking-widest mb-0.5" style={{ color: c }}>{nameOf(String(m.from), targetId)}</div>}
         <div className="text-[14px] font-sans leading-snug">{m.text}</div>
       </div>
     </div>
@@ -118,8 +118,8 @@ const DocBeat: React.FC<{ beat: Extract<Beat, { t: 'doc' }>; skip: boolean; onCo
   return (
     <div className="w-full max-w-[400px] bg-[#F4F1EA] text-[#1A1A1A] rounded-lg border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,.6)] rotate-[-0.6deg] overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1A1A] text-[#F4F1EA]">
-        <span className="text-[9px] font-black tracking-[0.25em]">{tag}</span>
-        <span className="text-[9px] font-mono opacity-70 truncate max-w-[70%]">{beat.title}</span>
+        <span className="text-[10px] font-black tracking-[0.25em]">{tag}</span>
+        <span className="text-[10px] font-mono opacity-70 truncate max-w-[70%]">{beat.title}</span>
       </div>
       <div className={`p-3.5 flex flex-col gap-1.5 ${mono ? 'font-mono text-[12px]' : 'font-sans text-[14px]'} leading-snug`}>
         {beat.lines.slice(0, n).map((l, i) => (
@@ -175,10 +175,10 @@ const ClueBeat: React.FC<{ id: string; onShown: () => void }> = ({ id, onShown }
   if (!c) return null;
   return (
     <div className="w-full max-w-[380px] flex flex-col items-center gap-3">
-      <div className="text-[11px] font-black uppercase tracking-[0.4em] text-[var(--m-accent)] animate-stamp-in">New clue pinned</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.4em] text-[var(--m-accent-text)] animate-stamp-in">New clue pinned</div>
       <div className="relative w-full bg-[#F4F1EA] text-[#1A1A1A] rounded-md border-2 border-black p-4 shadow-[6px_6px_0px_rgba(0,0,0,.6)] rotate-[1.2deg] animate-pop-in">
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#E11D48] border-2 border-black shadow-md" aria-hidden />
-        <div className="text-[9px] font-black tracking-[0.3em] text-[#8B0000]">CLUE {String(c.n).padStart(2, '0')} / 24</div>
+        <div className="text-[10px] font-black tracking-[0.3em] text-[#8B0000]">CLUE {String(c.n).padStart(2, '0')} / 24</div>
         <div className="font-serif font-black text-[20px] leading-tight mt-1">{c.title}</div>
         <p className="font-sans text-[13px] leading-snug mt-1.5">{c.detail}</p>
       </div>
@@ -186,20 +186,21 @@ const ClueBeat: React.FC<{ id: string; onShown: () => void }> = ({ id, onShown }
   );
 };
 
-const ChoiceBeat: React.FC<{ beat: Extract<Beat, { t: 'choice' }>; onPick: (optionId: string, auto: boolean) => void }> = ({ beat, onPick }) => {
+const ChoiceBeat: React.FC<{ beat: Extract<Beat, { t: 'choice' }>; story: StoryProgress; onPick: (optionId: string, auto: boolean) => void }> = ({ beat, story, onPick }) => {
+  const options = beat.options.filter(o => condHolds(story, o.when));
   const [left, setLeft] = useState(beat.timer ?? 0);
   const done = useRef(false);
   const pick = useCallback((id: string, auto: boolean) => { if (done.current) return; done.current = true; onPick(id, auto); }, [onPick]);
   useEffect(() => {
     if (!beat.timer) return;
-    if (left <= 0) { pick(beat.fallback ?? beat.options[beat.options.length - 1].id, true); return; }
+    if (left <= 0) { pick(beat.fallback && options.some(o => o.id === beat.fallback) ? beat.fallback : options[options.length - 1].id, true); return; }
     if (left <= 5) sfx.play('tick');
     const t = setTimeout(() => setLeft(l => l - 1), 1000);
     return () => clearTimeout(t);
   }, [left, beat, pick]);
   return (
     <div className="w-full max-w-[400px] flex flex-col gap-3">
-      <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--m-accent)]">A decision</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--m-accent-text)]">A decision</div>
       <div className="font-serif font-black text-[22px] leading-tight text-[var(--m-ink)]">{beat.prompt}</div>
       {beat.timer ? (
         <div className="h-2 rounded-full bg-[var(--m-sunk)] border border-[var(--m-line)] overflow-hidden" aria-label={`${left} seconds left`}>
@@ -207,7 +208,7 @@ const ChoiceBeat: React.FC<{ beat: Extract<Beat, { t: 'choice' }>; onPick: (opti
         </div>
       ) : null}
       <div className="flex flex-col gap-2">
-        {beat.options.map(o => (
+        {options.map(o => (
           <button key={o.id} onClick={() => { sfx.play('pop'); pick(o.id, false); }} className="text-left min-h-[56px] rounded-xl border-2 border-[var(--m-line)] bg-[var(--m-surface2)] px-4 py-3 cursor-pointer active:translate-y-[2px] hover:border-[var(--m-accent)]">
             <div className="font-black text-[15px] leading-tight text-[var(--m-ink)]">{o.label}</div>
             {o.hint && <div className="text-[12px] font-sans text-[var(--m-soft)] leading-snug mt-0.5">{o.hint}</div>}
@@ -236,6 +237,7 @@ export const ScenePlayer: React.FC<Props> = ({ scene, story, targetId, label, on
   const [idx, setIdx] = useState(0);
   const [ready, setReady] = useState(false);     // the current beat has finished playing (a tap now moves on)
   const [skipFast, setSkipFast] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);   // what a choice just did, in plain words
   const liveRef = useRef(live); liveRef.current = live;
 
   const beatAt = (i: number): Beat | null => scene.beats[i] ?? null;
@@ -270,11 +272,18 @@ export const ScenePlayer: React.FC<Props> = ({ scene, story, targetId, label, on
   }, [beat, advance]);
 
   const onChoice = (b: Extract<Beat, { t: 'choice' }>) => (optionId: string) => {
-    const opt = b.options.find(o => o.id === optionId) ?? b.options[0];
+    const opt = b.options.find(o => o.id === optionId) ?? b.options.find(o => condHolds(liveRef.current, o.when)) ?? b.options[0];
     const next = applyStoryEffects(liveRef.current, opt.effects, [b.id, opt.id]);
     // Clues named by an option are shown on the board straight away.
     setLive(next);
     onEffects(opt.effects, [b.id, opt.id]);
+    const fx = opt.effects;
+    const notes = [
+      fx?.trust ? (fx.trust > 0 ? 'Biko trusts you more' : 'Biko trusts you less') : '',
+      fx?.coker ? (fx.coker > 0 ? 'Inspector Coker is paying attention' : 'Inspector Coker loses the scent') : '',
+      fx?.integrity ? (fx.integrity > 0 ? 'Your reputation goes up' : 'Your reputation takes a hit') : ''
+    ].filter(Boolean);
+    if (notes.length) { setToast(notes.join(' • ')); setTimeout(() => setToast(null), 2600); sfx.play(fx?.trust && fx.trust < 0 || fx?.integrity && fx.integrity < 0 ? 'warn' : 'step'); }
     advance();
   };
   const onClueShown = useCallback(() => {
@@ -325,7 +334,7 @@ export const ScenePlayer: React.FC<Props> = ({ scene, story, targetId, label, on
       case 'doc': return <DocBeat key={idx} beat={beat} skip={skipFast} onComplete={() => setReady(true)} />;
       case 'still': return <StillBeat beat={beat} />;
       case 'clue': return <ClueBeat key={idx} id={beat.id} onShown={onClueShown} />;
-      case 'choice': return <ChoiceBeat key={idx} beat={beat} onPick={onChoice(beat)} />;
+      case 'choice': return <ChoiceBeat key={idx} beat={beat} story={live} onPick={onChoice(beat)} />;
       default: return null;
     }
   })();
@@ -333,10 +342,11 @@ export const ScenePlayer: React.FC<Props> = ({ scene, story, targetId, label, on
   return (
     <div data-mode="story" className="absolute inset-0 z-[125] flex flex-col tex-story fx-film text-[var(--m-ink)] overflow-hidden animate-fade-in" onClick={tapScreen}>
       <div className="relative z-[70] flex-shrink-0 h-11 px-3 flex items-center justify-between bg-black/70 border-b border-white/10">
-        <span className="text-[10px] font-mono tracking-widest text-[#F43F5E] animate-pulse">● REC</span>
-        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--m-ink)]/70 truncate px-2">{label ?? 'The Receipts'}</span>
-        <button onClick={e => { e.stopPropagation(); skip(); }} className="min-h-[44px] px-2 text-[11px] font-black uppercase tracking-widest text-[var(--m-ink)]/70 cursor-pointer">Skip ⏭</button>
+        <span className="text-[10px] font-mono tracking-widest text-[#FB7185] animate-hint">● REC</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--m-ink)]/72 truncate px-2">{label ?? 'The Receipts'}</span>
+        <button onClick={e => { e.stopPropagation(); skip(); }} className="min-h-[44px] px-2 text-[11px] font-black uppercase tracking-widest text-[var(--m-ink)]/72 cursor-pointer">Skip ⏭</button>
       </div>
+      {toast && <div className="absolute z-[80] inset-x-4 top-14 flex justify-center pointer-events-none animate-pop-in"><div className="bg-[var(--m-panel)] text-[var(--m-panel-ink)] border-2 border-[var(--m-line)] rounded-full px-4 py-1.5 text-[12px] font-sans font-black text-center shadow-[3px_3px_0px_var(--m-line)]">{toast}</div></div>}
       <div key={shakeKey} className={`relative flex-1 min-h-0 flex items-center justify-center p-4 ${beat.shake ? 'scene-shake' : ''}`}>{body}</div>
       <div className="relative z-[70] flex-shrink-0 h-12 px-4 flex items-center justify-between bg-black/70 border-t border-white/10">
         <div className="flex gap-1" aria-hidden>{scene.beats.map((_, i) => <span key={i} className={`h-1 rounded-full ${i < idx ? 'w-2 bg-[var(--m-ink)]/50' : i === idx ? 'w-4 bg-[var(--m-accent)]' : 'w-1.5 bg-[var(--m-ink)]/15'}`} />).slice(0, 24)}</div>

@@ -29,6 +29,8 @@ export interface TargetMods {
   heatRate?: number;                                 // Multiplies how fast your Heat builds (security-minded Targets)
   forgeryRisk?: number;                              // Added to forgery backfire probability
   staleRate?: number;                                // Multiplies Freshness decay (short attention spans)
+  evidenceCost?: number;                             // Multiplies what genuine evidence costs to leak (a room of liars: the truth is cheap)
+  noForgery?: boolean;                               // Forgeries cannot be leaked at all
 }
 
 // The first five are the original moves. The rest (DOUBT_WAVE onwards) are the extra moves players can give their own Targets.
@@ -46,6 +48,8 @@ export interface AbilityDef {
                       // EVIDENCE_RAID: Investigation lost | ACCOUNT_FREEZE: Sparks seized | ROADBLOCK: days land-border spread halves |
                       // LANE_JAM: days a lane runs at 60% | REGION_LOCK: days a region spreads at half speed
   branch?: Branch;    // INJUNCTION and LANE_JAM: the lane it hits
+  mirror?: boolean;   // INJUNCTION and LANE_JAM: hits the lane where YOU own the most channels (the Mentor plays your own playbook)
+  minBelievers?: number; // Only used once national Believers reach this % (a second phase of the case)
   zone?: ZoneId;      // REGION_LOCK: the region it locks down
   stamp: string;      // Alert stamp text
   headline: string;
@@ -102,7 +106,20 @@ export interface TargetBase {
 }
 
 // PLAYER: made by a player in the Arena. Structure is checked, the words are the player's own.
-export type TargetKind = 'FICTIONAL' | 'PARODY' | 'CREATOR' | 'STORY' | 'PLAYER';
+export type TargetKind = 'FICTIONAL' | 'PARODY' | 'CREATOR' | 'STORY' | 'PLAYER' | 'CAMPAIGN';
+
+// CAMPAIGN: spread something good (or useful) instead of a scandal. The same contagion engine runs it: "Believers" become adopters, Doubt
+// becomes skepticism, Cover-Up becomes the opposition, Heat becomes backlash. The Target is the OPPOSITION (a hoax, apathy, a rival); the
+// campaign itself is described here. See engine/campaigns.ts for the words the game uses for each type.
+export type CampaignType = 'HEALTH' | 'AWARENESS' | 'POLITICAL' | 'MARKETING' | 'MYTHBUST';
+export interface CampaignInfo {
+  type: CampaignType;
+  cause: string;        // The campaign's name: "Wash Your Hands, Naija"
+  slogan: string;       // One line on what it asks of people
+  adopter: string;      // What a person who has come round is called: "vaccinated", "registered voters", "customers"
+  goal: string;         // One sentence: what winning means
+  opposition: string;   // What stands in the way, in a phrase: "A hoax about the vaccine"
+}
 
 // A real creator appears only with their permission; the reference is kept with the Target.
 export interface CreatorInfo {
@@ -113,6 +130,7 @@ export interface CreatorInfo {
 
 export interface TargetArchetype extends TargetBase {
   kind?: TargetKind;
+  campaign?: CampaignInfo;                           // Set for kind CAMPAIGN
   storyOnly?: boolean;                               // Played through Story Mode, not listed in the Dossier folders
   avatar?: { imageUrl?: string; accent?: string };   // Optional portrait and colour; the silhouette is the fallback
   creator?: CreatorInfo;

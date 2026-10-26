@@ -1,15 +1,16 @@
 import { spring } from 'remotion';
 
 export const FPS = 60;
-export const TOTAL = 1800;
+export const TOTAL = 2700; // 45 seconds
 
+// Scene ranges (global frames). Six scenes, each long enough for its text to be read.
 export const SCENES = {
-  s1: { from: 0, dur: 240 },
-  s2: { from: 240, dur: 300 },
-  s3: { from: 540, dur: 360 },
-  s4: { from: 900, dur: 360 },
-  s5: { from: 1260, dur: 300 },
-  s6: { from: 1560, dur: 240 },
+  s1: { from: 0, dur: 360 }, //  0.0 -  6.0s  The classified drop
+  s2: { from: 360, dur: 480 }, //  6.0 - 14.0s  Ground zero & shatter
+  s3: { from: 840, dur: 540 }, // 14.0 - 23.0s  The conspiracy board
+  s4: { from: 1380, dur: 510 }, // 23.0 - 31.5s  Nationwide contagion
+  s5: { from: 1890, dur: 450 }, // 31.5 - 39.0s  Heat & the smoking gun
+  s6: { from: 2340, dur: 360 }, // 39.0 - 45.0s  Front page & CTA
 } as const;
 
 type SpringCfg = { damping: number; stiffness: number; mass: number };
@@ -27,27 +28,17 @@ export const touchdowns = (cfg: SpringCfg, delay = 0, fps = FPS, max = 150): num
   return out;
 };
 
-// ---- per-scene event frames, LOCAL to each scene (audio and visuals share these) ----
+// ---- per-scene event frames, LOCAL to each scene (picture and audio both read these) ----
 export const S1 = {
-  dropDelay: 30,
+  lampOn: 54,
+  dropDelay: 66,
   dropCfg: { damping: 7, stiffness: 80, mass: 1.5 },
-  // phrase starts leave ~1s between lines so a voiceover can read them
-  words: [72, 78, 129, 135, 213, 219, 229],
+  typeStart: 150, // folder label types itself out after the landing
+  // ONE WHISPER. / TWENTY DAYS. / BRING THEM / DOWN.   (~1.4s between phrases so they can be read aloud)
+  words: [120, 126, 192, 198, 288, 294, 312],
 };
-export const S2 = { craneEnd: 90, sparkPop: 88, shatter: 150, cardSlam: 205 };
-export const S3 = { pins: [70, 135, 200, 265], whipFrames: 22 };
-export const S4 = { arcs: [30, 70, 110, 150], counterLock: 255 };
-export const S5 = { wire: 24, stamp: 150 };
-export const S6 = { flash: 0, stamp: 50 };
-
-export const globalImpacts = (): { t: number; w: number }[] => {
-  const ev: { t: number; w: number }[] = [];
-  touchdowns(S1.dropCfg, S1.dropDelay).slice(0, 3).forEach((f, i) => ev.push({ t: SCENES.s1.from + f, w: 1 / (1 + i * 1.8) }));
-  [S1.words[0], S1.words[2], S1.words[4]].forEach((f) => ev.push({ t: SCENES.s1.from + f, w: 0.55 }));
-  ev.push({ t: SCENES.s2.from + S2.shatter, w: 0.8 }, { t: SCENES.s2.from + S2.cardSlam, w: 1 });
-  S3.pins.forEach((f) => ev.push({ t: SCENES.s3.from + f, w: 0.6 }));
-  ev.push({ t: SCENES.s4.from + S4.counterLock, w: 0.9 });
-  ev.push({ t: SCENES.s5.from + S5.wire, w: 0.6 }, { t: SCENES.s5.from + S5.stamp, w: 1.2 });
-  ev.push({ t: SCENES.s6.from + S6.flash, w: 1 }, { t: SCENES.s6.from + S6.stamp, w: 1.3 });
-  return ev;
-};
+export const S2 = { craneEnd: 130, pulse: 50, sparkPop: 140, shatter: 250, cardSlam: 320 };
+export const S3 = { pins: [96, 192, 288, 384], polaroid: 444, pullStart: 450, pullEnd: 530, whipFrames: 30 };
+export const S4 = { arcs: [40, 110, 180, 250], fly: [60, 170, 280, 360], flyLen: 190, tickStart: 30, counterLock: 400 };
+export const S5 = { wire: 30, heatEnd: 150, bubble: 100, stamp: 270 };
+export const S6 = { flash: 0, stamp: 135, cta: 225 };

@@ -14,7 +14,7 @@ interface SparkBubbleProps {
 // Each kind reads differently at a glance, so players learn what is worth chasing:
 //   WHISPER = amber (a state's first whisper) | FAST = small teal blip | FAT = big gold | GOLDEN = rare jackpot.
 const LOOK: Record<SparkKind, { size: string; bg: string; border: string; text: string; shard: string; label: string }> = {
-  WHISPER: { size: 'w-10 h-10', bg: 'bg-[#FEF3C7]', border: 'border-[#1A1A1A]', text: 'text-[#B45309]', shard: '#B45309', label: 'sparks' },
+  WHISPER: { size: 'w-10 h-10', bg: 'bg-[#FEF3C7]', border: 'border-[#1A1A1A]', text: 'text-[#92400E]', shard: '#B45309', label: 'sparks' },
   FAST: { size: 'w-8 h-8', bg: 'bg-white', border: 'border-[#0E7490]', text: 'text-[#0E7490]', shard: '#0E7490', label: 'quick sparks' },
   FAT: { size: 'w-12 h-12', bg: 'bg-[#FDE68A]', border: 'border-[#B45309]', text: 'text-[#92400E]', shard: '#92400E', label: 'big sparks' },
   GOLDEN: { size: 'w-12 h-12', bg: 'bg-gradient-to-br from-[#FEF08A] via-[#FACC15] to-[#F59E0B]', border: 'border-[#78350F]', text: 'text-[#78350F]', shard: '#F59E0B', label: 'golden jackpot' }
@@ -37,7 +37,7 @@ export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, kind = 'WHISPE
         <>
           <span className="absolute inset-0 rounded-full bg-[#FACC15]/50 animate-ping" aria-hidden />
           <span className="absolute -top-2 -right-1 text-[11px] animate-pulse" aria-hidden>✦</span>
-          <span className="absolute -bottom-1 -left-2 text-[9px] animate-pulse [animation-delay:300ms]" aria-hidden>✦</span>
+          <span className="absolute -bottom-1 -left-2 text-[10px] animate-pulse [animation-delay:300ms]" aria-hidden>✦</span>
         </>
       )}
       {kind === 'FAT' && !shattering && <span className="absolute inset-0 rounded-full border-2 border-[#B45309]/50 animate-ping" aria-hidden />}
@@ -57,7 +57,7 @@ export const SparkBubble: React.FC<SparkBubbleProps> = ({ amount, kind = 'WHISPE
         }`}
       >
         <span className={`${kind === 'FAST' ? 'text-[11px]' : 'text-[13px]'} font-black ${look.text}`}>⚡</span>
-        <span className={`${kind === 'FAST' ? 'text-[8px]' : 'text-[9px]'} font-black text-[#1A1A1A] -mt-0.5`}>{amount}</span>
+        <span className={`${kind === 'FAST' ? 'text-[10px]' : 'text-[10px]'} font-black text-[#1A1A1A] -mt-0.5`}>{amount}</span>
       </button>
       {shattering && <ShatterBurst color={look.shard} animating={animating} />}
     </div>

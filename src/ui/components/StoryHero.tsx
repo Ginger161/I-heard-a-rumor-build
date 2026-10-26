@@ -33,7 +33,7 @@ export const StoryHero: React.FC<{ profile: MetaProfile; onOpen: () => void; wid
       <TapeStrip className="-top-1 left-6 rotate-[-5deg]" />
       <div className="flex items-center justify-between gap-2">
         <div className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--m-accent2)]">🎬 Story Mode • Season 1</div>
-        <div className="text-[10px] font-sans font-black uppercase tracking-wider text-[var(--m-ink)]/60 whitespace-nowrap">{won}/{STORY_CHAPTERS.length}{storyStars(story) > 0 ? ` • ${storyStars(story)}★` : ''}</div>
+        <div className="text-[10px] font-sans font-black uppercase tracking-wider text-[var(--m-ink)]/72 whitespace-nowrap">{won}/{STORY_CHAPTERS.length}{storyStars(story) > 0 ? ` • ${storyStars(story)}★` : ''}</div>
       </div>
 
       <div className="flex gap-3.5 items-center mt-2.5">
@@ -55,7 +55,7 @@ export const StoryHero: React.FC<{ profile: MetaProfile; onOpen: () => void; wid
             {fresh ? '13 chapters • 4 acts • every one personal' : done ? 'Season complete. See who you became.' : <>Act {ch.act} • {act.name}</>}
           </div>
           {!fresh && !done && (
-            <div className="mt-1.5 text-[13px] font-black leading-tight text-[var(--m-accent2)]">Ch {idx + 1}: {ch.title}<span className="block font-sans font-semibold text-[11px] text-[var(--m-ink)]/70">{ch.kicker}</span></div>
+            <div className="mt-1.5 text-[13px] font-black leading-tight text-[var(--m-accent2)]">Ch {idx + 1}: {ch.title}<span className="block font-sans font-semibold text-[11px] text-[var(--m-ink)]/72">{ch.kicker}</span></div>
           )}
         </div>
       </div>

@@ -128,6 +128,7 @@ export interface StateNode {
   doubt: number;
   gistReport?: string;
   hasSpawnedFirstWhisper: boolean;
+  tipped?: boolean;               // The state has passed its tipping point (people there are really talking): it paid a bubble
 }
 
 export interface GameState {

@@ -4,6 +4,8 @@ export interface CopyVariant {
   headline: string;
   body: string;
   button?: string;
+  stamp?: string;     // Campaign copy: replaces the alert's stamp line
+  subtext?: string;   // Campaign copy: replaces the alert's sub-line
 }
 
 const v = (headline: string, body: string, button?: string): CopyVariant => ({ headline, body, button });
@@ -167,11 +169,11 @@ export const pickIndex = (key: string, seed: number, length: number): number => 
 export const fillTokens = (text: string, vars: Record<string, string>): string =>
   text.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
 
-export const pickCopy = (key: string, seed: number, vars: Record<string, string>): CopyVariant | null => {
-  const pool = COPY[key];
+export const pickCopy = (key: string, seed: number, vars: Record<string, string>, table: Record<string, CopyVariant[]> = COPY): CopyVariant | null => {
+  const pool = table[key];
   if (!pool || pool.length === 0) return null;
   const c = pool[pickIndex(key, seed, pool.length)];
-  return { headline: fillTokens(c.headline, vars), body: fillTokens(c.body, vars), button: c.button };
+  return { headline: fillTokens(c.headline, vars), body: fillTokens(c.body, vars), button: c.button, stamp: c.stamp ? fillTokens(c.stamp, vars) : undefined, subtext: c.subtext ? fillTokens(c.subtext, vars) : undefined };
 };
 
 // Seed-picked choice from any list (alt event bodies, taglines, tips...).

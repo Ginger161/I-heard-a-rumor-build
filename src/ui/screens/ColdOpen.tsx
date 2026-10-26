@@ -27,7 +27,7 @@ export const ColdOpen: React.FC<{ onStart: (stateId: string) => void; onSkip: ()
         {stage === 'headline' ? (
           <>
             <div className="flex-shrink-0 text-center pt-5 px-4">
-              <div className="font-serif font-black text-[15px] uppercase tracking-[0.3em] text-[#F4F1EA]/70">The Daily Gist</div>
+              <div className="font-serif font-black text-[15px] uppercase tracking-[0.3em] text-[#F4F1EA]/72">The Daily Gist</div>
               <div className="inline-block mt-2 border-4 border-[#B91C1C] text-[#EF4444] font-black text-lg tracking-[0.3em] px-4 py-0.5 rotate-[-4deg] animate-stamp-in">BREAKING</div>
             </div>
 
@@ -53,7 +53,7 @@ export const ColdOpen: React.FC<{ onStart: (stateId: string) => void; onSkip: ()
               >
                 Spread am 🔥
               </button>
-              <button onClick={() => { sfx.play('click'); onSkip(); }} className="min-h-[44px] px-4 text-[12px] font-black uppercase tracking-widest text-[#F4F1EA]/55 underline cursor-pointer">I don play this before</button>
+              <button onClick={() => { sfx.play('click'); onSkip(); }} className="min-h-[44px] px-4 text-[12px] font-black uppercase tracking-widest text-[#F4F1EA]/72 underline cursor-pointer">I don play this before</button>
             </div>
           </>
         ) : (

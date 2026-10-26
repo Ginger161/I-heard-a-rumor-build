@@ -13,8 +13,10 @@ import { OWNER, EggSource, maybeFax, onEgg, startEggListeners, triggerEgg } from
 import { getSettings, updateSettings, useSettings } from './ui/settings';
 import { ColdOpen } from './ui/screens/ColdOpen';
 import { ArenaScreen } from './ui/screens/ArenaScreen';
+import { CampaignsScreen } from './ui/screens/CampaignsScreen';
 import { ModeContext, modeFor } from './ui/modeTheme';
 import { loadLicense } from './engine/premium';
+import './engine/data/campaigns';
 import { usePremium } from './ui/usePremium';
 import { initReminders, setAppBadge, syncReminderTags } from './ui/notify';
 import { dailyStreak } from './engine/daily';
@@ -57,7 +59,7 @@ export default function App() {
 function Game() {
   const engine = useGameEngine();
   const { gameState, startArenaMatch, spendEnvelopes, startMatch, resetAll, returnToDossier, profile, unlockAll, resetProgress, climateId, daily, startDaily, bribe, buyTierFiles, buyPerk, equipPerk, startTraining, startFirstRumor, importProgress, startStory, pickStoryVariant, seeStoryPrologue, storyApply, storyClue, storySceneSeen, scores, startChallenge, importCode, grantEnvelopes } = engine;
-  const [screen, setScreen] = useState<'dossier' | 'story' | 'boards' | 'arena'>('dossier');
+  const [screen, setScreen] = useState<'dossier' | 'story' | 'boards' | 'arena' | 'campaigns'>('dossier');
   const [arenaCode, setArenaCode] = useState<string | null>(null);   // a ?t= link that was opened
   const [incoming, setIncoming] = useState<Challenge | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -151,7 +153,7 @@ function Game() {
 
   const lobby = gameState.status === 'LOBBY';
   // Each mode has its own look: arcade is the tabloid, story the thriller, arena the competition (ui/modeTheme.ts, index.css).
-  const mode = modeFor({ lobby, screen, storyId: gameState.storyId, playerTarget: !lobby && getTarget(gameState.activeTargetId).kind === 'PLAYER' });
+  const mode = modeFor({ lobby, screen, storyId: gameState.storyId, playerTarget: !lobby && getTarget(gameState.activeTargetId).kind === 'PLAYER', campaign: !lobby && !!getTarget(gameState.activeTargetId).campaign });
   useEffect(() => { document.documentElement.dataset.mode = mode; }, [mode]);
   const storyScreen = (
     <StoryScreen
@@ -173,11 +175,16 @@ function Game() {
       onImport={importCode} onPlayChallenge={c => { setScreen('dossier'); startChallenge(c); }}
     />
   );
+  const campaignsScreen = <CampaignsScreen profile={profile} onBack={() => setScreen('dossier')} onPlay={(id, cat) => { setScreen('dossier'); startMatch(id, cat); }} />;
   const content = lobby ? (
     screen === 'arena' ? (
       desktop
         ? <div className="flex-1 min-h-0 flex justify-center bg-[#EFEBE0]"><div className="w-full max-w-[640px] flex flex-col border-x-4 border-[#1A1A1A] shadow-2xl">{arenaScreen}</div></div>
         : arenaScreen
+    ) : screen === 'campaigns' ? (
+      desktop
+        ? <div className="flex-1 min-h-0 flex justify-center bg-[#EEF6EA]"><div className="w-full max-w-[720px] flex flex-col border-x-4 border-[#14231A] shadow-2xl">{campaignsScreen}</div></div>
+        : campaignsScreen
     ) : screen === 'boards' ? (
       desktop
         ? <div className="flex-1 min-h-0 flex justify-center bg-[#EFEBE0]"><div className="w-full max-w-[820px] flex flex-col border-x-4 border-[#1A1A1A] shadow-2xl">{boardsScreen}</div></div>
@@ -189,7 +196,7 @@ function Game() {
     ) : brandNew ? (
       <ColdOpen onStart={startFirstRumor} onSkip={() => updateSettings({ tutorialDone: true })} />
     ) : (
-      <DossierScreen wide={desktop} profile={profile} climateId={climateId} daily={daily} onStartDaily={startDaily} unlockAll={unlockAll || !!premium} onStart={startMatch} onReset={resetAll} onEraseProgress={resetProgress} onBribe={bribe} onBuyTier={buyTierFiles} onBuyPerk={buyPerk} onEquipPerk={equipPerk} onStartTraining={startTraining} onImportProgress={importProgress} onOpenStory={() => setScreen('story')} onOpenBoards={() => setScreen('boards')} onOpenArena={() => setScreen('arena')} />
+      <DossierScreen wide={desktop} profile={profile} climateId={climateId} daily={daily} onStartDaily={startDaily} unlockAll={unlockAll || !!premium} onStart={startMatch} onReset={resetAll} onEraseProgress={resetProgress} onBribe={bribe} onBuyTier={buyTierFiles} onBuyPerk={buyPerk} onEquipPerk={equipPerk} onStartTraining={startTraining} onImportProgress={importProgress} onOpenStory={() => setScreen('story')} onOpenBoards={() => setScreen('boards')} onOpenArena={() => setScreen('arena')} onOpenCampaigns={() => setScreen('campaigns')} />
     )
   ) : (
     <>

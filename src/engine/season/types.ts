@@ -20,11 +20,14 @@ export interface StoryEffects {
 /** A condition for showing a beat. All the parts given must hold. */
 export interface Cond {
   flag?: string; notFlag?: string; clue?: string; notClue?: string;
+  flags?: string[];               // every one of these flags is set
+  anyFlag?: string[];             // at least one of these flags is set
+  cluesGte?: number;              // at least this many clues are on the board
   trustGte?: number; trustLt?: number; cokerGte?: number; cokerLt?: number;
   choice?: [string, string];      // [choice id, option id] was picked earlier
 }
 
-export interface ChoiceOption { id: string; label: string; hint?: string; effects?: StoryEffects }
+export interface ChoiceOption { id: string; label: string; hint?: string; effects?: StoryEffects; when?: Cond }   // `when`: the option is only offered if the story says so
 export interface ChatMsg { from: CastId | string; text: string; time?: string }
 
 type Common = { when?: Cond; shake?: boolean };

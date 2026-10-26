@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { GameState } from '../../engine/types';
-import { computeMasterVariables, defenseUses, getChannel, heatMultiplier, isFrozen, nationalBelieverPct, nationalHeardPct, nationalAverageDoubt } from '../../engine/selectors';
+import { computeMasterVariables, defenseUses, exposureMultiplier, getChannel, heatFloor, heatMultiplier, isFrozen, nationalBelieverPct, nationalHeardPct, nationalAverageDoubt } from '../../engine/selectors';
 import { ZONE_IDS, ZONE_NAMES, ZONE_STATE_IDS } from '../../engine/data/zones';
 import { describeTarget, getTarget } from '../../engine/data/targets';
+import { campaignize, vocabFor } from '../../engine/campaigns';
 import { BALANCE } from '../../engine/balance';
 import { DEFENSE_DATA } from '../../engine/data/defense';
 import { WIN_BELIEVER_PCT } from '../../engine/simulation';
@@ -29,7 +30,7 @@ const SheetShell: React.FC<ShellProps> = ({ title, stamp, onClose, children }) =
       <PaperGrain />
       <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex-shrink-0 flex items-center justify-between border-b-4 border-[#8B0000]">
         <div>
-          {stamp && <div className="text-[9px] font-black tracking-widest uppercase text-[#FDE68A] mb-0.5">{stamp}</div>}
+          {stamp && <div className="text-[10px] font-black tracking-widest uppercase text-[#FDE68A] mb-0.5">{stamp}</div>}
           <span className="text-base font-black tracking-widest uppercase font-serif">{title}</span>
         </div>
         <button
@@ -61,13 +62,13 @@ export const HistoryLogSheet: React.FC<{ gameState: GameState; onClose: () => vo
   return (
     <SheetShell title="Case Log" stamp={`Day ${Math.min(gameState.currentDay, gameState.dayBudget)} of ${gameState.dayBudget}`} onClose={onClose}>
       {entries.length === 0 && (
-        <div className="text-center text-xs font-bold text-[#1A1A1A]/50 uppercase tracking-widest py-8">No developments yet. Keep pushing.</div>
+        <div className="text-center text-xs font-bold text-[#1A1A1A]/72 uppercase tracking-widest py-8">No developments yet. Keep pushing.</div>
       )}
       {entries.map((e, i) => (
         <div key={`${e.day}_${i}`} className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-3 shadow-[2px_2px_0px_#1A1A1A]">
           <div className="flex justify-between items-baseline gap-2">
             <span className="font-serif font-black text-sm leading-tight">{e.headline}</span>
-            <span className="text-[9px] font-black tracking-widest uppercase text-[#8B0000] whitespace-nowrap">Day {e.day}</span>
+            <span className="text-[10px] font-black tracking-widest uppercase text-[#8B0000] whitespace-nowrap">Day {e.day}</span>
           </div>
           <div className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-wider">{e.impact}</div>
         </div>
@@ -81,11 +82,12 @@ export const BelieversSheet: React.FC<{ gameState: GameState; onClose: () => voi
   const believers = nationalBelieverPct(gameState.states);
   const heard = nationalHeardPct(gameState.states);
   const doubt = nationalAverageDoubt(gameState.states);
+  const V = vocabFor(gameState.activeTargetId);
   return (
-    <SheetShell title="Public Opinion" stamp="Believers // Heard // Doubt" onClose={onClose}>
+    <SheetShell title={V.campaign ? 'Public Support' : 'Public Opinion'} stamp={`${V.adopters} // Heard // ${V.doubt}`} onClose={onClose}>
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
-          <span>Believers</span>
+          <span>{V.adopters}</span>
           <span className="text-[#8B0000]">{believers.toFixed(1)}% / {WIN_BELIEVER_PCT}% to win</span>
         </div>
         <Bar value={believers} color="#DC2626" markers={[25, 50, WIN_BELIEVER_PCT]} />
@@ -93,18 +95,18 @@ export const BelieversSheet: React.FC<{ gameState: GameState; onClose: () => voi
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
           <span>Heard it</span>
-          <span className="text-[#B45309]">{heard.toFixed(1)}%</span>
+          <span className="text-[#92400E]">{heard.toFixed(1)}%</span>
         </div>
         <Bar value={heard} color="#D97706" />
       </div>
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
-          <span>Avg. Doubt (reached states)</span>
+          <span>Avg. {V.doubt} (reached states)</span>
           <span>{Math.round(doubt)}%</span>
         </div>
         <Bar value={doubt} color="#64748B" markers={[65]} />
       </div>
-      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/60 mt-1">By geopolitical zone</div>
+      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/72 mt-1">By geopolitical zone</div>
       {ZONE_IDS.map(zone => {
         const ids = ZONE_STATE_IDS[zone];
         const pop = ids.reduce((a, id) => a + gameState.states[id].population, 0);
@@ -114,7 +116,7 @@ export const BelieversSheet: React.FC<{ gameState: GameState; onClose: () => voi
           <div key={zone} className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-2.5">
             <div className="flex justify-between text-[11px] font-black uppercase tracking-wider mb-1">
               <span>{ZONE_NAMES[zone]}</span>
-              <span className="text-slate-600">{reached}/{ids.length} states • {((bel / pop) * 100).toFixed(1)}% believe</span>
+              <span className="text-slate-600">{reached}/{ids.length} states • {((bel / pop) * 100).toFixed(1)}% {V.campaign ? 'on board' : 'believe'}</span>
             </div>
             <Bar value={(bel / pop) * 100} color="#DC2626" />
           </div>
@@ -130,38 +132,47 @@ export const HeatSheet: React.FC<{ gameState: GameState; onClose: () => void }> 
   const target = getTarget(gameState.activeTargetId);
   const proxy = defenseUses(gameState, 'proxy_relay') > 0 ? 0.75 : 1;
   const targetMult = heatMultiplier(gameState);
-  const daily = Math.max(BALANCE.heatFloor, vars.notoriety * BALANCE.heatPerNotoriety * proxy) * targetMult;
+  const V = vocabFor(gameState.activeTargetId);
+  const exposure = exposureMultiplier(gameState.states);
+  const floor = Math.round(heatFloor(gameState));
+  const daily = Math.max(BALANCE.heatFloor, vars.notoriety * BALANCE.heatPerNotoriety * proxy) * targetMult * exposure;
   return (
-    <SheetShell title="State Security Heat" stamp="DSS // Confidential" onClose={onClose}>
+    <SheetShell title={V.campaign ? 'Backlash' : 'State Security Heat'} stamp={V.campaign ? 'Regulators and critics' : 'DSS // Confidential'} onClose={onClose}>
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
-          <span>Heat</span>
+          <span>{V.heat}</span>
           <span className="text-[#8B0000]">{Math.floor(gameState.heat)}% (peak {Math.floor(gameState.peakHeat)}%)</span>
         </div>
         <Bar value={gameState.heat} color="#B91C1C" markers={[40, 70, 90]} />
       </div>
       <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-3 text-[11px] font-bold leading-relaxed">
-        <div>Daily Heat gain: <span className="text-[#8B0000]">+{daily.toFixed(1)}%</span></div>
-        <div className="text-slate-600">Notoriety {vars.notoriety.toFixed(2)} × {BALANCE.heatPerNotoriety}{proxy < 1 ? ' × 0.75 (Darknet Relay)' : ''}{Math.abs(targetMult - 1) > 0.005 ? ` × ${targetMult.toFixed(2)} (tier, Target style and perk)` : ''}, minimum {BALANCE.heatFloor}.</div>
+        <div>Daily {V.heat} gain: <span className="text-[#8B0000]">+{daily.toFixed(1)}%</span></div>
+        <div className="text-slate-600">Notoriety {vars.notoriety.toFixed(2)} × {BALANCE.heatPerNotoriety}{proxy < 1 ? ' × 0.75 (Darknet Relay)' : ''}{Math.abs(targetMult - 1) > 0.005 ? ` × ${targetMult.toFixed(2)} (tier, Target style and perk)` : ''}{exposure > 1.005 ? ` × ${exposure.toFixed(2)} (the story is spreading: more eyes)` : ''}, minimum {BALANCE.heatFloor}.</div>
+        <div className="text-slate-600 mt-1">The DSS keeps a file on you: {floor > 0 ? `defenses cannot take Heat below ${floor}% (30% of your peak).` : 'the louder you get, the higher the level Heat can never be cleaned back below.'}</div>
       </div>
-      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/60">Escalation</div>
-      {[
+      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/72">Escalation</div>
+      {(V.campaign ? [
+        { at: 40, text: 'A regulator asks who is behind the campaign' },
+        { at: 70, text: 'Platforms limit your reach; critics file complaints' },
+        { at: 90, text: 'A shutdown notice arrives' },
+        { at: 100, text: 'CAMPAIGN SHUT DOWN. Game over.' }
+      ] : [
         { at: 40, text: 'Cybercrime Unit begins logging ISP traffic' },
         { at: 70, text: 'Telecom throttling and burner-account freezes' },
         { at: 90, text: 'Unmarked Hilux vans outside the safehouse' },
         { at: 100, text: 'SAFEHOUSE RAIDED. Game over.' }
-      ].map(t => (
-        <div key={t.at} className={`flex items-center gap-2 text-[11px] font-bold ${gameState.heat >= t.at ? 'text-[#8B0000]' : 'text-slate-500'}`}>
+      ]).map(t => (
+        <div key={t.at} className={`flex items-center gap-2 text-[11px] font-bold ${gameState.heat >= t.at ? 'text-[#8B0000]' : 'text-slate-600'}`}>
           <span className="font-black w-9">{t.at}%</span>
           <span>{t.text}</span>
         </div>
       ))}
-      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/60 mt-1">OpSec on file</div>
+      <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/72 mt-1">{V.campaign ? 'Protection in place' : 'OpSec on file'}</div>
       {DEFENSE_DATA.filter(d => defenseUses(gameState, d.id) > 0).map(d => (
         <div key={d.id} className="text-[11px] font-bold">✓ {d.name}{d.maxUses > 1 ? ` ×${defenseUses(gameState, d.id)}` : ''}</div>
       ))}
       {Object.keys(gameState.defensePurchases).length === 0 && (
-        <div className="text-[11px] font-bold text-slate-500">Nothing yet. Open the Defense Desk before the vans arrive.</div>
+        <div className="text-[11px] font-bold text-slate-600">{V.campaign ? 'Nothing yet. Open the Protection Desk before the pressure builds.' : 'Nothing yet. Open the Defense Desk before the vans arrive.'}</div>
       )}
     </SheetShell>
   );
@@ -174,11 +185,12 @@ interface PauseProps {
   onHistory: () => void;
   onSettings: () => void;
   onGuide: () => void;
+  onCards?: () => void;
   onHowTo: () => void;
   onReset: () => void;
 }
 
-export const PauseMenu: React.FC<PauseProps> = ({ copySeed, onResume, onHistory, onSettings, onGuide, onHowTo, onReset }) => {
+export const PauseMenu: React.FC<PauseProps> = ({ copySeed, onResume, onHistory, onSettings, onGuide, onCards, onHowTo, onReset }) => {
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmTour, setConfirmTour] = useState(false);
   const [muted, setMuted] = useSfxMuted();
@@ -192,12 +204,13 @@ export const PauseMenu: React.FC<PauseProps> = ({ copySeed, onResume, onHistory,
             <BrutalButton tone="ink" onClick={onResume}>▶ Resume Investigation</BrutalButton>
             <BrutalButton tone="paper" onClick={onHistory}>Case Log</BrutalButton>
             <BrutalButton tone="paper" onClick={onSettings}>⚙ Settings</BrutalButton>
+            {onCards && <BrutalButton tone="paper" onClick={onCards}>❓ How to play (1 min)</BrutalButton>}
             <BrutalButton tone="paper" onClick={onGuide}>📖 Field Guide</BrutalButton>
             {!confirmTour ? (
-              <BrutalButton tone="paper" onClick={() => setConfirmTour(true)}>? Replay the tutorial</BrutalButton>
+              <BrutalButton tone="paper" onClick={() => setConfirmTour(true)}>🎓 Practice case (tutorial)</BrutalButton>
             ) : (
               <div className="border-2 border-dashed border-[#B45309] rounded-lg p-3 bg-[#FEF3C7]">
-                <div className="text-[11px] font-bold text-[#B45309] mb-2">The tutorial is a practice case. This case will be abandoned. Go?</div>
+                <div className="text-[11px] font-bold text-[#92400E] mb-2">The tutorial is a practice case. This case will be abandoned. Go?</div>
                 <div className="flex gap-2">
                   <BrutalButton tone="ink" className="flex-1 py-2" onClick={onHowTo}>Start tutorial</BrutalButton>
                   <BrutalButton tone="paper" className="flex-1 py-2" onClick={() => setConfirmTour(false)}>Stay</BrutalButton>
@@ -218,7 +231,7 @@ export const PauseMenu: React.FC<PauseProps> = ({ copySeed, onResume, onHistory,
             )}
           </div>
           <div className="text-[10px] font-sans italic text-slate-600 leading-snug mt-3">Tip: {pickTip(copySeed, 'pause')}</div>
-          {SHOW_DISCLAIMER && <div className="text-[8px] font-sans italic text-slate-500 leading-tight mt-2">{PARODY_DISCLAIMER}</div>}
+          {SHOW_DISCLAIMER && <div className="text-[10px] font-sans italic text-slate-600 leading-tight mt-2">{PARODY_DISCLAIMER}</div>}
         </div>
       </div>
     </div>
@@ -230,8 +243,9 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
   const target = getTarget(gameState.activeTargetId);
   const frozen = Object.entries(gameState.frozenChannels).filter(([, until]) => until >= gameState.currentDay);
   const effects = gameState.timedEffects.filter(e => e.until >= gameState.currentDay);
+  const V = vocabFor(gameState.activeTargetId);
   return (
-    <SheetShell title="Case File" stamp={`Tier ${target.tier} // ${target.title}`} onClose={onClose}>
+    <SheetShell title={V.campaign ? 'Campaign Brief' : 'Case File'} stamp={V.campaign ? `${target.campaign!.cause} // Against: ${target.title}` : `Tier ${target.tier} // ${target.title}`} onClose={onClose}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 w-16 h-20 bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden"><Avatar target={target} emotion={targetEmotion(gameState)} className="w-full h-full" /></div>
         <div className="min-w-0">
@@ -249,20 +263,26 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
 
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
-          <span>Cover-Up</span>
+          <span>{V.coverUp}</span>
           <span className="text-[#8B0000]">{Math.round(gameState.coverUp)}% / 100%</span>
         </div>
         <Bar value={gameState.coverUp} color="#B91C1C" markers={[30, 55, 80]} />
+        {V.campaign ? (
+          <p className="text-[10px] font-sans text-slate-700 leading-snug mt-1.5">
+            The other side's momentum. At 100% the campaign is dead and you lose. It grows every day, faster as more people come round, slower with high Credibility. Verified proof pushes it back; hoax bubbles that detonate and the opposition's moves push it forward.
+          </p>
+        ) : (
         <p className="text-[10px] font-sans text-slate-700 leading-snug mt-1.5">
           The Target's counter-narrative. At 100% the story is dead and you lose. It grows every day, faster as more people believe,
           slower with high Credibility. Verified evidence pushes it back; Spin bubbles that detonate and Target moves push it forward.
         </p>
+        )}
       </div>
 
       <div>
         <div className="flex justify-between text-xs font-black uppercase tracking-wider mb-1">
           <span>Story Freshness</span>
-          <span className="text-[#B45309]">{Math.round(gameState.freshness)}%</span>
+          <span className="text-[#92400E]">{Math.round(gameState.freshness)}%</span>
         </div>
         <Bar value={gameState.freshness} color="#D97706" />
         <p className="text-[10px] font-sans text-slate-700 leading-snug mt-1.5">
@@ -272,7 +292,7 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
       </div>
 
       <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-3 py-2">
-        <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60">News climate</div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">News climate</div>
         <div className="text-[12px] font-bold">{getClimate(gameState.climateId).icon} {getClimate(gameState.climateId).name}</div>
         <div className="text-[10px] font-sans text-slate-600 leading-snug">{getClimate(gameState.climateId).blurb}</div>
         {describeClimate(getClimate(gameState.climateId)).length > 0 && (
@@ -281,26 +301,26 @@ export const TargetInfoSheet: React.FC<{ gameState: GameState; onClose: () => vo
       </div>
 
       <div className="bg-[#1A1A1A] text-[#F4F1EA] rounded-lg px-3 py-2.5">
-        <div className="text-[9px] font-black uppercase tracking-widest text-[#FDE68A]">Passive: {target.passiveName}</div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-[#FDE68A]">Passive: {target.passiveName}</div>
         <div className="text-[10px] font-sans italic text-slate-300 mt-0.5">{target.passiveFlavor}</div>
         <ul className="mt-1.5 flex flex-col gap-0.5">
-          {describeTarget(target).map(line => <li key={line} className="text-[10px] font-sans leading-snug">• {line}</li>)}
+          {describeTarget(target).map(line => <li key={line} className="text-[10px] font-sans leading-snug">• {campaignize(line, V)}</li>)}
         </ul>
       </div>
 
       {frozen.length > 0 && (
         <div className="bg-[#DBEAFE] border-2 border-[#1E3A5F] rounded-lg px-3 py-2">
-          <div className="text-[9px] font-black uppercase tracking-widest text-[#1E3A5F] mb-1">Frozen channels</div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-[#1E3A5F] mb-1">Frozen channels</div>
           {frozen.map(([id, until]) => (
             <div key={id} className="text-[11px] font-bold text-[#1E3A5F]">❄ {getChannel(id)?.name ?? id} (thaws after Day {until})</div>
           ))}
-          {defenseUses(gameState, 'san_injunction') === 0 && <div className="text-[9px] font-sans text-[#1E3A5F]/80 mt-1">A SAN Counter-Injunction thaws every frozen channel.</div>}
+          {defenseUses(gameState, 'san_injunction') === 0 && <div className="text-[10px] font-sans text-[#1E3A5F]/80 mt-1">A SAN Counter-Injunction thaws every frozen channel.</div>}
         </div>
       )}
 
       {effects.length > 0 && (
         <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg px-3 py-2">
-          <div className="text-[9px] font-black uppercase tracking-widest mb-1">Active effects</div>
+          <div className="text-[10px] font-black uppercase tracking-widest mb-1">Active effects</div>
           {effects.map(e => (
             <div key={e.id} className="text-[11px] font-bold">{e.label} ×{e.mult} • {e.until - gameState.currentDay + 1} day(s) left</div>
           ))}

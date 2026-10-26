@@ -1,17 +1,37 @@
-import { loadFont as loadPlayfair } from '@remotion/google-fonts/PlayfairDisplay';
-import { loadFont as loadInter } from '@remotion/google-fonts/Inter';
-import { loadFont as loadMono } from '@remotion/google-fonts/JetBrainsMono';
+import { cancelRender, continueRender, delayRender, staticFile } from 'remotion';
 
-// latin-ext carries the naira sign (U+20A6). Each loadFont() holds the render until the font is ready.
-const subsets = ['latin', 'latin-ext'] as const;
-const playfair = loadPlayfair('normal', { weights: ['700', '900'], subsets: [...subsets] });
-const playfairItalic = loadPlayfair('italic', { weights: ['700', '900'], subsets: [...subsets] });
-const inter = loadInter('normal', { weights: ['500', '700', '900'], subsets: [...subsets] });
-const mono = loadMono('normal', { weights: ['500', '700'], subsets: [...subsets] });
+// Fonts are bundled in public/fonts (downloaded once from Google Fonts), so a render never needs the network.
+// fonts.css declares every subset; document.fonts.load() then pulls the ones we actually use, including
+// latin-ext, which carries the naira sign (U+20A6).
+const NEEDED = [
+  '900 64px "Playfair Display"',
+  '700 64px "Playfair Display"',
+  'italic 700 64px "Playfair Display"',
+  '500 24px "Inter"',
+  '700 24px "Inter"',
+  '900 24px "Inter"',
+  '500 24px "JetBrains Mono"',
+  '700 24px "JetBrains Mono"',
+];
+
+if (typeof document !== 'undefined') {
+  const handle = delayRender('Loading bundled fonts', { timeoutInMilliseconds: 60000 });
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = staticFile('fonts/fonts.css');
+  link.onload = () => {
+    Promise.all(NEEDED.map((f) => document.fonts.load(f, 'Aa0₦')))
+      .then(() => document.fonts.ready)
+      .then(() => continueRender(handle))
+      .catch((e) => cancelRender(e));
+  };
+  link.onerror = () => cancelRender(new Error('Could not load public/fonts/fonts.css'));
+  document.head.appendChild(link);
+}
 
 export const FONT = {
-  serif: `${playfair.fontFamily}, Georgia, serif`,
-  serifItalic: `${playfairItalic.fontFamily}, Georgia, serif`,
-  sans: `${inter.fontFamily}, system-ui, sans-serif`,
-  mono: `${mono.fontFamily}, ui-monospace, monospace`,
+  serif: '"Playfair Display", Georgia, serif',
+  serifItalic: '"Playfair Display", Georgia, serif',
+  sans: '"Inter", system-ui, sans-serif',
+  mono: '"JetBrains Mono", ui-monospace, monospace',
 } as const;

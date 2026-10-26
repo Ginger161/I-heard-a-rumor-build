@@ -7,7 +7,7 @@ import { RATING_RANGES } from './ratings';
 import { SCANDAL_CATEGORIES, SPOTLIGHT_IDS, TARGETS } from './targets';
 import type {
   AbilityDef, AbilityKind, ChatterLines, CreatorInfo, DefenseStyle, Folder, Occurrence, ScandalDef, SilhouetteKind,
-  TargetArchetype, TargetKind, TargetMods, Temperament, Tier
+  TargetArchetype, TargetKind, TargetMods, Temperament, Tier, CampaignInfo, CampaignType
 } from './targetTypes';
 
 // ---------------------------------------------------------------------------
@@ -48,6 +48,7 @@ export interface TargetDef {
   climateId?: string;             // The news climate this Target always plays in
   author?: string;                // PLAYER Targets: the maker's name
   creator?: CreatorInfo;          // Required for kind CREATOR: written permission on record
+  campaign?: CampaignInfo;        // Required for kind CAMPAIGN: what is being spread, and what stands in its way
   tags?: string[];
 }
 
@@ -65,7 +66,8 @@ export const DEFENSE_STYLES: DefenseStyle[] = ['BALANCED', 'SPIN_DOCTOR', 'IRON_
 export const TEMPERAMENTS: Temperament[] = ['STEADY', 'THE_CRASHOUT', 'THE_STOIC', 'THE_SHOWMAN', 'THE_PARANOID', 'THE_SCHEMER', 'THE_BULLY', 'THE_GHOST'];
 export const BRANCHES: Branch[] = ['STREET', 'SOCIAL', 'PRESS', 'ELITE'];
 export const ABILITY_KINDS: AbilityKind[] = ['INJUNCTION', 'DISTRACTION', 'HEAT_SURGE', 'COUNTER_STORY', 'BOT_SWARM', 'DOUBT_WAVE', 'EVIDENCE_RAID', 'ACCOUNT_FREEZE', 'ROADBLOCK', 'LANE_JAM', 'REGION_LOCK'];
-export const TARGET_KINDS: TargetKind[] = ['FICTIONAL', 'PARODY', 'CREATOR', 'STORY', 'PLAYER'];
+export const TARGET_KINDS: TargetKind[] = ['FICTIONAL', 'PARODY', 'CREATOR', 'STORY', 'PLAYER', 'CAMPAIGN'];
+export const CAMPAIGN_TYPES: CampaignType[] = ['HEALTH', 'AWARENESS', 'POLITICAL', 'MARKETING', 'MYTHBUST'];
 
 // What each ability strength means, and the range a Target may use (keeps authors inside the tested envelope).
 export const ABILITY_RANGE: Record<AbilityKind, { min: number; max: number; unit: string }> = {
@@ -128,7 +130,7 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
 
   if (!ID_RE.test(def.id ?? '')) e('id must be snake_case (3-41 characters, lowercase letters, digits, underscores).');
   if (opts.builtInIds?.has(def.id)) e(`id "${def.id}" is already used by built-in content.`);
-  if (!TARGET_KINDS.includes(def.kind)) e('kind must be FICTIONAL, PARODY, CREATOR, STORY or PLAYER.');
+  if (!TARGET_KINDS.includes(def.kind)) e('kind must be FICTIONAL, PARODY, CREATOR, STORY, PLAYER or CAMPAIGN.');
   if (!inRange(def.tier, 1, 5) || !Number.isInteger(def.tier)) e('tier must be a whole number from 1 to 5.');
   if (def.folder !== undefined && def.folder !== 'SPOTLIGHT' && !(inRange(def.folder, 1, 5) && Number.isInteger(def.folder))) e('folder must be SPOTLIGHT or 1-5.');
 
@@ -213,7 +215,8 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
         if (!EVENTS.some(ev => ev.id === o?.eventId)) e(`Occurrence ${i + 1}: unknown event.`);
         else if (ids.has(o.eventId)) e(`Occurrence ${i + 1}: each event can be scheduled once.`);
         ids.add(o?.eventId);
-        if (!inRange(o?.day, 4, 30) || !Number.isInteger(o.day)) e(`Occurrence ${i + 1}: day must be a whole number from 4 to 30.`);
+        const firstDay = def.kind === 'STORY' ? 2 : 4;   // story chapters open with a rule card on day 2 (the Blackout, the Siege)
+        if (!inRange(o?.day, firstDay, 30) || !Number.isInteger(o.day)) e(`Occurrence ${i + 1}: day must be a whole number from ${firstDay} to 30.`);
       });
     }
   }
@@ -231,7 +234,13 @@ export const validateTargetDef = (def: TargetDef, opts: { builtInIds?: Set<strin
     def.scandals.forEach((s, i) => { if (ACCUSATORY.test(s.title ?? '')) e(`Scandal ${i + 1}: real or real-inspired people only get comic scandals (no crimes, fraud or affairs).`); });
     if (def.kind === 'CREATOR') [def.personality, def.passiveFlavor, ...(def.abilities ?? []).map(a => a.line)].forEach(t => { if (ACCUSATORY.test(t ?? '')) e('Creator text must not contain accusatory wording.'); });
   }
-  if (def.kind === 'FICTIONAL' || def.kind === 'STORY') {
+  if (def.kind === 'CAMPAIGN') {
+    const c = def.campaign;
+    if (!c || !CAMPAIGN_TYPES.includes(c.type) || !text(c.cause, 60) || !text(c.slogan, 120) || !text(c.adopter, 40) || !text(c.goal, 200) || !text(c.opposition, 80)) {
+      e('A CAMPAIGN needs campaign.type (HEALTH, AWARENESS, POLITICAL, MARKETING or MYTHBUST), cause, slogan, adopter, goal and opposition.');
+    }
+  } else if (def.campaign !== undefined) w('campaign only applies to kind CAMPAIGN.');
+  if (def.kind === 'FICTIONAL' || def.kind === 'STORY' || def.kind === 'CAMPAIGN') {
     const full = `${def.fullName} ${def.shortName}`;
     KNOWN_REAL.forEach(r => { if (full.toLowerCase().includes(r.toLowerCase())) e(`The name contains "${r}", a real person. Use kind PARODY or CREATOR, or rename.`); });
   }
@@ -295,12 +304,13 @@ export const defToArchetype = (def: TargetDef, packId: string): TargetArchetype 
     mods: { ...def.mods },
     abilities: def.abilities.map(a => ({ ...a })),
     kind: def.kind,
-    storyOnly: !!def.storyOnly || def.kind === 'PLAYER',   // player Targets are played from the Arena, not listed in the Dossier folders
+    campaign: def.campaign ? { ...def.campaign } : undefined,
+    storyOnly: !!def.storyOnly || def.kind === 'PLAYER' || def.kind === 'CAMPAIGN',   // campaigns are played from the Campaigns hub, not the Dossier folders   // player Targets are played from the Arena, not listed in the Dossier folders
     avatar: { imageUrl: def.avatar.imageUrl, accent: def.avatar.accent },
     creator: def.creator,
     packId,
     // Personal-life, parody and creator Targets use the comic gist voice and comic endings, never arrests.
-    parody: def.kind !== 'FICTIONAL' && def.kind !== 'PLAYER',
+    parody: def.kind !== 'FICTIONAL' && def.kind !== 'PLAYER' && def.kind !== 'CAMPAIGN',
     occurrences: def.occurrences?.map(o => ({ ...o })),
     climateId: def.climateId,
     author: def.author,

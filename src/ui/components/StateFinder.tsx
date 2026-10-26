@@ -32,7 +32,7 @@ export const StateFinder: React.FC<Props> = ({ onPick, onClose, title, subtitle,
     <div className="flex-shrink-0 flex items-start justify-between gap-3 px-4 pt-3 pb-2">
       <div className="min-w-0">
         <div className="font-serif font-black text-xl leading-tight">{title}</div>
-        {subtitle && <div className={`text-[12px] font-sans leading-snug mt-0.5 ${dark ? 'text-[#F4F1EA]/70' : 'text-[#1A1A1A]/70'}`}>{subtitle}</div>}
+        {subtitle && <div className={`text-[12px] font-sans leading-snug mt-0.5 ${dark ? 'text-[#F4F1EA]/72' : 'text-[#1A1A1A]/72'}`}>{subtitle}</div>}
       </div>
       {onClose && (
         <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex-shrink-0 rounded-lg border-2 border-[#1A1A1A] bg-white text-[#1A1A1A] font-black text-lg shadow-[2px_2px_0px_#1A1A1A] cursor-pointer">✕</button>

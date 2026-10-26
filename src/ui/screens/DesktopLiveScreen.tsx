@@ -15,6 +15,7 @@ import { PaperGrain, SparkCounter } from '../components/common';
 import { accentOf } from '../theme';
 import { moodOf, targetEmotion } from '../mood';
 import { sfx, useSfxMuted } from '../audio';
+import { vocabFor } from '../../engine/campaigns';
 import { useSettings } from '../settings';
 import { LiveOverlays, useLiveShared } from '../live/shared';
 
@@ -49,6 +50,7 @@ type Desk = 'NONE' | 'CHANNELS_DESK' | 'EVIDENCE_DESK' | 'COUNTER_OPS_DESK';
 
 export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => {
   const { gameState, setModal, pause, resume, plantSeed, selectState, collectSpark, popSpin, buyChannel, leakEvidence, buyDefense } = engine;
+  const vocab = vocabFor(gameState.activeTargetId);
   const settings = useSettings();
   const [muted, setMuted] = useSfxMuted();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -120,7 +122,7 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
       {/* ---------------- TOP: masthead and instruments ---------------- */}
       <header className="flex-shrink-0 flex items-center gap-5 px-5 h-[76px] bg-[#111] border-b-4 text-[#F4F1EA]" style={{ borderColor: mood.accent }}>
         <div className="min-w-0 w-[260px]">
-          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Case file{gameState.training ? ' • Training' : ''}{gameState.assisted ? ' • Assisted' : ''}</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Case file{gameState.training ? ' • Training' : ''}{gameState.assisted ? ' • Assisted' : ''}</div>
           <div className="font-serif font-black text-[19px] leading-tight truncate">{target.shortName}</div>
           <div className="text-[11px] font-sans text-slate-400 truncate" title={gameState.scandalTitle}>{SCANDALS[gameState.scandalCategory].label}: {gameState.scandalTitle}</div>
         </div>
@@ -128,19 +130,19 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
         <div data-tour="hud" className="flex items-center gap-4 xl:gap-5 flex-1 justify-center min-w-0">
           <button onClick={() => openModal('HISTORY_LOG')} className="text-left cursor-pointer" aria-label="Case log">
             <div className={`${LABEL} text-slate-400`}>Day</div>
-            <div className="font-mono font-black text-[22px] leading-none">{day}<span className="text-slate-500 text-[14px]">/{gameState.dayBudget}</span></div>
+            <div className="font-mono font-black text-[22px] leading-none">{day}<span className="text-slate-600 text-[14px]">/{gameState.dayBudget}</span></div>
           </button>
-          <button onClick={() => openModal('BELIEVERS_INFO')} className="text-left cursor-pointer" aria-label="Believers">
-            <div className={`${LABEL} text-slate-400`}>Believers</div>
-            <div className="font-mono font-black text-[22px] leading-none whitespace-nowrap">{believers.toFixed(1)}<span className="text-slate-500 text-[14px]">% / 75</span></div>
+          <button onClick={() => openModal('BELIEVERS_INFO')} className="text-left cursor-pointer" aria-label={vocab.adopters}>
+            <div className={`${LABEL} text-slate-400`}>{vocab.adopters}</div>
+            <div className="font-mono font-black text-[22px] leading-none whitespace-nowrap">{believers.toFixed(1)}<span className="text-slate-600 text-[14px]">% / 75</span></div>
           </button>
-          <button onClick={() => openModal('HEAT_INFO')} className="text-left cursor-pointer" aria-label="Heat">
-            <div className={`${LABEL} text-slate-400`}>Heat</div>
-            <div className={`font-mono font-black text-[22px] leading-none ${gameState.heat >= 70 ? 'text-[#FCA5A5]' : ''}`}>{Math.floor(gameState.heat)}<span className="text-slate-500 text-[14px]">%</span></div>
+          <button data-tour="heat" onClick={() => openModal('HEAT_INFO')} className="text-left cursor-pointer" aria-label={vocab.heat}>
+            <div className={`${LABEL} text-slate-400`}>{vocab.heat}</div>
+            <div className={`font-mono font-black text-[22px] leading-none ${gameState.heat >= 70 ? 'text-[#FCA5A5]' : ''}`}>{Math.floor(gameState.heat)}<span className="text-slate-600 text-[14px]">%</span></div>
           </button>
           <SparkCounter value={gameState.sparks} className="text-base" />
           <div data-tour="meters" className="flex items-center gap-4 ml-2">
-            <Gauge label="Cover-Up" value={gameState.coverUp} color="#DC2626" warn={65} hint="At 100% the Target walks free" />
+            <Gauge label={vocab.coverUp} value={gameState.coverUp} color="#DC2626" warn={65} hint={vocab.campaign ? 'At 100% the message is dead' : 'At 100% the Target walks free'} />
             <Gauge label="Freshness" value={gameState.freshness} color="#F59E0B" hint="A stale story weakens every channel" />
           </div>
         </div>
@@ -166,7 +168,7 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
           <div className="relative flex gap-3 items-start">
             <div className="flex-shrink-0 w-[92px] bg-[#FDFCF8] p-1.5 pb-5 border border-[#1A1A1A] shadow-[3px_3px_0px_rgba(0,0,0,0.35)] -rotate-2" style={{ boxShadow: `0 0 0 2px ${accent}, 3px 3px 0 rgba(0,0,0,0.35)` }}>
               <div className="bg-[#D9CBB0] h-[104px] flex items-end justify-center overflow-hidden"><Avatar target={target} emotion={targetEmotion(gameState)} className="w-full h-full" /></div>
-              <div className="absolute bottom-1 left-0 right-0 text-center font-serif text-[9px] font-black truncate px-1">{target.shortName}</div>
+              <div className="absolute bottom-1 left-0 right-0 text-center font-serif text-[10px] font-black truncate px-1">{target.shortName}</div>
             </div>
             <div className="min-w-0">
               <div className="font-serif font-black text-[17px] leading-tight">{target.fullName}</div>
@@ -217,7 +219,7 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
           )}
 
           <div className="relative bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-md px-3 py-2">
-            <div className={`${LABEL} text-[#1A1A1A]/60`}>News climate</div>
+            <div className={`${LABEL} text-[#1A1A1A]/72`}>News climate</div>
             <div className="text-[12px] font-bold">{climate.icon} {climate.name}</div>
             <div className="text-[11px] font-sans text-slate-600 leading-snug">{climate.blurb}</div>
           </div>
@@ -226,10 +228,10 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
         {/* CENTRE: the map, or the Conspiracy Board */}
         <main className="relative min-w-0 flex flex-col">
           <div className="flex-shrink-0 flex items-center gap-2 px-4 h-11 bg-[#D9CBB0] border-b-2 border-[#1A1A1A]">
-            <button onClick={showLog} className={`px-3.5 h-8 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer ${desk !== 'CHANNELS_DESK' ? 'bg-[#EFEBE0]' : 'bg-[#BFB095] text-[#1A1A1A]/60'}`}>Map<Key k="1" /></button>
+            <button onClick={showLog} className={`px-3.5 h-8 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer ${desk !== 'CHANNELS_DESK' ? 'bg-[#EFEBE0]' : 'bg-[#BFB095] text-[#1A1A1A]/72'}`}>Map<Key k="1" /></button>
             <button
               data-tour="dock-channels" onClick={() => goDesk('CHANNELS_DESK')} disabled={!unlocked}
-              className={`px-3.5 h-8 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-40 ${desk === 'CHANNELS_DESK' ? 'bg-[#EFEBE0]' : 'bg-[#BFB095] text-[#1A1A1A]/60'}`}
+              className={`px-3.5 h-8 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-40 ${desk === 'CHANNELS_DESK' ? 'bg-[#EFEBE0]' : 'bg-[#BFB095] text-[#1A1A1A]/72'}`}
             >Conspiracy Board<Key k="2" /></button>
             <div className="flex-1" />
             {desk !== 'NONE' && <span className="text-[11px] font-black uppercase tracking-wider text-[#8B0000]">⏸ At the desk — the news cycle waits</span>}
@@ -247,7 +249,7 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
               )}
               {gameState.hasPlantedSeed && !gameState.hasPoppedFirstSpark && (
                 <div className="absolute inset-x-0 top-4 flex justify-center pointer-events-none z-20">
-                  <div className="bg-[#FDE68A] text-[#B45309] px-5 py-2.5 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[1deg] animate-pulse">
+                  <div className="bg-[#FDE68A] text-[#92400E] px-5 py-2.5 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[1deg] animate-pulse">
                     <p className="font-serif font-black text-sm uppercase tracking-widest text-center">Click the ⚡ to start the clock</p>
                   </div>
                 </div>
@@ -263,12 +265,13 @@ export const DesktopLiveScreen: React.FC<{ engine: GameEngine }> = ({ engine }) 
         {/* RIGHT: desks and the log */}
         <aside className="relative border-l-4 border-[#1A1A1A] bg-[#EADCC8] flex flex-col min-h-0">
           <div data-tour="dock" className="flex-shrink-0 flex gap-1 px-3 pt-3 bg-[#D9CBB0] border-b-2 border-[#1A1A1A]">
-            {([['LOG', 'Log', 'L'], ['EVIDENCE', 'Evidence', 'E'], ['DEFENSE', 'Defence', 'D']] as const).map(([id, label, k]) => (
+            {([['LOG', 'Log', 'L'], ['EVIDENCE', vocab.evidence, 'E'], ['DEFENSE', vocab.campaign ? vocab.defense : 'Defence', 'D']] as const).map(([id, label, k]) => (
               <button
                 key={id}
+                data-tour={id === 'EVIDENCE' ? 'dock-evidence' : id === 'DEFENSE' ? 'dock-defense' : undefined}
                 disabled={id !== 'LOG' && !unlocked}
                 onClick={() => (id === 'LOG' ? showLog() : goDesk(id === 'EVIDENCE' ? 'EVIDENCE_DESK' : 'COUNTER_OPS_DESK'))}
-                className={`flex-1 h-9 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-40 ${rightTab === id ? 'bg-[#EADCC8]' : 'bg-[#BFB095] text-[#1A1A1A]/60'}`}
+                className={`flex-1 h-9 rounded-t-md border-2 border-b-0 border-[#1A1A1A] text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-40 ${rightTab === id ? 'bg-[#EADCC8]' : 'bg-[#BFB095] text-[#1A1A1A]/72'}`}
               >{label}<Key k={k} /></button>
             ))}
           </div>

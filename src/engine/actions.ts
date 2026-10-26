@@ -11,7 +11,7 @@ import { findChoice } from './events';
 import { BALANCE } from './balance';
 import { perkEffects } from './data/perks';
 import { chatterPing } from './chatter';
-import { channelAvailable, clamp, getChannel, nationalAverageDoubt } from './selectors';
+import { channelAvailable, clamp, defenseActualCut, defenseCostFor, evidenceCostFor, evidenceFadeFor, getChannel, nationalAverageDoubt } from './selectors';
 
 export const FIRST_SPARK_AMOUNT = BALANCE.seedSpark;
 export const FORGERY_BASE_BACKFIRE = 0.3;
@@ -158,8 +158,10 @@ export const Actions = {
   leakEvidence: (s: GameState, evidenceId: string, rng: Rng = Math.random): GameState => {
     const item = getEvidence(evidenceId);
     if (!item || s.status !== 'PLAYING') return s;
-    if (s.droppedEvidence.includes(evidenceId) || s.sparks < item.cost) return s;
+    const cost = evidenceCostFor(s, item);
+    if (s.droppedEvidence.includes(evidenceId) || s.sparks < cost) return s;
     if (s.investigationProgress < item.requiredInvestigation) return s;
+    if (item.isFabricated && getTarget(s.activeTargetId).mods.noForgery) return s;     // a room of liars: forgeries are not an option
 
     const backfireRisk = (FORGERY_BASE_BACKFIRE
       + (nationalAverageDoubt(s.states) > 55 ? FORGERY_HIGH_DOUBT_BACKFIRE : 0)
@@ -167,6 +169,7 @@ export const Actions = {
     const backfired = item.isFabricated && rng() < backfireRisk;
 
     const states = { ...s.states };
+    const fade = item.isFabricated ? 1 : evidenceFadeFor(s);   // people stop being shocked by file after file
     let heat = s.heat;
     let coverUp = s.coverUp;
     let freshness = s.freshness;
@@ -191,7 +194,7 @@ export const Actions = {
           heard -= converted;
           believers += converted;
         }
-        const doubt = clamp(st.doubt - item.doubtReduction, 0, 100);
+        const doubt = clamp(st.doubt - item.doubtReduction * fade, 0, 100);
         states[id] = {
           ...st,
           heard,
@@ -210,7 +213,7 @@ export const Actions = {
     return finalize({
       ...s,
       states,
-      sparks: s.sparks - item.cost,
+      sparks: s.sparks - cost,
       heat: clamp(heat, 0, 100),
       coverUp: clamp(coverUp, 0, 100),
       peakCoverUp: Math.max(s.peakCoverUp, clamp(coverUp, 0, 100)),
@@ -227,12 +230,13 @@ export const Actions = {
     const item = getDefense(defenseId);
     if (!item || s.status !== 'PLAYING') return s;
     const uses = s.defensePurchases[defenseId] ?? 0;
-    if (uses >= item.maxUses || s.sparks < item.cost) return s;
-    const alert = AlertFactory.createDefenseAlert(item, s.copySeed);
+    const cost = defenseCostFor(s, item);
+    if (uses >= item.maxUses || s.sparks < cost) return s;
+    const alert = AlertFactory.createDefenseAlert(item, s.copySeed, s.activeTargetId);
     return finalize({
       ...s,
-      sparks: s.sparks - item.cost,
-      heat: clamp(s.heat - item.heatReduction, 0, 100),
+      sparks: s.sparks - cost,
+      heat: clamp(s.heat - defenseActualCut(s, item), 0, 100),
       defensePurchases: { ...s.defensePurchases, [defenseId]: uses + 1 },
       activeSpinBubbles: defenseId === 'san_injunction' ? [] : s.activeSpinBubbles,
       frozenChannels: defenseId === 'san_injunction' ? {} : s.frozenChannels,

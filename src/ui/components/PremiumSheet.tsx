@@ -30,11 +30,11 @@ export const PremiumSheet: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 
   return (
     <div className="absolute inset-0 z-[90] bg-[#1A1A1A]/75 backdrop-blur-sm flex items-end justify-center animate-fade-in desk-wrap" onClick={onClose}>
-      <div role="dialog" aria-label={PREMIUM_NAME} onClick={e => e.stopPropagation()} className="relative w-full max-h-[92%] bg-[#F4F1EA] border-t-4 border-x-4 border-[#1A1A1A] rounded-t-2xl flex flex-col animate-slide-up overflow-hidden desk-sheet">
+      <div role="dialog" aria-label={PREMIUM_NAME} onClick={e => e.stopPropagation()} className="relative w-full max-h-[92%] bg-[#F4F1EA] text-[#1A1A1A] border-t-4 border-x-4 border-[#1A1A1A] rounded-t-2xl flex flex-col animate-slide-up overflow-hidden desk-sheet">
         <PaperGrain />
         <div className="relative flex items-center justify-between px-4 pt-3 pb-2 border-b-2 border-[#1A1A1A] flex-shrink-0 bg-[#FDE68A]">
           <div>
-            <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">{ent ? 'Active' : live ? 'Premium' : 'Coming soon'}</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000]">{ent ? 'Active' : live ? 'Premium' : 'Coming soon'}</div>
             <div className="font-serif font-black text-xl leading-none">⭐ {PREMIUM_NAME}</div>
           </div>
           <button onClick={onClose} aria-label="Close" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>

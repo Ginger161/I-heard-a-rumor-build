@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { GameEngine } from '../../hooks/useGameEngine';
 import { canTick } from '../../engine/simulation';
 import { nationalBelieverPct } from '../../engine/selectors';
+import { vocabFor } from '../../engine/campaigns';
 import { getTarget } from '../../engine/data/targets';
 import { SCANDALS } from '../../engine/data/targets';
 
@@ -23,7 +24,7 @@ const PILL =
 
 const Meter: React.FC<{ label: string; value: number; color: string; danger?: boolean }> = ({ label, value, color, danger }) => (
   <div className="flex-1 min-w-0">
-    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-[var(--m-ink)]/60 leading-none mb-0.5">
+    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[var(--m-ink)]/72 leading-none mb-0.5">
       <span>{label}</span>
       <span className={danger ? 'text-[#B91C1C]' : ''}>{Math.round(value)}%</span>
     </div>
@@ -52,6 +53,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   // Beginners get a lighter screen: the day, believers and cash first, and each other meter or button appears the moment it starts
   // to matter (with a one-time hint). Experienced players, with three Targets beaten, always see everything.
   const lite = gameState.training || Object.keys(profile.targetStars).length < 3;
+  const vocab = vocabFor(gameState.activeTargetId);
   const showHeat = !lite || gameState.peakHeat >= 10;
   const showMeters = !lite || gameState.coverUp >= 8 || gameState.freshness <= 80;
   const showEvidence = !lite || gameState.investigationProgress >= 25 || gameState.droppedEvidence.length > 0;
@@ -79,9 +81,9 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   };
 
   const dockButton = (label: string, modal: 'CHANNELS_DESK' | 'EVIDENCE_DESK' | 'COUNTER_OPS_DESK', tone: 'ink' | 'paper', revealId?: 'evidence' | 'defense') => (
-    <Reveal id={revealId ?? 'evidence'} on={!!revealId && reveal === revealId} onDone={dismissReveal} className="flex-1">
+    <Reveal id={revealId ?? 'evidence'} on={!!revealId && reveal === revealId} onDone={dismissReveal} className="flex-1" campaign={vocab.campaign}>
       <button
-        data-tour={modal === 'CHANNELS_DESK' ? 'dock-channels' : undefined}
+        data-tour={modal === 'CHANNELS_DESK' ? 'dock-channels' : modal === 'EVIDENCE_DESK' ? 'dock-evidence' : 'dock-defense'}
         disabled={!unlocked}
         onClick={() => openModal(modal)}
         className={`w-full py-3 font-black text-[11px] tracking-widest uppercase border-2 border-[var(--m-line)] rounded-lg transition-all ${
@@ -94,7 +96,7 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   );
 
   return (
-    <div ref={rootRef} className={`w-full h-full flex flex-col ${MODE_META[mode].tex} ${mode === 'story' ? 'fx-film' : ''} text-[var(--m-ink)] font-serif overflow-hidden select-none relative transition-[filter] duration-1000`} style={{ filter: settings.vignette ? mood.filter : 'none' }}>
+    <div ref={rootRef} className={`w-full h-full flex flex-col ${MODE_META[mode].tex} ${mode === 'story' ? 'fx-film' : ''} text-[#1A1A1A] font-serif overflow-hidden select-none relative transition-[filter] duration-1000`} style={{ filter: settings.vignette ? mood.filter : 'none' }}>
       <PaperGrain className="z-50" />
 
       {/* MOOD OVERLAY: heat vignette, momentum glow and icy edge. Pure decoration; never blocks a tap. */}
@@ -121,36 +123,37 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
             DAY {Math.min(gameState.currentDay, gameState.dayBudget)}/{gameState.dayBudget}
           </button>
           <button onClick={() => openModal('BELIEVERS_INFO')} className={`${PILL} bg-[var(--m-surface2)] text-[var(--m-ink)]`}>
-            👥 {believers.toFixed(1)}%{lite && <span className="text-[var(--m-ink)]/45 font-bold">&nbsp;/ 75</span>}
+            👥 {believers.toFixed(1)}%{lite && <span className="text-[var(--m-ink)]/72 font-bold">&nbsp;/ 75</span>}
           </button>
-          <Reveal id="heat" on={reveal === 'heat'} onDone={dismissReveal} className="flex-1">
+          <Reveal id="heat" on={reveal === 'heat'} onDone={dismissReveal} className="flex-1" campaign={vocab.campaign}>
             <button
+              data-tour="heat"
               onClick={() => openModal('HEAT_INFO')}
               disabled={!showHeat}
               aria-hidden={!showHeat}
-              className={`${PILL} w-full bg-[#FEE2E2] text-[#D9381E] transition-opacity duration-500 ${showHeat ? (lite ? 'animate-pop-in' : '') : 'opacity-0 pointer-events-none'}`}
+              className={`${PILL} w-full bg-[#FEE2E2] text-[#B91C1C] transition-opacity duration-500 ${showHeat ? (lite ? 'animate-pop-in' : '') : 'opacity-0 pointer-events-none'}`}
             >
-              🚨 {Math.floor(gameState.heat)}%
+              {vocab.heatIcon} {Math.floor(gameState.heat)}%
             </button>
           </Reveal>
           <SparkCounter value={gameState.sparks} className="flex-1 h-9 flex items-center justify-center text-xs font-sans" />
         </div>
-        <Reveal id="meters" on={reveal === 'meters'} onDone={dismissReveal}>
+        <Reveal id="meters" on={reveal === 'meters'} onDone={dismissReveal} campaign={vocab.campaign}>
           <button data-tour="meters" onClick={() => openModal('TARGET_INFO')} disabled={!showMeters} aria-hidden={!showMeters} aria-label="Open case file" className={`w-full flex items-center gap-3 px-1 cursor-pointer text-left transition-opacity duration-700 ${showMeters ? '' : 'opacity-0 pointer-events-none'}`}>
-            <Meter label="Cover-Up" value={gameState.coverUp} color="#B91C1C" danger={gameState.coverUp >= 65} />
+            <Meter label={vocab.coverUp} value={gameState.coverUp} color="#B91C1C" danger={gameState.coverUp >= 65} />
             <Meter label="Story Freshness" value={gameState.freshness} color="#D97706" danger={gameState.freshness <= 25} />
           </button>
           {!showMeters && (
-            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-sans font-bold text-[var(--m-ink)]/70 text-center leading-tight pointer-events-none">🎯 Get 75% of Nigeria to believe it before the days run out.</div>
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-sans font-bold text-[var(--m-ink)]/72 text-center leading-tight pointer-events-none">🎯 Get 75% of Nigeria to believe it before the days run out.</div>
           )}
         </Reveal>
         {(activeEffects.length > 0 || frozenCount > 0) && (
           <div className="flex gap-1.5 flex-wrap px-1">
             {frozenCount > 0 && (
-              <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1E3A5F] text-white">❄ {frozenCount} channel{frozenCount > 1 ? 's' : ''} frozen</span>
+              <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1E3A5F] text-white">❄ {frozenCount} channel{frozenCount > 1 ? 's' : ''} frozen</span>
             )}
             {activeEffects.map(e => (
-              <span key={e.id} className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm text-white ${e.mult >= 1 ? 'bg-[#065F46]' : 'bg-[#8B0000]'}`}>
+              <span key={e.id} className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm text-white ${e.mult >= 1 ? 'bg-[#065F46]' : 'bg-[#8B0000]'}`}>
                 {e.label} ×{e.mult} • {e.until - gameState.currentDay + 1}d
               </span>
             ))}
@@ -173,14 +176,14 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
         {/* Phase 1 floating instruction badges */}
         {!gameState.hasPlantedSeed && (
           <div className="absolute inset-x-0 top-3 flex justify-center pointer-events-none z-20">
-            <div className="bg-[#1A1A1A] text-[#F4F1EA] px-4 py-2 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[-2deg] animate-pulse">
-              <p className="font-serif font-black text-xs uppercase tracking-widest text-center">Tap a state to plant the rumor</p>
+            <div className="bg-[#1A1A1A] text-[#F4F1EA] px-4 py-2 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[-2deg] animate-hint">
+              <p className="font-serif font-black text-xs uppercase tracking-widest text-center">{vocab.campaign ? 'Tap a state to start the campaign' : 'Tap a state to plant the rumor'}</p>
             </div>
           </div>
         )}
         {gameState.hasPlantedSeed && !gameState.hasPoppedFirstSpark && (
           <div className="absolute inset-x-0 top-3 flex justify-center pointer-events-none z-20">
-            <div className="bg-[#FDE68A] text-[#B45309] px-4 py-2 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[1deg] animate-pulse">
+            <div className="bg-[#FDE68A] text-[#7C2D12] px-4 py-2 border-2 border-[#1A1A1A] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] rotate-[1deg] animate-hint">
               <p className="font-serif font-black text-xs uppercase tracking-widest text-center">Shatter the ⚡ to start the clock</p>
             </div>
           </div>
@@ -193,8 +196,8 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
       {/* BOTTOM ACTION DOCK */}
       <div data-tour="dock" className="absolute bottom-4 inset-x-4 flex gap-2 z-30">
         {dockButton('Channels', 'CHANNELS_DESK', 'ink')}
-        {showEvidence && dockButton('Evidence', 'EVIDENCE_DESK', 'ink', 'evidence')}
-        {showDefense && dockButton('Defense', 'COUNTER_OPS_DESK', 'paper', 'defense')}
+        {showEvidence && dockButton(vocab.evidence, 'EVIDENCE_DESK', 'ink', 'evidence')}
+        {showDefense && dockButton(vocab.defense, 'COUNTER_OPS_DESK', 'paper', 'defense')}
         <button
           onClick={() => (gameState.isPaused ? resume() : pause())}
           disabled={!unlocked}

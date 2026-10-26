@@ -8,7 +8,7 @@ import { DEFENSE_DATA } from './data/defense';
 import { getTarget } from './data/targets';
 import { findChoice } from './events';
 import {
-  channelAvailable, isFrozen, nationalAverageDoubt, nationalBelieverPct, nationalJadedPct
+  channelAvailable, defenseCostFor, isFrozen, nationalAverageDoubt, nationalBelieverPct, nationalJadedPct
 } from './selectors';
 import type { Branch } from './data/channels';
 import type { Effect } from './effects';
@@ -193,7 +193,7 @@ export const play = (targetId: string, skill: Skill, seed: number, perkId: strin
       const frozenNow = Object.keys(s.frozenChannels).some(id => isFrozen(s, id));
       for (const d of DEFENSE_DATA) {
         const uses = s.defensePurchases[d.id] ?? 0;
-        if (uses >= d.maxUses || s.sparks < d.cost) continue;
+        if (uses >= d.maxUses || s.sparks < defenseCostFor(s, d)) continue;
         let want = false;
         if (d.id === 'burner_sim') want = s.heat >= threshold;
         else if (d.id === 'proxy_relay') want = pro ? s.currentDay >= (strategy ? 3 : 5) : s.heat >= 60;

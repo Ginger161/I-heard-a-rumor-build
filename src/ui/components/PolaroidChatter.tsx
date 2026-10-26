@@ -28,7 +28,6 @@ export const PolaroidChatter: React.FC<{ target: TargetArchetype; ping: ChatterP
         <div className="bg-[#D9CBB0] h-[44px] flex items-end justify-center overflow-hidden">
           <Avatar target={target} emotion={(speaking ? pingEmotion(ping?.event) : null) ?? emotion} className={`w-full h-full ${emotion === 'PANIC' || (speaking && ping?.event === 'onCritical') ? 'avatar-shake' : ''}`} />
         </div>
-        <div className="absolute bottom-0.5 inset-x-0 text-center font-serif text-[6px] font-black leading-none truncate px-0.5">{target.shortName}</div>
       </div>
       {speaking && ping && (
         <div style={{ borderColor: accent, boxShadow: `2px 2px 0px ${accent}` }} className={`relative mt-1 bg-white border-2 rounded-lg rounded-tl-none px-2 py-1.5 animate-fade-in ${tone}`}>

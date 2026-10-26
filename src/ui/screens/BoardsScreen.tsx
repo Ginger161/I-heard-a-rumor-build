@@ -91,14 +91,14 @@ export const BoardsScreen: React.FC<Props> = ({ scores, daily, dailyDone, onBack
       <div className="relative flex-shrink-0 px-3.5 py-2.5 border-b-4 border-double border-[#1A1A1A] flex items-center gap-3">
         <button onClick={() => { sfx.play('click'); onBack(); }} aria-label="Back" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer flex-shrink-0">←</button>
         <div className="min-w-0">
-          <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Compete</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Compete</div>
           <h1 className="text-[18px] font-black uppercase tracking-tight leading-none">Leaderboards</h1>
         </div>
       </div>
 
       <div className="relative flex-1 min-h-0 overflow-y-auto no-scrollbar p-3.5 flex flex-col gap-3">
         <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-3">
-          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-[#8B0000] mb-1.5">You on the boards</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8B0000] mb-1.5">You on the boards</div>
           <div className="grid grid-cols-2 gap-2">
             <label className="block"><span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Name</span>
               <input value={settings.playerName} maxLength={20} onChange={e => updateSettings({ playerName: e.target.value })} placeholder="Anonymous" className="w-full border-2 border-[#1A1A1A] rounded px-2 py-1 text-[13px] font-sans bg-white" /></label>
@@ -119,7 +119,7 @@ export const BoardsScreen: React.FC<Props> = ({ scores, daily, dailyDone, onBack
           <div className={`flex items-center gap-3 border-2 border-[#1A1A1A] rounded-lg px-3 py-2 ${dailyDone ? 'bg-[#D1FAE5]' : 'bg-[#FDE68A]'}`}>
             <span className="text-xl" aria-hidden>📅</span>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60">Today's case, the same for everyone</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">Today's case, the same for everyone</div>
               <div className="text-[13px] font-black leading-tight truncate">{dailyTarget.shortName}</div>
             </div>
             {dailyDone ? <span className="text-[10px] font-black uppercase text-[#065F46]">✓ Played</span> : <BrutalButton tone="ink" className="py-1.5 px-3 text-[11px]" onClick={onPlayDaily}>Play</BrutalButton>}
@@ -178,7 +178,7 @@ export const ChallengeIntro: React.FC<{ challenge: Challenge; onPlay: () => void
   return (
     <div className="absolute inset-0 z-[110] bg-[#1A1A1A]/80 backdrop-blur-sm flex items-center justify-center p-5 animate-fade-in">
       <div role="dialog" aria-label="Challenge" className="relative w-full max-w-[380px] bg-[#FDE68A] border-4 border-[#1A1A1A] rounded-2xl shadow-[8px_8px_0px_#1A1A1A] p-5 animate-pop-in">
-        <div className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8B0000]">Challenge</div>
+        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8B0000]">Challenge</div>
         <div className="font-serif font-black text-2xl leading-tight mt-1">{c.by} wants to see you try.</div>
         <p className="text-[13px] font-sans leading-snug mt-2">Take down <b>{t.shortName}</b> with the exact same case: same scandal, same news climate, same luck. No perks. {c.by} scored <b>{c.sc}</b> ({'★'.repeat(c.st)}{'☆'.repeat(3 - c.st)}) in {c.d} days.</p>
         <div className="flex flex-col gap-2 mt-4">

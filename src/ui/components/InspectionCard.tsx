@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameState } from '../../engine/types';
+import { vocabFor } from '../../engine/campaigns';
 import { DISPLAY_POPULATION_LABEL, nationalAverageDoubt } from '../../engine/selectors';
 import { formatCount } from './common';
 import { pickGist } from '../../engine/data/copyUi';
@@ -34,9 +35,21 @@ const streetGist = (s: Slice, _zone?: string, _seed?: number, _stateId?: string)
   return 'Complete silence. Not even a motor-park whisper has reached the streets of this state yet.';
 };
 
+// The same five moods, for a campaign: the street talks about the cause, not a scandal.
+const campaignGist = (s: Slice, cause: string, adopters: string): string => {
+  const reached = s.heard + s.believers;
+  if (reached === 0) return `Nobody here has heard of ${cause} yet. Not a poster, not a radio mention, not even a rumour.`;
+  if (s.doubt >= 65) return 'People are not convinced. Questions about who is behind it and whether it is true are everywhere. Clear, checkable proof is the only way back.';
+  if (s.jaded / s.population > 0.15) return 'Campaign fatigue has set in. People have heard the slogan so many times that it has stopped meaning anything. Fresh proof, a fresh voice.';
+  if (s.believers / s.population >= 0.5) return `More than half of this state is now among the ${adopters}. The shop owners know the slogan and the children can sing it.`;
+  if (s.heard > 0) return `${cause} is being talked about at bus stops, barber shops and in the family group chat. People are asking whether it really works.`;
+  return `Nobody here has heard of ${cause} yet.`;
+};
+
 const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : 0);
 
 export const InspectionCard: React.FC<{ gameState: GameState; desktop?: boolean }> = ({ gameState, desktop = false }) => {
+  const vocab = vocabFor(gameState.activeTargetId);
   const selected = gameState.selectedStateId ? gameState.states[gameState.selectedStateId] : null;
   const all = Object.values(gameState.states);
 
@@ -58,11 +71,11 @@ export const InspectionCard: React.FC<{ gameState: GameState; desktop?: boolean 
 
   let quote: string;
   if (!gameState.hasPlantedSeed) {
-    quote = 'Investigation dossier assembled. Tap any state to leak the first whisper and start the countdown.';
+    quote = vocab.campaign ? `${vocab.cause}: brief ready. Tap any state to start the first conversation and the countdown.` : 'Investigation dossier assembled. Tap any state to leak the first whisper and start the countdown.';
   } else if (!gameState.hasPoppedFirstSpark) {
-    quote = 'The rumor is out. Tap the ⚡ bubble to bank your first Sparks and start the clock.';
+    quote = vocab.campaign ? 'The first conversation has started. Tap the ⚡ bubble to bank your first Sparks and start the clock.' : 'The rumor is out. Tap the ⚡ bubble to bank your first Sparks and start the clock.';
   } else {
-    quote = streetGist(slice, selected?.region ?? 'NC', gameState.copySeed, selected?.id ?? 'nation');
+    quote = vocab.campaign ? campaignGist(slice, vocab.cause, vocab.adoptersLow) : streetGist(slice, selected?.region ?? 'NC', gameState.copySeed, selected?.id ?? 'nation');
   }
 
   return (
@@ -73,7 +86,7 @@ export const InspectionCard: React.FC<{ gameState: GameState; desktop?: boolean 
             {selected ? selected.name : '🇳🇬 NG Nigeria'}
           </span>
           {selected && (
-            <span className="text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-sm bg-[#FEF3C7] text-[#B45309] whitespace-nowrap">
+            <span className="text-[10px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-sm bg-[#FEF3C7] text-[#92400E] whitespace-nowrap">
               {selected.demographicTag.replace('_', ' ')}
             </span>
           )}
@@ -92,8 +105,8 @@ export const InspectionCard: React.FC<{ gameState: GameState; desktop?: boolean 
 
       <div className="flex justify-between text-[10px] font-sans font-bold px-1 mb-2 text-slate-300">
         <span>Heard: <span className="text-[#D97706]">{heardPct.toFixed(1)}%</span></span>
-        <span>Believers: <span className="text-[#F87171]">{believersPct.toFixed(1)}%</span></span>
-        <span>Doubt: <span className="text-white">{Math.round(slice.doubt)}%</span></span>
+        <span>{vocab.adopters}: <span className="text-[#F87171]">{believersPct.toFixed(1)}%</span></span>
+        <span>{vocab.doubt}: <span className="text-white">{Math.round(slice.doubt)}%</span></span>
         <span>Fatigue: <span className="text-[#94A3B8]">{jadedPct.toFixed(1)}%</span></span>
       </div>
 

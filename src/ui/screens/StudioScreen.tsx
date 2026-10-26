@@ -19,7 +19,7 @@ const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode 
   <label className="block">
     <span className={LABEL}>{label}</span>
     {children}
-    {hint && <span className="block text-[11px] text-slate-500 font-sans">{hint}</span>}
+    {hint && <span className="block text-[11px] text-slate-600 font-sans">{hint}</span>}
   </label>
 );
 
@@ -203,7 +203,7 @@ export const StudioScreen: React.FC = () => {
                     <li key={i}>
                       <button onClick={() => { setSel(i); setBalance(null); }} className={`w-full text-left rounded border-2 px-2 py-1 cursor-pointer ${i === sel ? 'border-[#8B0000] bg-[#FEE2E2]' : 'border-slate-300 bg-white'}`}>
                         <div className="text-[13px] font-bold leading-tight truncate">{t.fullName || '(unnamed)'}</div>
-                        <div className="text-[11px] text-slate-500 truncate">{t.id} • T{t.tier} • {t.kind}{t.enabled === false ? ' • hidden' : ''}{tv?.errors.length ? ` • ${tv.errors.length} error(s)` : ''}</div>
+                        <div className="text-[11px] text-slate-600 truncate">{t.id} • T{t.tier} • {t.kind}{t.enabled === false ? ' • hidden' : ''}{tv?.errors.length ? ` • ${tv.errors.length} error(s)` : ''}</div>
                       </button>
                     </li>
                   );
@@ -265,7 +265,7 @@ export const StudioScreen: React.FC = () => {
             <Section title="Avatar">
               <div className="flex items-center gap-3">
                 <div className="w-20 h-24 bg-[#D9CBB0] border-2 border-[#1A1A1A] rounded overflow-hidden flex items-end justify-center">
-                  {preview ? <Avatar target={preview} className="w-full h-full" /> : <span className="text-[11px] text-slate-500 p-1">fix errors to preview</span>}
+                  {preview ? <Avatar target={preview} className="w-full h-full" /> : <span className="text-[11px] text-slate-600 p-1">fix errors to preview</span>}
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <Field label="Silhouette (always the fallback)">
@@ -280,7 +280,7 @@ export const StudioScreen: React.FC = () => {
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => pickImage(e.target.files?.[0])} />
                 <Btn onClick={() => fileRef.current?.click()}>Upload portrait</Btn>
                 {def.avatar.imageUrl && <Btn onClick={() => edit({ avatar: { silhouette: def.avatar.silhouette, accent: def.avatar.accent } })}>Remove portrait</Btn>}
-                <span className="text-[11px] text-slate-500">Uploads are resized to 256px. Use a photo you have the rights to.</span>
+                <span className="text-[11px] text-slate-600">Uploads are resized to 256px. Use a photo you have the rights to.</span>
               </div>
               <Field label="…or an https image URL"><input className={INPUT} value={def.avatar.imageUrl?.startsWith('data:') ? '' : def.avatar.imageUrl ?? ''} placeholder="https://…" onChange={e => edit({ avatar: { ...def.avatar, imageUrl: e.target.value || undefined } })} /></Field>
             </Section>
@@ -371,8 +371,8 @@ export const StudioScreen: React.FC = () => {
             <Section title="Checks">
               {v.errors.length === 0 && v.warnings.length === 0 && <div className="text-[13px] text-[#065F46] font-bold">✓ No problems found.</div>}
               {v.errors.map((m, i) => <div key={'e' + i} className="text-[12px] text-[#8B0000] font-bold">✕ {m}</div>)}
-              {v.warnings.map((m, i) => <div key={'w' + i} className="text-[12px] text-[#B45309]">⚠ {m}</div>)}
-              <div className="text-[11px] text-slate-500">Threat score {v.errors.length ? '—' : threatScore(def)} • estimated rating {estimateRating(def)}</div>
+              {v.warnings.map((m, i) => <div key={'w' + i} className="text-[12px] text-[#92400E]">⚠ {m}</div>)}
+              <div className="text-[11px] text-slate-600">Threat score {v.errors.length ? '—' : threatScore(def)} • estimated rating {estimateRating(def)}</div>
             </Section>
 
             <Section title="Balance test" right={<Btn tone="ink" disabled={v.errors.length > 0 || balance === 'running'} onClick={runBalance}>{balance === 'running' ? 'Running…' : 'Run bots'}</Btn>}>
@@ -381,8 +381,8 @@ export const StudioScreen: React.FC = () => {
                 <div className="text-[13px]">
                   <div>Expert bot wins <b>{balance.expert}%</b> • average bot wins <b>{balance.average}%</b> ({balance.runs} runs each)</div>
                   {balance.expert < 35 && <div className="text-[#8B0000] font-bold">Very hard: a skilled human may struggle. Soften an ability or lower the tier.</div>}
-                  {balance.expert >= 35 && balance.expert < 60 && def.tier <= 3 && <div className="text-[#B45309]">Harder than usual for this tier.</div>}
-                  {balance.average > 97 && balance.expert > 97 && def.tier >= 3 && <div className="text-[#B45309]">Very easy for this tier. Add pressure or raise the tier.</div>}
+                  {balance.expert >= 35 && balance.expert < 60 && def.tier <= 3 && <div className="text-[#92400E]">Harder than usual for this tier.</div>}
+                  {balance.average > 97 && balance.expert > 97 && def.tier >= 3 && <div className="text-[#92400E]">Very easy for this tier. Add pressure or raise the tier.</div>}
                   {balance.expert >= 35 && balance.average >= 5 && <div className="text-[#065F46] font-bold">Within a playable range.</div>}
                 </div>
               )}
@@ -404,7 +404,7 @@ export const StudioScreen: React.FC = () => {
                   <ul className="mt-1 flex flex-col gap-0.5">{describeTarget(preview).map(l => <li key={l} className="text-[12px]">• {l}</li>)}</ul>
                   <div className="text-[11px] italic text-slate-400 mt-2">“{preview.ai.chatter.onStart}”</div>
                 </div>
-              ) : <div className="text-[12px] text-slate-500">Fix the errors to see the preview.</div>}
+              ) : <div className="text-[12px] text-slate-600">Fix the errors to see the preview.</div>}
             </Section>
           </div>
         </div>

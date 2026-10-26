@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { GameState, WinRewards } from '../../engine/types';
 import { getTarget, SCANDALS, TargetArchetype } from '../../engine/data/targets';
 import { countEvidence, nationalBelieverPct } from '../../engine/selectors';
+import { CAMPAIGN_ENDINGS } from '../../engine/data/campaignCopy';
+import { CAMPAIGN_TYPES_META, vocabFor } from '../../engine/campaigns';
 import { BrutalButton, PaperGrain } from '../components/common';
 import { Avatar } from '../components/Silhouette';
 import { targetEmotion } from '../mood';
@@ -88,7 +90,7 @@ const RewardPanel: React.FC<{ gameState: GameState; rewards: WinRewards }> = ({ 
         <div className="text-[10px] font-black uppercase tracking-widest">Case rating</div>
         <div className="text-3xl tracking-widest" aria-label={`${rewards.stars} stars`}>
           {[1, 2, 3].map(i => (
-            <span key={i} className={i <= rewards.stars ? 'text-[#B45309] inline-block animate-star-pop' : 'text-[#1A1A1A]/20 inline-block'} style={{ animationDelay: `${i * 0.25}s` }}>★</span>
+            <span key={i} className={i <= rewards.stars ? 'text-[#92400E] inline-block animate-star-pop' : 'text-[#1A1A1A]/72 inline-block'} style={{ animationDelay: `${i * 0.25}s` }}>{i <= rewards.stars ? '★' : '☆'}</span>
           ))}
         </div>
       </div>
@@ -101,7 +103,7 @@ const RewardPanel: React.FC<{ gameState: GameState; rewards: WinRewards }> = ({ 
         <div className="flex justify-between text-xs font-sans font-black border-t-2 border-[#1A1A1A] pt-1 mt-0.5">
           <span>Brown Envelopes earned</span><span><CountUp to={rewards.total} prefix="+" /> ✉️</span>
         </div>
-        <div className="text-[10px] font-sans font-bold text-[#1A1A1A]/60 text-right">Balance: {rewards.envelopesAfter} ✉️</div>
+        <div className="text-[10px] font-sans font-bold text-[#1A1A1A]/72 text-right">Balance: {rewards.envelopesAfter} ✉️</div>
       </div>
       <div className="text-[10px] font-sans italic text-slate-700 border-t border-dashed border-[#1A1A1A] pt-1.5">{hint}</div>
     </div>
@@ -163,7 +165,7 @@ Try am: ${baseUrl()}`; window.open(`https://wa.me/?text=${encodeURIComponent(tex
           <BrutalButton tone="paper" onClick={shareScore}>🏆 Share my score</BrutalButton>
         </div>
       )}
-      {won && <div className="text-center text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500">Score {score}{gameState.assisted ? ' (assisted counts half)' : ''}</div>}
+      {won && <div className="text-center text-[10px] font-sans font-bold uppercase tracking-wider text-slate-600">Score {score}{gameState.assisted ? ' (assisted counts half)' : ''}</div>}
       {note && <div role="status" className="text-center text-[11px] font-bold text-[#065F46]">{note}</div>}
     </div>
   );
@@ -220,8 +222,49 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
     ['Evidence Leaked', `${ev.total}${ev.forged > 0 ? ` (${ev.forged} forged)` : ''}`]
   ];
 
+  // ---- A CAMPAIGN: a community bulletin, not a tabloid. The same numbers, in the campaign's own words. ----
+  if (target.campaign) {
+    const c = target.campaign;
+    const V = vocabFor(target.id);
+    const meta = CAMPAIGN_TYPES_META[c.type];
+    const end = CAMPAIGN_ENDINGS[c.type];
+    const won = gameState.status === 'WON';
+    const lost = !won ? end.lost[gameState.status === 'LOST_HEAT' ? 'LOST_HEAT' : gameState.status === 'LOST_COVERUP' ? 'LOST_COVERUP' : 'LOST_TIME'] : null;
+    const fill = (t: string) => t.replace(/\{Cause\}/g, c.cause).replace(/\{Target\}/g, target.shortName).replace(/\{Adopters\}/g, c.adopter);
+    const campRows = [
+      ['Campaign', c.cause], ['Angle', gameState.scandalTitle || ''], ['Days Taken', `${days}/${gameState.dayBudget}`],
+      [`Final ${V.adopters}`, `${believers.toFixed(1)}%`], [`Peak ${V.heat}`, `${Math.floor(gameState.peakHeat)}%`], [`Peak ${V.coverUp}`, `${Math.floor(gameState.peakCoverUp)}%`],
+      ['Channels Used', `${gameState.unlockedChannels.length}`], [`${V.evidence} Shared`, `${ev.total}${ev.forged > 0 ? ` (${ev.forged} exaggerated)` : ''}`]
+    ];
+    return (
+      <div className={`absolute inset-0 z-[120] end-root ${won ? 'bg-[#ECFDF5]' : 'bg-[#F4F1EA]'} text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in`}>
+        <PaperGrain />
+        {won && <Confetti />}
+        <div className="relative p-5 flex flex-col gap-4">
+          <div className="border-b-4 border-double pb-2 text-center" style={{ borderColor: meta.color }}>
+            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72"><span>{meta.icon} {meta.name} campaign</span><span>Community edition</span></div>
+            <div className="font-serif font-black text-3xl uppercase tracking-tight leading-none">The Community Bulletin</div>
+          </div>
+          <div className="relative">
+            <div className="absolute -top-2 right-0 rotate-[8deg] border-4 font-black text-sm tracking-[0.25em] px-3 py-1 bg-white/80 animate-stamp-in" style={{ borderColor: won ? '#065F46' : '#7F1D1D', color: won ? '#065F46' : '#7F1D1D' }}>{won ? 'SUCCESS' : 'NOT THIS TIME'}</div>
+            <h1 className="font-serif font-black text-[32px] uppercase leading-[0.95] tracking-tight pt-6">{won ? end.win : lost!.head}</h1>
+          </div>
+          <p className="font-serif text-sm leading-relaxed border-t-2 border-b-2 border-[#1A1A1A] py-3">{fill(won ? end.winBody : lost!.body)}</p>
+          <div className="text-[12px] font-sans font-bold leading-snug">🎯 {c.goal}</div>
+          <EndPortrait gameState={gameState} />
+          <div className="flex flex-col gap-2">{campRows.map(([l, v]) => <Row key={l} label={l} value={v} className="bg-white/80 shadow-[2px_2px_0px_#1A1A1A]" />)}</div>
+          {won && rewards && <RewardPanel gameState={gameState} rewards={rewards} />}
+          {!won && <div className="text-[12px] font-sans border-2 border-dashed border-[#1A1A1A]/60 bg-white/70 rounded-lg p-3 leading-snug"><b>Next time:</b> {gameState.status === 'LOST_HEAT' ? `Open the ${V.defenseDesk} earlier, and keep ${V.heat} low while you grow.` : gameState.status === 'LOST_COVERUP' ? `Share ${V.evidence.toLowerCase()} early and often, and pop the ${V.spin.toLowerCase()} bubbles before they land.` : 'Buy bigger channels earlier. Every day the window is open is a day people can come round.'}</div>}
+          <div className="text-[10px] font-sans italic text-slate-600 text-center">Tip: {tip}</div>
+          <ShareButton gameState={gameState} stars={stars} tone={won ? 'green' : 'paper'} />
+          <BrutalButton tone="ink" onClick={onNewInvestigation}>{continueLabel === 'New Investigation' ? 'Back to the campaigns' : continueLabel}</BrutalButton>
+        </div>
+      </div>
+    );
+  }
+
   const Disclaimer = SHOW_DISCLAIMER && target.parody
-    ? <div className="text-[9px] font-sans italic text-center opacity-60 px-2">{PARODY_DISCLAIMER}</div>
+    ? <div className="text-[10px] font-sans italic text-center opacity-60 px-2">{PARODY_DISCLAIMER}</div>
     : null;
 
   // ---- VICTORY: tabloid front page ----
@@ -234,7 +277,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
         <Confetti />
         <div className="relative p-5 flex flex-col gap-4">
           <div className="border-b-4 border-double border-[#1A1A1A] pb-2 text-center">
-            <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60">
+            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">
               <span>{gameState.dailyKey ? 'Daily Special' : 'Special Edition'}</span>
               <span>₦300</span>
             </div>
@@ -312,7 +355,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
               <div className="w-10 h-10 rounded-full border-2 border-[#1A1A1A] flex items-center justify-center font-serif font-black">★</div>
               <div>
                 <div className="font-serif font-bold text-[11px] uppercase tracking-[0.2em]">Office of the Principal</div>
-                <div className="font-serif text-[8px] uppercase tracking-widest text-slate-500">Press Secretariat • For immediate release</div>
+                <div className="font-serif text-[10px] uppercase tracking-widest text-slate-600">Press Secretariat • For immediate release</div>
               </div>
             </div>
             <div className="relative">
@@ -346,7 +389,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
       <PaperGrain />
       <div className="relative p-5 flex flex-col gap-4">
         <div className="border-b-4 border-double border-[#1A1A1A] pb-2 text-center">
-          <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60">
+          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">
             <span>Late Edition</span>
             <span>₦300</span>
           </div>

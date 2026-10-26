@@ -74,6 +74,7 @@
 .animate-stamp-in { animation: stamp-in 0.35s ease-out both; }
 .animate-shake { animation: shake 0.35s ease-in-out both; }
 .animate-border-pulse { animation: border-pulse 0.9s ease-in-out 2; }
+.animate-border-loop { animation: border-pulse 1.1s ease-in-out infinite; }
 
 @keyframes ring-deplete {
   from { stroke-dashoffset: var(--ring-from); }
@@ -180,6 +181,7 @@ html[data-layout='desktop'] .end-root { align-items: center; }
 .desk-room { background: radial-gradient(ellipse at 50% 30%, var(--m-room1, #2a2f3a) 0%, var(--m-room2, #0b0e14) 70%); }
 [data-mode='story'] { --m-room1: #1b2438; --m-room2: #04060a; --m-frame: #05070b; }
 [data-mode='arena'] { --m-room1: #2d2275; --m-room2: #07041a; --m-frame: #07041a; }
+[data-mode='campaign'] { --m-room1: #3f6b52; --m-room2: #0d1f16; --m-frame: #0d1f16; }
 
 /* Touch screens: every button is at least 44 x 44 px (the usual finger-size guideline). Text links keep their look but get
    a taller row. Add data-compact to a button that must stay small on purpose. */
@@ -200,8 +202,10 @@ html[data-layout='desktop'] .end-root { align-items: center; }
   --m-ink: #1A1A1A; --m-soft: #5B564B; --m-line: #1A1A1A;
   --m-accent: #8B0000; --m-accent-ink: #FFFFFF; --m-accent2: #FDE68A; --m-accent2-ink: #1A1A1A;
   --m-header: #F4F1EA; --m-header-ink: #1A1A1A; --m-map: #EADFCB; --m-glow: rgba(139,0,0,0);
+  --m-panel: #1A1A1A; --m-panel-ink: #F4F1EA; --m-panel-accent: #FDE68A; --m-accent-text: #8B0000;   /* a dark strip or panel, the text on it, its highlight; and accent colour as TEXT on the mode's page */
   --m-disabled: #D4CFC4; --m-btn-ink-bg: #1A1A1A; --m-btn-ink-fg: #F4F1EA; --m-btn-paper-bg: #FFFFFF; --m-btn-paper-fg: #1A1A1A; --m-btn-crimson-bg: #8B0000;
   --m-label: #1A1A1A; --m-label-halo: #F4F1EA; --m-state-line: #1A1A1A;
+  --m-state-hi: #8B0000; --m-hi-outer: #1A1A1A; --m-label-forced: #8B0000; --m-start-fill: #FEF3C7;   /* map highlights: bright ring, dark ring under it, pinned label, the start state before the first bubble */
   --z-SW: #D9EBD9; --z-SE: #E4D9F0; --z-SS: #CFE6EC; --z-NC: #E3EAD0; --z-NE: #D8DCF0; --z-NW: #E6DFD6; --z-none: #F4F1EA;
 }
 [data-mode='story'] {
@@ -209,8 +213,10 @@ html[data-layout='desktop'] .end-root { align-items: center; }
   --m-ink: #E9EDF5; --m-soft: #9AA6BA; --m-line: #2F3B57;
   --m-accent: #E11D48; --m-accent-ink: #FFFFFF; --m-accent2: #F59E0B; --m-accent2-ink: #1A1206;
   --m-header: #0E131D; --m-header-ink: #E9EDF5; --m-map: #0B1220; --m-glow: rgba(225,29,72,.35);
+  --m-panel: #0E131D; --m-panel-ink: #E9EDF5; --m-panel-accent: #F59E0B; --m-accent-text: #FB7185;
   --m-disabled: #1B2233; --m-btn-ink-bg: #E9EDF5; --m-btn-ink-fg: #0A0D14; --m-btn-paper-bg: #1A2233; --m-btn-paper-fg: #E9EDF5; --m-btn-crimson-bg: #E11D48;
   --m-label: #E9EDF5; --m-label-halo: #0B1220; --m-state-line: #3A4766;
+  --m-state-hi: #FBBF24; --m-hi-outer: #05070B; --m-label-forced: #FBBF24; --m-start-fill: #3B1020;
   --z-SW: #1E2A3A; --z-SE: #261F3A; --z-SS: #1A3038; --z-NC: #232C26; --z-NE: #1F2540; --z-NW: #2A2623; --z-none: #151C2C;
 }
 [data-mode='arena'] {
@@ -218,9 +224,22 @@ html[data-layout='desktop'] .end-root { align-items: center; }
   --m-ink: #F1EEFF; --m-soft: #A79FD6; --m-line: #4B3FA8;
   --m-accent: #22D3EE; --m-accent-ink: #04222A; --m-accent2: #E879F9; --m-accent2-ink: #2A0630;
   --m-header: #140E35; --m-header-ink: #F1EEFF; --m-map: #120B30; --m-glow: rgba(34,211,238,.35);
+  --m-panel: #140E35; --m-panel-ink: #F1EEFF; --m-panel-accent: #E879F9; --m-accent-text: #22D3EE;
   --m-disabled: #2A2366; --m-btn-ink-bg: #22D3EE; --m-btn-ink-fg: #04222A; --m-btn-paper-bg: #261E5A; --m-btn-paper-fg: #F1EEFF; --m-btn-crimson-bg: #C026D3;
   --m-label: #F1EEFF; --m-label-halo: #120B30; --m-state-line: #5B4FC9;
+  --m-state-hi: #22D3EE; --m-hi-outer: #07041A; --m-label-forced: #67E8F9; --m-start-fill: #0E3B4A;
   --z-SW: #1F3A4A; --z-SE: #3A2A66; --z-SS: #14414F; --z-NC: #2B3A5C; --z-NE: #322A70; --z-NW: #3B2A58; --z-none: #1B1640;
+}
+[data-mode='campaign'] {
+  --m-bg: #EEF6EA; --m-surface: #F6FBF3; --m-surface2: #FFFFFF; --m-sunk: #D5E8CF;
+  --m-ink: #14231A; --m-soft: #4A5E50; --m-line: #14231A;
+  --m-accent: #0F766E; --m-accent-ink: #FFFFFF; --m-accent2: #D9F99D; --m-accent2-ink: #14231A;
+  --m-header: #F6FBF3; --m-header-ink: #14231A; --m-map: #E2EFDC; --m-glow: rgba(15,118,110,0);
+  --m-panel: #14231A; --m-panel-ink: #ECFDF5; --m-panel-accent: #D9F99D; --m-accent-text: #0F766E;
+  --m-disabled: #CFE0CC; --m-btn-ink-bg: #14231A; --m-btn-ink-fg: #ECFDF5; --m-btn-paper-bg: #FFFFFF; --m-btn-paper-fg: #14231A; --m-btn-crimson-bg: #B45309;
+  --m-label: #14231A; --m-label-halo: #F6FBF3; --m-state-line: #14231A;
+  --m-state-hi: #0F766E; --m-hi-outer: #14231A; --m-label-forced: #0F766E; --m-start-fill: #D1FAE5;
+  --z-SW: #D5EBDA; --z-SE: #E0E6F3; --z-SS: #CDE8E6; --z-NC: #E0EBCB; --z-NE: #D6E3F0; --z-NW: #E7E2D3; --z-none: #F6FBF3;
 }
 /* Page and frame backgrounds (behind everything) */
 .mode-page { background-color: var(--m-bg); color: var(--m-ink); }
@@ -241,6 +260,8 @@ html[data-layout='desktop'] .end-root { align-items: center; }
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%234B3FA8' stroke-opacity='.38' stroke-width='1.2'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%234B3FA8' stroke-opacity='.38' stroke-width='1.2'/%3E%3C/svg%3E");
   background-size: 100% 100%, 56px 100px;
 }
+/* Campaigns: a fresh community-poster look: pale green paper, a soft dot grid and rounded, friendly shapes */
+.tex-campaign { background-color: var(--m-bg); background-image: radial-gradient(rgba(15,118,110,.10) 1px, transparent 1.4px), linear-gradient(180deg, rgba(217,249,157,.35), transparent 40%); background-size: 8px 8px, 100% 100%; }
 /* The film look for the thriller: grain, scanlines and a vignette laid over a screen (pointer-events none). */
 /* (every element that uses fx-film is already positioned: relative or absolute) */
 .fx-film::after {
@@ -255,3 +276,7 @@ html[data-layout='desktop'] .end-root { align-items: center; }
 html[data-motion='reduced'] .fx-film::after { opacity: .3; }
 
 .scene-shake { animation: shake 0.45s ease-in-out 2; }
+
+/* A gentle blink for hints: never fades below 75%, so the text stays readable the whole time (animate-pulse dims to 50%). */
+@keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
+.animate-hint { animation: hint 1.8s ease-in-out infinite; }

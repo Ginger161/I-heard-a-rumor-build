@@ -107,7 +107,7 @@ const BRANCH_NAME: Record<Branch, string> = { STREET: 'Street', SOCIAL: 'Social'
 const describeAbility = (a: AbilityDef): string => {
   const cadence = `Every ~${a.every} days`;
   switch (a.kind) {
-    case 'INJUNCTION': return `${cadence}: freezes one of your ${a.branch ? a.branch + ' ' : ''}channels for ${a.strength} days.`;
+    case 'INJUNCTION': return `${cadence}${a.minBelievers ? ` once ${a.minBelievers}% believe` : ''}: freezes one of your ${a.mirror ? 'most-used lane’s ' : a.branch ? a.branch + ' ' : ''}channels for ${a.strength} days.`;
     case 'DISTRACTION': return `${cadence}: a distraction costs your story ${a.strength} Freshness.`;
     case 'HEAT_SURGE': return `${cadence}: security agencies add +${a.strength}% Heat.`;
     case 'COUNTER_STORY': return `${cadence}: a counter-story adds +${a.strength}% Cover-Up.`;
@@ -116,7 +116,7 @@ const describeAbility = (a: AbilityDef): string => {
     case 'EVIDENCE_RAID': return `${cadence}: files go missing and your Investigation drops ${a.strength}%.`;
     case 'ACCOUNT_FREEZE': return `${cadence}: your accounts are frozen and ${a.strength} ⚡ are seized.`;
     case 'ROADBLOCK': return `${cadence}: roadblocks halve land-border spread for ${a.strength} days.`;
-    case 'LANE_JAM': return `${cadence}: your ${a.branch ?? 'SOCIAL'} channels run at 60% for ${a.strength} days.`;
+    case 'LANE_JAM': return `${cadence}${a.minBelievers ? ` once ${a.minBelievers}% believe` : ''}: your ${a.mirror ? 'most-used lane’s' : a.branch ?? 'SOCIAL'} channels run at 60% for ${a.strength} days.`;
     case 'REGION_LOCK': return `${cadence}: the ${ZONE_NAMES[a.zone ?? 'SW']} spreads at half speed for ${a.strength} days.`;
   }
 };
@@ -161,6 +161,8 @@ export const describeTarget = (t: TargetArchetype): string[] => {
   if (m.heatRate && m.heatRate !== 1) out.push(`Your Heat builds a further ${pct(m.heatRate)} ${m.heatRate > 1 ? 'faster' : 'slower'} (on top of their style and the tier).`);
   if (m.days) out.push(m.days < 0 ? `A short news cycle: ${-m.days} fewer days than the tier gives.` : `A slow news cycle: ${m.days} more days than the tier gives.`);
   if (m.counterHeat) out.push(`Every counter-offensive adds +${m.counterHeat}% Heat (a SAN Counter-Injunction cancels it).`);
+  if (m.evidenceCost !== undefined && m.evidenceCost < 1) out.push(`Genuine evidence costs ${Math.round((1 - m.evidenceCost) * 100)}% less to leak.`);
+  if (m.noForgery) out.push('Forgeries are disabled: only real evidence works here.');
   if (m.forgeryRisk) out.push(`Forgeries are ${Math.round(m.forgeryRisk * 100)}% more likely to be exposed.`);
   t.abilities.forEach(a => out.push(describeAbility(a)));
   const last = t.abilities[t.abilities.length - 1];

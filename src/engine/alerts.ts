@@ -1,5 +1,5 @@
 import { GameAlert, GameState } from './types';
-import { ScandalCategory } from './data/channels';
+import { Branch, ScandalCategory } from './data/channels';
 import { EvidenceItem, getEvidenceVariant } from './data/evidence';
 import { channelFlavorLine } from './data/flavor';
 import { DefenseItem } from './data/defense';
@@ -11,6 +11,8 @@ import { BALANCE } from './balance';
 import { SCHEMER_EVENT, buildEventAlert } from './events';
 import { getClimate } from './data/climates';
 import { COPY, pickCopy, pickFrom } from './data/copy';
+import { CAMPAIGN_COPY, CAMPAIGN_DEFENSE, CAMPAIGN_EVIDENCE } from './data/campaignCopy';
+import { campaignize, vocabFor } from './campaigns';
 
 let alertCounter = 0;
 const uid = (prefix: string) => `${prefix}_${Date.now()}_${alertCounter++}`;
@@ -92,7 +94,15 @@ export const scaledStrength = (a: AbilityDef, target: TargetArchetype): number =
 };
 
 // Target abilities -> effects (the sim applies them and then builds the alert with the outcome notes).
-export const abilityEffects = (a: AbilityDef, state: Pick<GameState, 'defensePurchases' | 'activeTargetId'>): Effect[] => {
+// The lane where the player owns the most channels (ties go to the first lane listed): what a mirroring Target copies.
+export const dominantBranch = (unlocked: string[]): Branch => {
+  const count: Record<Branch, number> = { STREET: 0, SOCIAL: 0, PRESS: 0, ELITE: 0 };
+  unlocked.forEach(id => { const ch = getChannel(id); if (ch) count[ch.branch]++; });
+  return (['STREET', 'SOCIAL', 'PRESS', 'ELITE'] as Branch[]).reduce((best, b) => (count[b] > count[best] ? b : best), 'STREET' as Branch);
+};
+
+export const abilityEffects = (a0: AbilityDef, state: Pick<GameState, 'defensePurchases' | 'activeTargetId'> & Partial<Pick<GameState, 'unlockedChannels'>>): Effect[] => {
+  const a: AbilityDef = a0.mirror ? { ...a0, branch: dominantBranch(state.unlockedChannels ?? []) } : a0;
   const strength = scaledStrength(a, getTarget(state.activeTargetId));
   switch (a.kind) {
     case 'INJUNCTION': return [{ kind: 'freeze', days: strength, branch: a.branch }];
@@ -133,8 +143,8 @@ export const buildAbilityAlert = (target: TargetArchetype, a: AbilityDef, state:
   stampText: a.stamp,
   headline: a.headline,
   body: `"${fillTarget(a.line, target)}"`,
-  subtext: abilitySubtext(a, target, state, notes),
-  buttonText: 'Fight Back',
+  subtext: campaignize(abilitySubtext(a, target, state, notes), vocabFor(target.id)),
+  buttonText: target.campaign ? 'Answer Back' : 'Fight Back',
   priority: 79
 });
 
@@ -144,14 +154,15 @@ export const buildAbilityAlert = (target: TargetArchetype, a: AbilityDef, state:
 export const AlertFactory = {
   // Seed pop (Day 1): STREET_WHISPER
   createSeedAlert: (stateName: string, target: TargetArchetype, climateId?: string, copySeed = 0): GameAlert => {
-    const c = pickCopy('SEED', copySeed, { State: stateName, Target: target.shortName })!;
+    const camp = target.campaign;
+    const c = pickCopy('SEED', copySeed, { State: stateName, Target: target.shortName, Cause: camp?.cause ?? '', Adopters: camp?.adopter ?? '' }, camp ? CAMPAIGN_COPY : COPY)!;
     return {
       id: uid('seed'),
       archetype: 'STREET_WHISPER',
-      stampText: 'GROUND ZERO // FIRST WHISPER',
+      stampText: camp ? 'DAY ONE // THE FIRST CONVERSATION' : 'GROUND ZERO // FIRST WHISPER',
       headline: c.headline,
       body: c.body,
-      subtext: `Contagion Active • Clock Started${climateId && climateId !== 'CLEAR_SKIES' ? ` • ${getClimate(climateId).icon} ${getClimate(climateId).name}` : ''}`,
+      subtext: `${camp ? 'Campaign Live' : 'Contagion Active'} • Clock Started${climateId && climateId !== 'CLEAR_SKIES' ? ` • ${getClimate(climateId).icon} ${getClimate(climateId).name}` : ''}`,
       buttonText: c.button ?? 'Fan the Flames',
       priority: 100
     };
@@ -166,7 +177,7 @@ export const AlertFactory = {
     return {
       id: uid(`chan_${channel.id}`),
       archetype: isPressOrElite ? 'BREAKING_FRONT' : 'VIRAL_RECEIPT',
-      stampText: isPressOrElite ? `${channel.branch} SYNDICATION` : 'VIRAL GIST ALERT',
+      stampText: target.campaign ? (isPressOrElite ? `${channel.branch} PARTNERSHIP` : 'WORD IS SPREADING') : isPressOrElite ? `${channel.branch} SYNDICATION` : 'VIRAL GIST ALERT',
       headline: channel.name,
       body: `"${channelFlavorLine(channel, category, target, String(Date.now() % 7))}"`,
       subtext: `Velocity +${channel.velocity} • Credibility +${channel.credibility} • Notoriety +${channel.notoriety}${matched ? ' • SYNERGY x1.35' : ''}`,
@@ -177,7 +188,35 @@ export const AlertFactory = {
 
   // Evidence leaked: genuine => BREAKING_FRONT, forgery success => VIRAL_RECEIPT, exposed => TARGET_PR
   createEvidenceAlert: (item: EvidenceItem, backfired: boolean, category: ScandalCategory, target: TargetArchetype, copySeed = 0): GameAlert => {
-    const variant = getEvidenceVariant(item, category, target.parody, target.storyOnly);
+    const camp = target.campaign;
+    const v = vocabFor(target.id);
+    const variant = camp ? { name: CAMPAIGN_EVIDENCE[item.id]?.name ?? item.name, flavor: [CAMPAIGN_EVIDENCE[item.id]?.flavor ?? ''] } : getEvidenceVariant(item, category, target.parody, target.storyOnly);
+    if (camp && backfired) {
+      return {
+        id: uid(`ev_backfire_${item.id}`),
+        archetype: 'TARGET_PR',
+        stampText: 'FACT-CHECKED // BACKFIRE!',
+        headline: `"${variant.name}" Is Called Out!`,
+        body: `"Fact-checkers and ${target.shortName} have shown that the claim goes further than the evidence. The streets are calling ${camp.cause} a hype job. Honest proof would have been slower, and safer."`,
+        subtext: campaignize('+20% National Doubt • +25% Heat • +15% Cover-Up', v),
+        buttonText: pickFrom(['Own It', 'Correct the Record', 'Regroup', 'Learn From It'], 'bf:' + item.id, copySeed),
+        priority: 100
+      };
+    }
+    if (camp) {
+      return {
+        id: uid(`ev_${item.id}`),
+        archetype: item.isFabricated ? 'VIRAL_RECEIPT' : 'BREAKING_FRONT',
+        stampText: item.isFabricated ? 'BOLD CLAIM // SHARED WIDELY' : 'PROOF PUBLISHED',
+        headline: `${variant.name} Goes Out`,
+        body: item.isFabricated
+          ? '"It is punchy, it is shareable and it is just a little more than the evidence supports. Skepticism is dropping, for now."'
+          : `"${variant.flavor[0].replace('{Cause}', camp.cause)} It is being shared by exactly the people who were hardest to convince."`,
+        subtext: campaignize(`-${item.doubtReduction}% Doubt • +${item.heatIncrease}% Heat • -${item.coverUpReduction}% Cover-Up • +${item.freshnessBoost} Freshness`, v),
+        buttonText: pickFrom(['Keep Going', 'Let It Land', 'Share It Wider', 'Hit Send'], 'ev:' + item.id, copySeed),
+        priority: 100
+      };
+    }
     if (backfired) {
       return {
         id: uid(`ev_backfire_${item.id}`),
@@ -205,14 +244,14 @@ export const AlertFactory = {
   },
 
   // Defense purchased: SECURITY_WIRE
-  createDefenseAlert: (item: DefenseItem, copySeed = 0): GameAlert => ({
+  createDefenseAlert: (item: DefenseItem, copySeed = 0, targetId?: string | null): GameAlert => ({
     id: uid(`def_${item.id}`),
-    archetype: 'SECURITY_WIRE',
-    stampText: 'OPSEC PROTOCOL // EXECUTED',
-    headline: item.name,
-    body: item.alertBody,
-    subtext: `-${item.heatReduction}% Heat${item.id === 'proxy_relay' ? ' • Notoriety Heat -25%' : ''}${item.id === 'san_injunction' ? ' • Spin Bubbles Neutralized • Injunctions Blocked' : ''}${item.id === 'whistleblower' ? ' • Investigation Nearly Doubled' : ''}`,
-    buttonText: pickFrom(['Stay in the Shadows', 'Go Dark', 'Cover Tracks', 'Breathe Easy'], 'def:' + item.id, copySeed),
+    archetype: targetId && vocabFor(targetId).campaign ? 'VIRAL_RECEIPT' : 'SECURITY_WIRE',
+    stampText: targetId && vocabFor(targetId).campaign ? 'PROTECTION // IN PLACE' : 'OPSEC PROTOCOL // EXECUTED',
+    headline: targetId && vocabFor(targetId).campaign ? (CAMPAIGN_DEFENSE[item.id]?.name ?? item.name) : item.name,
+    body: targetId && vocabFor(targetId).campaign ? (CAMPAIGN_DEFENSE[item.id]?.alertBody ?? item.alertBody) : item.alertBody,
+    subtext: campaignize(`-${item.heatReduction}% Heat${item.id === 'proxy_relay' ? ' • Notoriety Heat -25%' : ''}${item.id === 'san_injunction' ? ' • Spin Bubbles Neutralized • Injunctions Blocked' : ''}${item.id === 'whistleblower' ? ' • Investigation Nearly Doubled' : ''}`, vocabFor(targetId)),
+    buttonText: pickFrom(targetId && vocabFor(targetId).campaign ? ['Carry On', 'Stay Steady', 'Breathe Easy', 'Keep Going'] : ['Stay in the Shadows', 'Go Dark', 'Cover Tracks', 'Breathe Easy'], 'def:' + item.id, copySeed),
     priority: 100
   }),
 
@@ -440,6 +479,7 @@ export const AlertFactory = {
 
     // --- F. TARGET ABILITIES (due on or after their scheduled day) ---
     target.abilities.forEach((a, i) => {
+      if (a.minBelievers !== undefined && nationalBelieverPct(next.states) < a.minBelievers) return;   // a later phase of the case
       if (next.abilityNext[i] !== undefined && next.abilityNext[i] <= next.currentDay) {
         candidates.push({
           alert: buildAbilityAlert(target, a, next, []),
@@ -458,17 +498,24 @@ export const AlertFactory = {
 
     // Variants: the run's copySeed picks which wording each milestone uses.
     const hubText = (id: string) => hubNames[id] ?? { name: id, desc: 'the local networks' };
-    const varied = candidates.map(c => {
+    const camp = target.campaign;
+    const table = camp ? CAMPAIGN_COPY : COPY;
+    const vocab = vocabFor(target.id);
+    const varied = candidates.map(c0 => {
+      // In a campaign every stock word on every alert is re-voiced (Doubt becomes Skepticism, and so on).
+      // Backlash letters read as official letters, not state-security telexes; field reports read as notebook scraps.
+      const arch = c0.alert.archetype === 'SECURITY_WIRE' ? 'TARGET_PR' : c0.alert.archetype === 'INFORMANT_TIP' && !c0.eventId ? 'STREET_WHISPER' : c0.alert.archetype;
+      const c = camp ? { ...c0, alert: { ...c0.alert, archetype: arch, subtext: c0.alert.subtext ? campaignize(c0.alert.subtext, vocab) : c0.alert.subtext } } : c0;
       const id = c.milestoneId;
-      const key = id.startsWith('HUB_') ? 'HUB' : id.startsWith('SWEEP_') ? 'SWEEP' : id === 'FIRST_STATE_FLIP' ? 'FLIP' : COPY[id] ? id : null;
+      const key = id.startsWith('HUB_') ? 'HUB' : id.startsWith('SWEEP_') ? 'SWEEP' : id === 'FIRST_STATE_FLIP' ? 'FLIP' : table[id] ? id : null;
       if (!key) return c;
-      const vars: Record<string, string> = { Target: target.shortName, Chatter: target.ai.chatter.onCritical };
+      const vars: Record<string, string> = { Target: target.shortName, Chatter: target.ai.chatter.onCritical, Cause: camp?.cause ?? '', Adopters: camp?.adopter ?? '' };
       if (key === 'HUB') { const h = hubText(id.slice(4)); vars.Hub = h.name; vars.HubDesc = h.desc; }
       if (key === 'SWEEP') vars.Zone = ZONE_NAMES[id.slice(6) as keyof typeof ZONE_NAMES] ?? '';
       if (key === 'FLIP') vars.State = flipped?.name ?? 'The state';
-      const picked = pickCopy(key, next.copySeed, vars);
+      const picked = pickCopy(key, next.copySeed, vars, table);
       if (!picked) return c;
-      return { ...c, alert: { ...c.alert, headline: picked.headline, body: picked.body, buttonText: picked.button ?? c.alert.buttonText } };
+      return { ...c, alert: { ...c.alert, headline: picked.headline, body: picked.body, buttonText: picked.button ?? c.alert.buttonText, stampText: picked.stamp ?? c.alert.stampText, subtext: picked.subtext ?? c.alert.subtext } };
     });
     varied.sort((a, b) => b.alert.priority - a.alert.priority);
     return varied[0];

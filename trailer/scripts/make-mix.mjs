@@ -1,15 +1,15 @@
 // Builds public/trailer-mix.wav: music edit + sound effects + voiceover, mixed offline.
 //   node scripts/make-mix.mjs
-// Every cue is derived from src/timing.ts (same frames the picture uses) so sound and image cannot drift.
+// Every cue is derived from src/timing.ts (the same frames the picture uses) so sound and image cannot drift.
 // Sources live in public/audio (Epidemic Sound files + vo/ clips from make-vo.mjs).
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { decode, ROOT } from './audio-lib.mjs';
 import { LINES } from './vo-script.mjs';
-import { FPS, SCENES, S1, S2, S3, S4, S5, S6, touchdowns } from '../src/timing.ts';
+import { FPS, SCENES, S1, S2, S3, S4, S5, S6, TOTAL, touchdowns } from '../src/timing.ts';
 
 const SR = 44100;
-const DUR = 30;
+const DUR = TOTAL / FPS; // 45s
 const N = Math.ceil(SR * (DUR + 1));
 const AUD = join(ROOT, 'public/audio');
 const f2s = (f) => f / FPS;
@@ -123,6 +123,11 @@ const shutter = (o) => seg('shutter', 0, 0.74, o);
 const whoosh = (o, d = 1.5) => seg('whoosh', 0.07, d, { fadeOut: 0.25, ...o });
 const whooshRev = (d = 1.1, o) => seg('whoosh', 0.07, d, { rev: true, fadeIn: 0.2, fadeOut: 0.01, ...o });
 
+/** A run of quiet keystrokes that follows text being typed on screen (frames are scene-local). */
+const typing = (b, scene, fromF, toF, every, db) => {
+  for (let f = fromF, n = 0; f < toF; f += every, n++) put(b, key(n + 1, { fadeOut: 0.04 }), at(scene, f), db + (n % 3 === 0 ? 2 : 0), rnd() * 0.3);
+};
+
 /* ------------------------------------------------------------------ SFX bus */
 const sfx = bus();
 
@@ -138,9 +143,11 @@ const sfx = bus();
     put(sfx, sledge('med'), c[1] / FPS, -15);
   }
   if (c[2]) put(sfx, book({ rate: 1.25 }), c[2] / FPS, -15);
-  put(sfx, stamp(0), (c[0] + 10) / FPS, -3); // CLASSIFIED
+  put(sfx, stamp(0), (c[0] + 12) / FPS, -3); // CLASSIFIED
   // lamp coming on: a few electrical ticks as it flickers
-  [8, 9, 20, 21, 27].forEach((f, i) => put(sfx, seg('shutter', 0.02, 0.07, { fadeOut: 0.03 }), f / FPS, -26 + (i % 2) * 3, rnd() * 0.5));
+  [12, 13, 30, 31, 42].forEach((f, i) => put(sfx, seg('shutter', 0.02, 0.07, { fadeOut: 0.03 }), f / FPS, -26 + (i % 2) * 3, rnd() * 0.5));
+  // the case-file label types itself out
+  typing(sfx, 's1', c[0] + 24, c[0] + 200, 9, -22);
   // kinetic type: a key per word, an impact on each phrase, a heavy one for the last word
   S1.words.forEach((f, i) => put(sfx, key(i), f / FPS, -6, rnd() * 0.4));
   [S1.words[0], S1.words[2], S1.words[4]].forEach((f, i) => put(sfx, junk({ rate: 0.9 - i * 0.05 }), f / FPS, -9 + i));
@@ -150,44 +157,48 @@ const sfx = bus();
 // ---- Scene 2: ground zero & shatter
 {
   const s = (f) => at('s2', f);
-  put(sfx, whoosh({ rate: 0.7 }, 2.2), s(0), -9);
+  put(sfx, whoosh({ rate: 0.7 }, 2.4), s(0), -9);
+  typing(sfx, 's2', 30, 110, 10, -26); // the caption
+  for (let f = S2.pulse; f < S2.shatter - 20; f += 72) put(sfx, sledge('med', { rate: 0.6 }), s(f), -24); // FCT pulse
   put(sfx, cork(), s(S2.sparkPop), -4); // bubble pops in
-  put(sfx, whooshRev(1.0, { rate: 1 }), s(S2.shatter) - 1.0, -9);
+  put(sfx, whooshRev(1.2, { rate: 1 }), s(S2.shatter) - 1.2, -9);
   put(sfx, junk({ rate: 0.8 }), s(S2.shatter), -5);
   put(sfx, sledge('big'), s(S2.shatter), -10);
-  for (let i = 0; i < 7; i++) put(sfx, cork({ rate: 1.5 + rnd() * 0.5 }), s(S2.shatter) + 0.03 + i * 0.045, -15 - i * 0.6, rnd());
+  for (let i = 0; i < 9; i++) put(sfx, cork({ rate: 1.5 + rnd() * 0.5 }), s(S2.shatter) + 0.03 + i * 0.06, -15 - i * 0.6, rnd());
   put(sfx, whoosh({ rate: 1.15 }, 0.9), s(S2.cardSlam) - 0.5, -8);
   put(sfx, book(), s(S2.cardSlam), -2);
   put(sfx, sledge('big2'), s(S2.cardSlam), -6);
+  typing(sfx, 's2', S2.cardSlam + 16, S2.cardSlam + 110, 7, -24); // the quote types out
 }
 
 // ---- Scene 3: the conspiracy board
 {
   const s = (f) => at('s3', f);
-  put(sfx, whooshRev(1.1, { rate: 0.9 }), s(0) - 1.1, -9); // riser into the whip-pan
-  put(sfx, whoosh({ rate: 1.0 }, 1.1), s(0) - 0.05, -2);
+  put(sfx, whooshRev(1.2, { rate: 0.9 }), s(0) - 1.2, -9); // riser into the whip-pan
+  put(sfx, whoosh({ rate: 1.0 }, 1.2), s(0) - 0.05, -2);
   S3.pins.forEach((f, i) => {
     put(sfx, pin(i), s(f), -3, (i - 1.5) * 0.25);
     put(sfx, junk({ rate: 1.1 + i * 0.05 }), s(f), -16);
-    put(sfx, key(i + 2), s(f + 8), -9);
-    put(sfx, whoosh({ rate: 1.4 }, 0.7), s(f + 12), -20); // yarn zipping out
+    put(sfx, key(i + 2), s(f + 10), -9);
+    put(sfx, whoosh({ rate: 1.4 }, 0.9), s(f + 18), -20); // yarn zipping out
   });
-  put(sfx, book({ rate: 1.05 }), s(S3.pins[3] + 50), -7); // the target's polaroid
-  put(sfx, whoosh({ rate: 0.8 }, 1.8), s(300), -10); // pull-back
+  put(sfx, book({ rate: 1.05 }), s(S3.polaroid), -7); // the target's polaroid
+  put(sfx, whoosh({ rate: 1.3 }, 0.7), s(S3.polaroid + 16), -18); // circle being drawn
+  put(sfx, whoosh({ rate: 0.8 }, 2.0), s(S3.pullStart), -10); // pull-back
 }
 
 // ---- Scene 4: nationwide contagion
 {
   const s = (f) => at('s4', f);
-  S4.arcs.forEach((f, i) => put(sfx, whoosh({ rate: 1.5 + i * 0.05 }, 0.8), s(f), -15, -0.6 + i * 0.4));
-  [50, 100, 150, 200, 245, 285].forEach((f, i) => put(sfx, whoosh({ rate: 0.9 + (i % 3) * 0.12 }, 1.2), s(f + 52), -11, i % 2 ? 0.55 : -0.55));
+  S4.arcs.forEach((f, i) => put(sfx, whoosh({ rate: 1.5 + i * 0.05 }, 1.0), s(f), -15, -0.6 + i * 0.4));
+  S4.fly.forEach((f, i) => put(sfx, whoosh({ rate: 0.9 + (i % 3) * 0.12 }, 1.4), s(f + S4.flyLen / 2 - 6), -11, i % 2 ? 0.55 : -0.55));
   // the counter: ticks that speed up and rise in pitch
-  let t = s(20);
+  const t0 = s(S4.tickStart);
   const end = s(S4.counterLock);
-  while (t < end) {
-    const p = (t - s(20)) / (end - s(20));
+  for (let t = t0; t < end; ) {
+    const p = (t - t0) / (end - t0);
     put(sfx, seg('type', KEYS[Math.floor(p * 40) % KEYS.length] - 0.01, 0.1, { rate: 1.3 + p * 0.8, fadeOut: 0.04 }), t, -17 + p * 5);
-    t += 0.17 - 0.1 * p;
+    t += 0.2 - 0.12 * p;
   }
   put(sfx, sledge('big'), s(S4.counterLock), -3);
   put(sfx, stamp(1), s(S4.counterLock), -4); // MAJORITY
@@ -197,33 +208,29 @@ const sfx = bus();
 {
   const s = (f) => at('s5', f);
   // siren bed runs the whole scene and is cut by the flash-bulb
-  const sirenStart = 1.0;
-  const sirenLen = 5.0;
-  const siren = seg('siren', sirenStart, sirenLen, { fadeIn: 0.7, fadeOut: 0.05 });
-  put(sfx, siren, s(0), -19);
+  put(sfx, seg('siren', 0.6, SCENES.s5.dur / FPS, { fadeIn: 0.9, fadeOut: 0.05 }), s(0), -19);
   put(sfx, shutter({ rate: 1.6 }), s(S5.wire), -9);
   put(sfx, book(), s(S5.wire), -4);
-  for (let i = 1; i < 9; i++) put(sfx, seg('shutter', 0.02, 0.07, { fadeOut: 0.03 }), s(S5.wire + i * 6), -22); // strobing wire
-  for (let i = 0; i < 5; i++) put(sfx, cork({ rate: 1.25 + i * 0.09 }), s(56 + i * 6), -14, -0.6 + i * 0.3);
-  put(sfx, whoosh({ rate: 0.75 }, 1.4), s(S5.stamp) - 0.7, -7);
+  for (let i = 1; i < 8; i++) put(sfx, seg('shutter', 0.02, 0.07, { fadeOut: 0.03 }), s(S5.wire + i * 8), -22); // strobing wire
+  for (let i = 0; i < 5; i++) put(sfx, cork({ rate: 1.25 + i * 0.09 }), s(S5.bubble + i * 9), -14, -0.6 + i * 0.3);
+  put(sfx, whoosh({ rate: 0.75 }, 1.6), s(S5.stamp) - 0.8, -7);
   put(sfx, sledge('big2'), s(S5.stamp), -1);
   put(sfx, stamp(0), s(S5.stamp), -3);
   put(sfx, junk({ rate: 0.85 }), s(S5.stamp), -7);
-  for (let i = 0; i < 9; i++) put(sfx, cork({ rate: 1.7 + rnd() * 0.5 }), s(S5.stamp) + 0.02 + i * 0.04, -19, rnd());
-  put(sfx, stamp(1, { rate: 1.1 }), s(S5.stamp + 4), -10); // -65% DOUBT
+  for (let i = 0; i < 9; i++) put(sfx, cork({ rate: 1.7 + rnd() * 0.5 }), s(S5.stamp) + 0.02 + i * 0.05, -19, rnd());
 }
 
 // ---- Scene 6: front page & CTA
 {
   const s = (f) => at('s6', f);
-  put(sfx, whooshRev(1.3, { rate: 0.85 }), s(0) - 1.3, -8);
+  put(sfx, whooshRev(1.5, { rate: 0.85 }), s(0) - 1.5, -8);
   put(sfx, shutter(), s(0), -2);
   put(sfx, sledge('med'), s(0), -6);
   put(sfx, sledge('big'), s(S6.stamp), -1);
   put(sfx, stamp(1), s(S6.stamp), -2);
   put(sfx, book({ rate: 0.9 }), s(S6.stamp), -6);
   put(sfx, junk({ rate: 0.8 }), s(S6.stamp), -6);
-  put(sfx, key(5), s(S6.stamp + 50), -11);
+  put(sfx, key(5), s(S6.cta + 2), -11);
 }
 
 /* ------------------------------------------------------------------ voiceover bus */
@@ -252,22 +259,21 @@ for (const l of LINES) {
     for (let i = 0; i < len; i++) {
       withEcho[ch][i] += clip[ch][i];
       lp += (clip[ch][i] - lp) * 0.35;
-      const d1 = i + Math.floor(0.085 * SR);
-      const d2 = i + Math.floor(0.19 * SR);
-      withEcho[ch][d1] += lp * 0.2;
-      withEcho[ch][d2] += lp * 0.1;
+      withEcho[ch][i + Math.floor(0.085 * SR)] += lp * 0.2;
+      withEcho[ch][i + Math.floor(0.19 * SR)] += lp * 0.1;
     }
   }
   put(vo, withEcho, l.at, 0);
   const dur = len / SR;
   voWindows.push({ a: l.at - 0.12, b: l.at + dur + 0.2 });
-  report.push({ id: l.id, at: l.at, end: +(l.at + dur).toFixed(2), text: l.text });
+  report.push({ id: l.id, at: l.at, end: +(l.at + dur - 0.12).toFixed(2) });
 }
+report.sort((a, b) => a.at - b.at);
 report.forEach((r, i) => {
   const next = report[i + 1];
-  const warn = next && r.end > next.at - 0.05 ? '  <-- OVERLAPS NEXT LINE' : '';
-  const late = r.end > DUR - 0.05 ? '  <-- RUNS PAST THE END' : '';
-  console.log(`${r.id} ${r.at.toFixed(2)}s -> ${r.end.toFixed(2)}s  ${r.text}${warn}${late}`);
+  const warn = next && r.end > next.at ? '  <-- OVERLAPS NEXT LINE' : '';
+  const late = r.end > DUR ? '  <-- RUNS PAST THE END' : '';
+  console.log(`${r.id} ${r.at.toFixed(2)}s -> ${r.end.toFixed(2)}s${warn}${late}`);
 });
 
 /* ------------------------------------------------------------------ music: opening downbeat, rebuild, real ending */
@@ -276,29 +282,38 @@ const music = bus();
   const A = 80.25; // source time of the big downbeat that opens the breakdown
   const FINAL_HIT = 126.5; // source time of the track's closing chord
   const stampT = at('s6', S6.stamp);
-  const flashT = at('s6', S6.flash);
-  const B = FINAL_HIT - stampT; // source time that plays at trailer t=0 once we jump to the ending
-  const XF = 0.25;
+  // The track is on a 5.0s (2-bar) grid, so jumping exactly one phrase keeps the groove. We jump at the
+  // counter-lock impact, which hides the edit, and land the closing chord on the final stamp.
+  const SKIP = FINAL_HIT - stampT - A - 0; // seconds of source skipped between A's start and the ending
+  const jumpT = at('s4', S4.counterLock);
+  const XF = 0.14;
   const m = src('music');
   const mAt = (c, p) => m.ch[c][Math.floor(p * SR)] ?? 0;
   for (let i = 0; i < N; i++) {
     const t = i / SR;
-    const ga = t < flashT - XF / 2 ? 1 : t > flashT + XF / 2 ? 0 : Math.cos(((t - (flashT - XF / 2)) / XF) * Math.PI * 0.5);
-    const gb = t < flashT - XF / 2 ? 0 : t > flashT + XF / 2 ? 1 : Math.sin(((t - (flashT - XF / 2)) / XF) * Math.PI * 0.5);
+    const ga = t < jumpT - XF / 2 ? 1 : t > jumpT + XF / 2 ? 0 : Math.cos(((t - (jumpT - XF / 2)) / XF) * Math.PI * 0.5);
+    const gb = t < jumpT - XF / 2 ? 0 : t > jumpT + XF / 2 ? 1 : Math.sin(((t - (jumpT - XF / 2)) / XF) * Math.PI * 0.5);
     for (let c = 0; c < 2; c++) {
       const a = ga > 0 ? mAt(c, A + t) : 0;
-      const b = gb > 0 ? mAt(c, B + t) : 0;
+      const b = gb > 0 ? mAt(c, A + SKIP + t) : 0;
       music[c][i] = a * ga + b * gb;
     }
   }
-  // the last chord rings out; fade the tail so the file ends clean
-  const tailStart = DUR - 1.0;
+  console.log(`music: skip ${SKIP.toFixed(2)}s at ${jumpT.toFixed(2)}s (5.00s = exactly one phrase)`);
+  // the closing chord rings out (~2s); keep a quiet pad under the CTA hold so the end is not dead air
+  const tailStart = stampT + 2.0;
   for (let i = Math.floor(tailStart * SR); i < N; i++) {
-    const g = Math.max(0, 1 - (i / SR - tailStart) / 1.0);
+    const g = Math.max(0, 1 - (i / SR - tailStart) / 1.4);
     music[0][i] *= g;
     music[1][i] *= g;
   }
-  // build in over the first 0.0s is intentionally hard: the downbeat IS the opening hit
+  for (let i = Math.floor((stampT + 0.6) * SR); i < Math.floor(DUR * SR); i++) {
+    const t = i / SR;
+    const env = Math.min(1, (t - stampT - 0.6) / 1.5) * Math.min(1, (DUR - t) / 1.2);
+    const v = (Math.sin(2 * Math.PI * 55 * t) + 0.55 * Math.sin(2 * Math.PI * 82.4 * t + 1) + 0.3 * Math.sin(2 * Math.PI * 110 * t + 2)) * 0.05 * env * (0.85 + 0.15 * Math.sin(2 * Math.PI * 0.2 * t));
+    music[0][i] += v;
+    music[1][i] += v;
+  }
 }
 
 /* ------------------------------------------------------------------ ducking + final mix */
@@ -325,18 +340,19 @@ const SFX_GAIN = 0.8;
 const VO_GAIN = 1.0;
 const out = [new Float32Array(N), new Float32Array(N)];
 for (let c = 0; c < 2; c++) {
-  for (let i = 0; i < N; i++) out[c][i] = music[c][i] * MUSIC_GAIN * duckAt(i) + sfx[c][i] * SFX_GAIN * (0.9 + 0.1 * duckAt(i) / 1) + vo[c][i] * VO_GAIN;
+  for (let i = 0; i < N; i++) out[c][i] = music[c][i] * MUSIC_GAIN * duckAt(i) + sfx[c][i] * SFX_GAIN * (0.9 + 0.1 * duckAt(i)) + vo[c][i] * VO_GAIN;
 }
 
-// master: soft limiter, fade out the last 0.6s, normalise to -1 dBFS
+// master: soft limiter, fade out the last second, normalise to -1 dBFS
 let peak = 0;
 for (let c = 0; c < 2; c++) for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(out[c][i]));
 const drive = 1.6 / Math.max(peak, 1e-6);
-const pcm = Buffer.alloc(Math.floor(SR * DUR) * 4);
+const frames = Math.floor(SR * DUR);
+const pcm = Buffer.alloc(frames * 4);
 let after = 0;
-for (let i = 0; i < Math.floor(SR * DUR); i++) {
+for (let i = 0; i < frames; i++) {
   const t = i / SR;
-  const fade = Math.min(1, (DUR - t) / 0.6);
+  const fade = Math.min(1, (DUR - t) / 1.0);
   for (let c = 0; c < 2; c++) {
     const v = (Math.tanh(out[c][i] * drive) / Math.tanh(1.6)) * 0.89 * fade;
     after = Math.max(after, Math.abs(v));
@@ -357,4 +373,4 @@ header.writeUInt16LE(16, 34);
 header.write('data', 36);
 header.writeUInt32LE(pcm.length, 40);
 writeFileSync(join(ROOT, 'public/trailer-mix.wav'), Buffer.concat([header, pcm]));
-console.log(`\ntrailer-mix.wav written: ${(pcm.length / 1e6).toFixed(1)} MB, premaster peak ${peak.toFixed(2)}, final peak ${after.toFixed(2)}`);
+console.log(`\ntrailer-mix.wav written: ${DUR}s, ${(pcm.length / 1e6).toFixed(1)} MB, premaster peak ${peak.toFixed(2)}, final peak ${after.toFixed(2)}`);

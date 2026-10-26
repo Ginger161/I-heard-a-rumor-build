@@ -62,6 +62,9 @@ export const addClue = (p: StoryProgress, id: string): StoryProgress => (CLUE_BY
 export const condHolds = (p: StoryProgress, c: Cond | undefined): boolean => {
   if (!c) return true;
   if (c.flag && !p.flags.includes(c.flag)) return false;
+  if (c.flags && !c.flags.every(f => p.flags.includes(f))) return false;
+  if (c.anyFlag && !c.anyFlag.some(f => p.flags.includes(f))) return false;
+  if (c.cluesGte !== undefined && p.clues.length < c.cluesGte) return false;
   if (c.notFlag && p.flags.includes(c.notFlag)) return false;
   if (c.clue && !p.clues.includes(c.clue)) return false;
   if (c.notClue && p.clues.includes(c.notClue)) return false;
@@ -88,6 +91,9 @@ export const REP_LABEL: Record<RepBand, { name: string; line: string }> = {
 
 export const chapterUnlocked = (p: StoryProgress, index: number): boolean =>
   index === 0 || !!p.results[STORY_CHAPTERS[index - 1]?.id]?.won;
+
+/** A Premium Gist episode opens once the main chapter it follows has been won. (Needing a licence is checked by the screens and the engine's startStory.) */
+export const episodeUnlocked = (p: StoryProgress, ep: { requires?: string }): boolean => !ep.requires || !!p.results[ep.requires]?.won;
 
 export const chaptersWon = (p: StoryProgress): number => STORY_CHAPTERS.filter(c => p.results[c.id]?.won).length;
 export const seasonComplete = (p: StoryProgress): boolean => chaptersWon(p) === STORY_CHAPTERS.length;
@@ -128,13 +134,13 @@ export const recordChapter = (profile: MetaProfile, s: GameState): MetaProfile =
   const won = s.status === 'WON';
   const stars = won ? (s.assisted ? 1 : starsFor(s)) : 0;
   let integrity = story.integrity;
-  if (won && !prev?.won) {
+  if (won && !prev?.won && !ch.premium) {   // bonus episodes never move your reputation or the season's plot choices
     integrity += approachDelta(perk.approach) - Math.min(2, s.backfires);
     integrity = Math.max(INTEGRITY_MIN, Math.min(INTEGRITY_MAX, integrity));
   }
   // What the player chose during the match's plot beats counts the first time the chapter is won.
   let after: StoryProgress = { ...story, integrity };
-  if (won && !prev?.won) (s.storyChoices ?? []).forEach(k => { const i = k.lastIndexOf(':'); after = applyStoryEffects(after, plotChoiceStory(k.slice(0, i), k.slice(i + 1))); });
+  if (won && !prev?.won && !ch.premium) (s.storyChoices ?? []).forEach(k => { const i = k.lastIndexOf(':'); after = applyStoryEffects(after, plotChoiceStory(k.slice(0, i), k.slice(i + 1))); });
   integrity = after.integrity;
   const result: ChapterResult = won
     ? { won: true, stars: Math.max(prev?.stars ?? 0, stars), approach: prev?.won ? prev.approach : perk.approach, backfires: s.backfires, day: Math.min(s.currentDay, s.dayBudget), targetId: s.activeTargetId, attempts: (prev?.attempts ?? 0) + 1 }

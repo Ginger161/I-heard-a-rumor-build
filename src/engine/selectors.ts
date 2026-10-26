@@ -158,3 +158,37 @@ export const heatMultiplier = (s: TargetView): number => {
 
 export const spinMultiplier = (s: Pick<GameState, 'activeTargetId'>): number =>
   STYLE_MULTIPLIERS[getTarget(s.activeTargetId).ai.defenseStyle].spin;
+
+/** What leaking this file costs in this case: some Targets make the truth cheap (a room full of liars). Forgeries are never discounted. */
+export const evidenceCostFor = (s: Pick<GameState, 'activeTargetId'>, item: { cost: number; isFabricated?: boolean }): number =>
+  item.isFabricated ? item.cost : Math.max(1, Math.round(item.cost * (getTarget(s.activeTargetId).mods.evidenceCost ?? 1)));
+
+// ---- Heat v2 (see BALANCE): the file the DSS keeps, the exposure of a spreading story, and the rising price of cover-ups ----
+/** Heat cannot be pushed below this by defenses: a share of your peak, capped. */
+export const heatFloor = (s: Pick<GameState, 'peakHeat'>): number => Math.min(BALANCE.heatFloorCap, s.peakHeat * BALANCE.heatFloorShare);
+
+/** Daily Heat gain grows as the story spreads: 1 at the start, up to 1 + heatExposure when everyone believes. */
+export const exposureMultiplier = (states: Record<string, StateNode>): number => 1 + BALANCE.heatExposure * (nationalBelieverPct(states) / 100);
+
+export const totalDefenseBought = (s: Pick<GameState, 'defensePurchases'>): number => Object.values(s.defensePurchases).reduce((a, n) => a + n, 0);
+
+/** What a defense costs now: every one you have already bought makes the next dearer. */
+export const defenseCostFor = (s: Pick<GameState, 'defensePurchases'>, item: { cost: number }): number =>
+  Math.ceil(item.cost * (1 + BALANCE.defenseCostStep * totalDefenseBought(s)));
+
+/** The Heat a defense nominally removes this time (a Burner SIM scrubs less each time). */
+export const defenseNominalCut = (s: Pick<GameState, 'defensePurchases'>, item: { id: string; heatReduction: number }): number => {
+  const uses = s.defensePurchases[item.id] ?? 0;
+  const decay = item.id === 'burner_sim' ? (BALANCE.burnerDecay[Math.min(uses, BALANCE.burnerDecay.length - 1)] ?? 1) : 1;
+  return Math.round(item.heatReduction * decay);
+};
+
+/** The Heat it actually removes right now, after the floor. */
+export const defenseActualCut = (s: Pick<GameState, 'defensePurchases' | 'heat' | 'peakHeat'>, item: { id: string; heatReduction: number }): number =>
+  Math.max(0, Math.min(defenseNominalCut(s, item), s.heat - heatFloor(s)));
+
+/** How much a verified file cuts Doubt this time: earlier files have already shocked people. */
+export const evidenceFadeFor = (s: Pick<GameState, 'droppedEvidence'>): number => {
+  const verified = s.droppedEvidence.filter(id => { const e = getEvidence(id); return !!e && !e.isFabricated; }).length;
+  return Math.max(0.5, 1 - BALANCE.evidenceFade * verified);
+};

@@ -126,7 +126,7 @@ export const applyWin = (p: MetaProfile, s: GameState, believers: number): { pro
 
   const breakdown: { label: string; amount: number }[] = [];
   breakdown.push(previousStars === 0
-    ? { label: 'First takedown', amount: BALANCE.envelopesFirstWin }
+    ? { label: target.campaign ? 'First campaign win' : 'First takedown', amount: BALANCE.envelopesFirstWin }
     : { label: 'Replay win', amount: BALANCE.envelopesReplayWin });
   if (newStars > 0) breakdown.push({ label: `${newStars} new star${newStars > 1 ? 's' : ''}`, amount: newStars * BALANCE.envelopesPerNewStar });
   // Daily Case: a once-a-day bonus that grows with your streak.

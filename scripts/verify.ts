@@ -17,7 +17,7 @@ import { EVENTS, buildEventAlert, pickEvent } from '../src/engine/events';
 import {
   applyWin, bribeTarget, buyPerk, buyTier, emptyProfile, equipPerk, isTargetUnlocked, isTierUnlocked, loadProfile, starsFor, starsInTier
 } from '../src/engine/profile';
-import { heatMultiplier, spinMultiplier } from '../src/engine/selectors';
+import { defenseCostFor, defenseNominalCut, evidenceFadeFor, exposureMultiplier, heatFloor, heatMultiplier, spinMultiplier } from '../src/engine/selectors';
 import { milestoneEffect } from '../src/engine/alerts';
 import { SaveManager, sanitizeState } from '../src/engine/saveManager';
 import { checkInvariants } from '../src/engine/invariants';
@@ -43,14 +43,19 @@ import { sanitizeSettings } from '../src/ui/settings';
 import { verifyLicense, PREMIUM_FEATURES } from '../src/engine/premium';
 import { MONETIZATION_LIVE, PAYMENT_URL } from '../src/config';
 import { computeScore, makeEntry, decodeScores, encodeEntry, encodeBoard, dailyBoard, crewBoard, makeChallenge, encodeChallenge, decodeChallenge, challengeId } from '../src/engine/scores';
-import { STORY_PACK, STORY_CHAPTERS, APPROACHES, seasonEnding } from '../src/engine/data/story';
+import { STORY_PACK, STORY_CHAPTERS, PREMIUM_EPISODES, APPROACHES, getChapter, seasonEnding } from '../src/engine/data/story';
 import { validatePack, builtInIds, registerPack, unregisterPack, newBlankDef, validateTargetDef, estimateRating, PACK_SCHEMA_VERSION } from '../src/engine/data/targetPacks';
 import type { TargetPack, TargetDef } from '../src/engine/data/targetPacks';
 import { wipeData } from '../src/engine/wipe';
 import { LICENSE_KEY } from '../src/engine/premium';
+import { ENDINGS, SIGNATURE, endingFromFlags, signatureApplies } from '../src/engine/season/act5';
 import { PROLOGUE, SCRIPTS, allPlotEvents } from '../src/engine/season/script';
-import { CLUES, CLUE_BY_ID } from '../src/engine/season/clues';
-import { applyStoryEffects, condHolds } from '../src/engine/story';
+import { CAMPAIGN_PACK } from '../src/engine/data/campaigns';
+import { CAMPAIGN_COPY, CAMPAIGN_DEFENSE, CAMPAIGN_ENDINGS, CAMPAIGN_EVIDENCE } from '../src/engine/data/campaignCopy';
+import { campaignize, vocabFor } from '../src/engine/campaigns';
+import { DEFENSE_DATA } from '../src/engine/data/defense';
+import { CLUES, CLUE_BY_ID, CLUE_TOTAL, isBonusClue, seasonClueCount } from '../src/engine/season/clues';
+import { applyStoryEffects, condHolds, episodeUnlocked, chaptersWon } from '../src/engine/story';
 import { STRATEGIES, STRATEGIES_30, STRATEGY_TIPS } from '../src/engine/bots';
 import { abilityEffects } from '../src/engine/alerts';
 import type { AbilityDef, AbilityKind } from '../src/engine/data/targetTypes';
@@ -131,7 +136,7 @@ ok('a SAN Counter-Injunction cancels the Danjuma surcharge', !milestoneEffect('T
 
 // ---- Defense styles ----
 ok('SPIN_DOCTOR: Heat x0.8, Spin x1.5', Math.abs(heatMultiplier({ activeTargetId: 'cryptoking', perkId: null }) - 1.05 * 0.8 * (getTarget('cryptoking').mods.heatRate ?? 1)) < 1e-9 && spinMultiplier({ activeTargetId: 'cryptoking' }) === 1.5);
-ok('IRON_FIST: Heat x1.4 on top of the tier, Spin x0.6', Math.abs(heatMultiplier({ activeTargetId: 'godfather', perkId: null }) - 1.35 * 1.4 * (getTarget('godfather').mods.heatRate ?? 1)) < 1e-9 && spinMultiplier({ activeTargetId: 'godfather' }) === 0.6);
+ok('IRON_FIST: Heat x1.4 on top of the tier, Spin x0.6', Math.abs(heatMultiplier({ activeTargetId: 'godfather', perkId: null }) - BALANCE.tier.heat[getTarget('godfather').tier - 1] * 1.4 * (getTarget('godfather').mods.heatRate ?? 1)) < 1e-9 && spinMultiplier({ activeTargetId: 'godfather' }) === 0.6);
 ok('BALANCED has no style modifier', Math.abs(heatMultiplier({ activeTargetId: 'pothole_commissioner', perkId: null }) - 1.05 * (getTarget('pothole_commissioner').mods.heatRate ?? 1)) < 1e-9);
 
 // ---- Evidence ----
@@ -154,13 +159,20 @@ const hi = { ...fg, states: Object.fromEntries(Object.entries(fg.states).map(([i
 ok('Backfire risk 65% when avg Doubt > 55 (roll 0.6)', Actions.leakEvidence(hi, 'ev_fake_whatsapp', fixed(0.6)).heat === 25 && Actions.leakEvidence(fg, 'ev_fake_whatsapp', fixed(0.6)).heat === 12);
 
 // ---- Defense ----
-const df = { ...started('godfather'), sparks: 500, heat: 60 };
+const df = { ...started('godfather'), sparks: 500, heat: 60, peakHeat: 0 };   // (no peak, so the Heat floor stays out of these older checks; it has its own below)
 df.activeSpinBubbles = [{ id: 'x', stateId: 'kano', doubtPenalty: 15, offsetX: 0, offsetY: 0, ticksRemaining: 3 }];
 let d = Actions.buyDefense(df, 'burner_sim');
 d = Actions.buyDefense(d, 'burner_sim');
 d = Actions.buyDefense(d, 'burner_sim');
 const d4 = Actions.buyDefense(d, 'burner_sim');
-ok('Burner SIM: -18 Heat each, max 3 uses', d.heat === 6 && d4.defensePurchases['burner_sim'] === 3 && d4.sparks === d.sparks);
+ok('Burner SIM scrubs less each time (18, 15, 13); max 3 uses', [0, 1, 2, 3].map(n => defenseNominalCut({ defensePurchases: { burner_sim: n } }, { id: 'burner_sim', heatReduction: 18 })).join() === '18,15,13,13' && d4.defensePurchases['burner_sim'] === 3 && d4.sparks === d.sparks);
+ok('a loud player cannot Burner their way to zero: Heat stops at the DSS file', (() => { let x: GameState = { ...df, heat: 60, peakHeat: 60 }; x = Actions.buyDefense(Actions.buyDefense(Actions.buyDefense(x, 'burner_sim'), 'burner_sim'), 'burner_sim'); return Math.abs(x.heat - heatFloor({ peakHeat: 60 })) < 1e-9; })());
+// Heat v2: the DSS keeps a file, cover-ups get dearer, evidence is less shocking each time, and a spreading story draws more eyes
+ok('each defense you buy makes the next one dearer', defenseCostFor({ defensePurchases: {} }, { cost: 12 }) === 12 && defenseCostFor({ defensePurchases: { burner_sim: 2, proxy_relay: 1 } }, { cost: 12 }) === Math.ceil(12 * (1 + BALANCE.defenseCostStep * 3)));
+ok('defenses cannot take Heat below a share of your peak (they remember how loud you were)', (() => { const hot = { ...df, heat: 80, peakHeat: 80, sparks: 900 }; let x = hot; for (const id of ['burner_sim', 'burner_sim', 'burner_sim', 'proxy_relay', 'san_injunction', 'whistleblower', 'safehouse']) x = Actions.buyDefense(x, id); return x.heat >= Math.min(BALANCE.heatFloorCap, 80 * BALANCE.heatFloorShare) - 1e-9 && x.heat > 0; })());
+ok('the heat floor is capped, and zero if you were never loud', heatFloor({ peakHeat: 100 }) === BALANCE.heatFloorCap && heatFloor({ peakHeat: 0 }) === 0);
+ok('a spreading story makes Heat rise faster', exposureMultiplier(started('godfather').states) === 1 && exposureMultiplier(Object.fromEntries(Object.entries(started('godfather').states).map(([k, st]) => [k, { ...st, believers: st.population, unaware: 0, heard: 0 }]))) > 1.1);
+ok('each verified file you leak cuts Doubt less than the last', evidenceFadeFor({ droppedEvidence: [] }) === 1 && evidenceFadeFor({ droppedEvidence: ['ev_tier1_wire'] }) < 1 && evidenceFadeFor({ droppedEvidence: ['ev_fake_whatsapp'] }) === 1);
 const san = Actions.buyDefense(df, 'san_injunction');
 ok('SAN: -20 Heat, clears Spin bubbles, SECURITY_WIRE', san.heat === 40 && san.activeSpinBubbles.length === 0 && san.notificationQueue[0].archetype === 'SECURITY_WIRE');
 ok('Safehouse -45 Heat, one-time', Actions.buyDefense(Actions.buyDefense(df, 'safehouse'), 'safehouse').heat === 15);
@@ -190,8 +202,8 @@ ok('highest priority wins (HEAT_90)', sp.triggeredMilestones[0] === 'HEAT_90', s
 // ---- Data integrity ----
 ok('at least 10 Targets per tier plus a 2-creator Spotlight', TIERS.every(tr => targetsInTier(tr).length >= 10) && TARGETS.filter(x => x.folder === 'SPOTLIGHT').length === 2);
 ok('target ids are unique', new Set(TARGETS.map(x => x.id)).size === TARGETS.length);
-ok('every target has 3 scandals in distinct categories', TARGETS.every(x => x.scandals.length === 3 && new Set(x.scandals.map(sd => sd.category)).size === 3));
-ok('every target has 1-3 abilities with sane timing', TARGETS.every(x => x.abilities.length >= 1 && x.abilities.length <= 3 && x.abilities.every(a => a.every >= 5 && a.start >= 6 && a.strength > 0)));
+ok('every target has 3 scandals in distinct categories (a campaign has 4 angles)', TARGETS.every(x => x.scandals.length === (x.kind === 'CAMPAIGN' ? 4 : 3) && new Set(x.scandals.map(sd => sd.category)).size === x.scandals.length));
+ok('every target has 1-3 abilities with sane timing (story set pieces may move faster)', TARGETS.every(x => x.abilities.length >= 1 && x.abilities.length <= 3 && x.abilities.every(a => a.every >= (x.storyOnly ? 3 : 5) && a.start >= (x.storyOnly ? 3 : 6) && a.strength > 0)));
 ok('every target auto-describes its mechanics', TARGETS.every(x => describeTarget(x).length >= 1));
 ok('all four original targets are kept', ['godfather', 'televangelist', 'cryptoking', 'minister'].every(id => TARGETS.some(x => x.id === id)));
 
@@ -428,8 +440,8 @@ ok('parody Targets never get an accusatory flavor or evidence line', (() => {
 ok('non-parody Targets still use the scandal-matched flavor', !tgt('iyaloja_general').parody && CHANNELS_DATA.some(c => channelFlavorLine(c, 'FINANCIAL', tgt('iyaloja_general'), 'x') !== channelFlavorLine(c, 'FINANCIAL', tgt('afrobeats_star'), 'x')));
 
 // ---- Playstyle variety ----
-const styles = new Set(TARGETS.map(x => x.ai.defenseStyle));
-const temperaments = new Set(TARGETS.map(x => x.ai.temperament));
+const styles = new Set(TARGETS.filter(x => !x.storyOnly).map(x => x.ai.defenseStyle));
+const temperaments = new Set(TARGETS.filter(x => !x.storyOnly).map(x => x.ai.temperament));
 ok('all 5 defense styles and 6 temperaments are in use', styles.size === 5 && temperaments.size === 6, `${[...styles]} ${[...temperaments]}`);
 ok('no style or temperament dominates the roster (none above 30%)', ['SPIN_DOCTOR', 'IRON_FIST', 'LAWYER_UP', 'DISTRACTOR', 'BALANCED'].every(st => TARGETS.filter(x => x.ai.defenseStyle === st).length <= TARGETS.length * 0.3));
 ok('LAWYER_UP: injunctions last longer', scaledStrength({ kind: 'INJUNCTION', every: 8, start: 9, strength: 3, stamp: '', headline: '', line: '' }, tgt('minister')) === 4 + 0 || scaledStrength({ kind: 'INJUNCTION', every: 8, start: 9, strength: 3, stamp: '', headline: '', line: '' }, tgt('minister')) === 4);
@@ -470,8 +482,25 @@ for (let i = 0; i < 400; i++) {
   st.activeSparks.filter(sp => sp.id.startsWith('spark_rng')).forEach(sp => { if (sp.kind === 'GOLDEN') goldenSeen++; else if (sp.kind === 'FAT') fatSeen++; else fastSeen++; });
 }
 ok('stochastic sparks come in FAST, FAT and rare GOLDEN kinds', goldenSeen > 0 && fatSeen > 0 && fastSeen > 0 && goldenSeen < fastSeen + fatSeen, `${fastSeen}/${fatSeen}/${goldenSeen}`);
-const goldenSample = (() => { for (let i = 0; i < 2000; i++) { const st = SimulationEngine.processTick({ ...started(), activeSparks: [] }, mulberry32(i)); const g = st.activeSparks.find(sp => sp.kind === 'GOLDEN'); if (g) return g; } return null; })();
+const goldenSample = (() => { for (let i = 0; i < 2000; i++) { const st = SimulationEngine.processTick({ ...started(), currentDay: 12, activeSparks: [] }, mulberry32(i)); const g = st.activeSparks.find(sp => sp.kind === 'GOLDEN'); if (g) return g; } return null; })();
 ok('a golden spark pays triple a fat spark and lasts 3 ticks', !!goldenSample && goldenSample.amount >= BALANCE.fatSpark[0] * BALANCE.goldenMultiplier && goldenSample.ticksRemaining === 3);
+// bubbles v2: never an empty board, and the spread brings more
+{
+  let empty = 0, ticks = 0;
+  for (let g = 0; g < 30; g++) { let st = started(); for (let t = 0; t < 12 && st.status === 'PLAYING'; t++) { st = SimulationEngine.processTick({ ...st, activeSparks: [], notificationQueue: [] }, mulberry32(g * 977 + t)); ticks++; if (st.activeSparks.length === 0) empty++; } }
+  ok('the board is never left empty after a day (a small bubble drifts up if nothing else did)', empty === 0, `${empty}/${ticks}`);
+  {
+    // The guided first case always keeps a few bubbles on the board, so a beginner never waits for one.
+    let low = 0;
+    for (let g = 0; g < 20; g++) { let st: any = Actions.plantSeed(Actions.startMatch('slay_queen', 'AFFAIR', null, 'CLEAR_SKIES', { seed: g + 1, training: true }), 'kano'); st = { ...st, hasPoppedFirstSpark: true, activeSparks: [], notificationQueue: [], activeModal: 'NONE', isPaused: false }; for (let t = 0; t < 12 && st.status === 'PLAYING'; t++) { st = SimulationEngine.processTick({ ...st, activeSparks: [], notificationQueue: [] }, mulberry32(g * 31 + t)); if (st.activeSparks.length < BALANCE.trainingMinBubbles) low++; } }
+    ok('the guided first case always has at least 3 bubbles on the board', low === 0, `${low} short ticks`);
+  }
+  const tipState = (aware: number) => { const s0 = started(); const k = s0.states.kano; return { ...s0, currentDay: 10, activeSparks: [], states: { ...s0.states, kano: { ...k, tipped: false, heard: Math.floor(k.population * aware), unaware: k.population - Math.floor(k.population * aware) } } } as GameState; };
+  const tipped = SimulationEngine.processTick(tipState(0.3), mulberry32(5));
+  ok('a state that is really talking pays a tipping-point bubble, once', tipped.activeSparks.some(sp => sp.id.startsWith('spark_tip_kano')) && tipped.states.kano.tipped === true && !SimulationEngine.processTick({ ...tipped, activeSparks: [] }, mulberry32(6)).activeSparks.some(sp => sp.id.startsWith('spark_tip_kano')));
+  ok('a state that has barely heard it pays no tipping-point bubble', !SimulationEngine.processTick(tipState(0.001), mulberry32(5)).activeSparks.some(sp => sp.id.startsWith('spark_tip_kano')));
+  ok('a state’s bounty is paid in two bubbles that add up to what it always was', Math.abs(BALANCE.whisperShare + BALANCE.tippingFactor - 1) < 1e-9);
+}
 ok('first-whisper sparks are WHISPER kind', SimulationEngine.processTick(started(), fixed(0.99)).activeSparks.filter(sp => sp.id.startsWith('spark_first')).every(sp => sp.kind === 'WHISPER'));
 
 // ---- Copy variants ----
@@ -488,7 +517,7 @@ ok('ids and priorities never change with the variant (tests and queue logic depe
 ok('four Ground Zero variants', new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(sd => pickCopy('SEED', sd, { State: 'Kano', Target: 'X' })!.headline)).size === 4);
 ok('GIST pools: 3 variants per mood, zone-flavored', Object.values(GIST).every(p => p.length >= 3) && pickGist('EARLY', 'SW', 1, 'lagos') !== pickGist('EARLY', 'NW', 1, 'kano'));
 ok('24 tips and 8 taglines', TIPS.length >= 24 && TAGLINES.length >= 8);
-ok('24 random events (14 + 10) plus the Schemer bait, and every event (scripted ones too) has a free choice', EVENTS.filter(e => !e.scripted).length === 24 && [...EVENTS, SCHEMER_EVENT].every(e => e.choices('NW').some(c => !c.cost)), EVENTS.filter(e => !e.choices('NW').some(c => !c.cost)).map(e => e.id).join(','));
+ok('24 random events (14 + 10) plus the Schemer bait, and every event (scripted ones too) has a free choice', EVENTS.filter(e => !e.scripted && !e.campaignOnly).length === 24 && EVENTS.filter(e => e.campaignOnly).length === 6 && [...EVENTS, SCHEMER_EVENT].every(e => e.choices('NW').some(c => !c.cost)), EVENTS.filter(e => !e.choices('NW').some(c => !c.cost)).map(e => e.id).join(','));
 ok('events read differently across runs', new Set([0, 1, 2, 3, 4, 5].map(sd => buildEventAlert(EVENTS.find(e => e.id === 'fuel_protests')!, { ...started(), copySeed: sd }).body)).size >= 2);
 
 // ---- Daily case ----
@@ -628,6 +657,27 @@ TARGETS.forEach(t => t.scandals.forEach(sd => { try { const x = dPlay(Actions.st
 ok('all 61 Targets x 3 scandals start and tick cleanly', startFailures === 0, String(startFailures));
 
 // ---------------------------------------------------------------------------
+// ---- CAMPAIGNS: spread something good (same engine, different words and opposition)
+{
+  const camps = TARGETS.filter(x => x.kind === 'CAMPAIGN');
+  ok('there are 15 campaigns, three in each of the five kinds', camps.length === 15 && (['HEALTH', 'AWARENESS', 'POLITICAL', 'MARKETING', 'MYTHBUST'] as const).every(t => camps.filter(c => c.campaign?.type === t).length === 3));
+  ok('every campaign is a valid pack entry, hidden from the Dossier folders, outside the arcade ladder', CAMPAIGN_PACK.targets.every(d => validateTargetDef(d, {}).errors.length === 0) && camps.every(c => c.storyOnly && !c.parody && !!c.campaign?.cause) && !TARGETS.filter(x => !x.storyOnly).some(x => x.kind === 'CAMPAIGN'));
+  ok('every campaign offers four angles, one per category, and three tiers of difficulty exist', camps.every(c => new Set(c.scandals.map(x => x.category)).size === 4) && new Set(camps.map(c => c.tier)).size === 3);
+  ok('campaign alert copy covers every key the scandal copy does', Object.keys(COPY).every(k => (CAMPAIGN_COPY[k]?.length ?? 0) >= 2), Object.keys(COPY).filter(k => (CAMPAIGN_COPY[k]?.length ?? 0) < 2).join());
+  ok('campaign wording never talks about scandals, guilt or arrests', (() => { const bad = /scandal|guilt|arrest|dossier|disgrac/i; const all = [...Object.values(CAMPAIGN_COPY).flat().flatMap(v => [v.headline, v.body, v.button ?? '', v.stamp ?? '', v.subtext ?? '']), ...Object.values(CAMPAIGN_EVIDENCE).flatMap(e => [e.name, e.flavor]), ...Object.values(CAMPAIGN_DEFENSE).flatMap(d => [d.name, d.effectText, d.alertBody]), ...Object.values(CAMPAIGN_ENDINGS).flatMap(e => [e.win, e.winBody, ...Object.values(e.lost).flatMap(l => [l.head, l.body])]), ...camps.flatMap(c => [c.passiveFlavor, ...c.abilities.flatMap(a => [a.headline, a.line]), c.campaign!.goal, c.campaign!.slogan])]; return all.every(t => !bad.test(t)); })());
+  const hv = vocabFor('camp_nets');
+  ok('a campaign renames the four numbers, an ordinary case does not', hv.campaign && hv.coverUp === 'Opposition' && hv.doubt === 'Skepticism' && hv.heat === 'Backlash' && hv.adopters === 'Net users' && !vocabFor('godfather').campaign && vocabFor('godfather').heat === 'Heat' && campaignize('-12% Doubt • +4% Heat • -6% Cover-Up', hv) === '-12% Skepticism • +4% Backlash • -6% Opposition' && campaignize('+4% Heat', vocabFor('godfather')) === '+4% Heat');
+  const cstart = Actions.startMatch('camp_handwash', 'FINANCIAL', null, 'CLEAR_SKIES');
+  const seed = AlertFactory.createSeedAlert('Kano', getTarget('camp_handwash'), 'CLEAR_SKIES', 3);
+  ok('a campaign opens with its own first-conversation alert', cstart.activeTargetId === 'camp_handwash' && /Wash Your Hands/.test(seed.body + seed.headline) && !/rumou?r/i.test(seed.body));
+  ok('campaign proof and protection have campaign names and alerts', AlertFactory.createEvidenceAlert(EVIDENCE_DATA[0], false, 'FINANCIAL', getTarget('camp_handwash'), 1).headline.includes('Field Records') && AlertFactory.createEvidenceAlert(EVIDENCE_DATA[4], true, 'FINANCIAL', getTarget('camp_handwash'), 1).headline.includes('Called Out') && AlertFactory.createDefenseAlert(DEFENSE_DATA[0], 1, 'camp_handwash').headline === 'Volunteer Network' && AlertFactory.createDefenseAlert(DEFENSE_DATA[0], 1, 'godfather').headline !== 'Volunteer Network');
+  const drawnC = new Set<string>(), drawnN = new Set<string>();
+  for (let i = 0; i < 600; i++) { const base = { ...started(), currentDay: 6 + (i % 14), lastEventDay: 0, usedEvents: [] as string[] }; const pc = pickEvent({ ...base, activeTargetId: 'camp_handwash' } as GameState, fixed((i % 89) / 89), 1, 0, 0); if (pc) drawnC.add(pc.def.id); const pn = pickEvent(base, fixed((i % 89) / 89), 1, 0, 0); if (pn) drawnN.add(pn.def.id); }
+  ok('informant tips and court dates never happen in a campaign; community moments never happen in a scandal', ![...drawnC].some(id => EVENTS.find(e => e.id === id)?.scandalOnly) && [...drawnC].some(id => EVENTS.find(e => e.id === id)?.campaignOnly) && ![...drawnN].some(id => EVENTS.find(e => e.id === id)?.campaignOnly));
+  ok('a campaign tick runs to a result without problems', (() => { let st: GameState = Actions.plantSeed(cstart, 'kano'); st = Actions.collectSpark(st, `spark_first_kano`); st = Actions.dismissTopAlert(st); for (let t = 0; t < 12 && st.status === 'PLAYING'; t++) { st = SimulationEngine.processTick({ ...st, notificationQueue: [] }, mulberry32(t + 5)); } return st.status === 'PLAYING' || st.status !== 'LOBBY'; })());
+  ok('a campaign win pays envelopes and stars like any other case', (() => { const w: GameState = { ...cstart, status: 'WON', currentDay: 10, winRewards: null }; const r = applyWin(emptyProfile(), w, 80); return !!r && r.rewards.total > 0 && r.profile.targetStars['camp_handwash'] >= 1 && r.rewards.breakdown[0].label === 'First campaign win'; })());
+}
+
 // Target packs, Story Mode, settings
 // ---------------------------------------------------------------------------
 const packCheck = validatePack(STORY_PACK, builtInIds());
@@ -767,7 +817,7 @@ const issueLicense = async (payload: object): Promise<string> => {
 
 // ---- THE STORY SCRIPT: scenes, clues, plot beats, and what a finished chapter does to Trust and the clue board
 {
-  const scenes = [PROLOGUE, ...Object.values(SCRIPTS).flatMap(sc => [sc.pre, sc.won, sc.lost].filter((x): x is NonNullable<typeof x> => !!x))];
+  const scenes = [PROLOGUE, ...Object.values(SCRIPTS).flatMap(sc => [sc.pre, sc.won, sc.lost].filter((x): x is NonNullable<typeof x> => !!x)), ...Object.values(ENDINGS).map(e => e.scene), SIGNATURE];
   const beats = scenes.flatMap(sc => sc.beats.map(b => ({ sc: sc.id, b })));
   const settable = new Set<string>();
   const optionIds = new Set<string>();
@@ -776,15 +826,27 @@ const issueLicense = async (payload: object): Promise<string> => {
   beats.forEach(({ b }) => { if (b.t === 'choice') b.options.forEach(o => { addFx(o.effects); optionIds.add(`${b.id}:${o.id}`); }); });
   allPlotEvents().forEach(p => p.choices.forEach(c => addFx(c.story)));
 
-  ok('there are 24 clues, with unique ids C01 to C24', CLUES.length === 24 && new Set(CLUES.map(c => c.id)).size === 24 && CLUES.every((c, i) => c.id === `C${String(i + 1).padStart(2, '0')}` && c.detail.length > 30));
+  ok('there are 24 season clues plus 1 bonus clue, with unique ids C01 to C25', CLUES.length === 25 && CLUE_TOTAL === 24 && new Set(CLUES.map(c => c.id)).size === 25 && CLUES.every((c, i) => c.id === `C${String(i + 1).padStart(2, '0')}` && c.detail.length > 30) && isBonusClue('C25') && !isBonusClue('C24') && seasonClueCount(['C01', 'C25']) === 1);
   ok('every scene is non-empty and has a unique id', scenes.every(sc => sc.beats.length > 0) && new Set(scenes.map(sc => sc.id)).size === scenes.length);
   ok('every clue a scene pins exists on the board', beats.every(({ b }) => b.t !== 'clue' || !!CLUE_BY_ID[b.id]), beats.filter(({ b }) => b.t === 'clue' && !CLUE_BY_ID[b.id]).map(x => x.sc).join());
   ok('Act 1 pins clues C01 to C07 exactly once each', ['C01', 'C02', 'C03', 'C04', 'C05', 'C06', 'C07'].every(id => beats.filter(({ b }) => b.t === 'clue' && b.id === id).length === 1));
   ok('every choice has unique option ids and at least two options', beats.every(({ b }) => b.t !== 'choice' || (new Set(b.options.map(o => o.id)).size === b.options.length && b.options.length >= 2)));
   ok('a timed choice names a fallback that exists', beats.every(({ b }) => b.t !== 'choice' || !b.timer || b.options.some(o => o.id === b.fallback)));
-  ok('every flag a beat tests for can be set by some choice', beats.every(({ b }) => !b.when || [b.when.flag, b.when.notFlag].every(f => !f || settable.has(f))), beats.filter(({ b }) => b.when && [b.when.flag, b.when.notFlag].some(f => f && !settable.has(f))).map(x => x.sc).join());
+  const condFlags = (c?: { flag?: string; notFlag?: string; flags?: string[]; anyFlag?: string[] }): string[] => (c ? [c.flag, c.notFlag, ...(c.flags ?? []), ...(c.anyFlag ?? [])].filter((f): f is string => !!f) : []);
+  const testedFlags = beats.flatMap(({ b }) => [...condFlags(b.when), ...(b.t === 'choice' ? b.options.flatMap(o => condFlags(o.when)) : [])]);
+  ok('every flag a beat or an option tests for can be set by some choice', testedFlags.every(f => settable.has(f)), testedFlags.filter(f => !settable.has(f)).join());
+  // the whole season: sixteen chapters in five acts, every clue found exactly once, in the chapter the clue says
+  ok('the season has 16 chapters in 5 acts, each with a full script', STORY_CHAPTERS.length === 16 && new Set(STORY_CHAPTERS.map(c => c.act)).size === 5 && STORY_CHAPTERS.every(c => !!SCRIPTS[c.id]?.pre && !!SCRIPTS[c.id]?.won && !!SCRIPTS[c.id]?.lost));
+  const pinned = (cid: string) => [SCRIPTS[cid]?.pre, SCRIPTS[cid]?.won, SCRIPTS[cid]?.lost].flatMap(sc => sc ? sc.beats.flatMap(b => (b.t === 'clue' ? [b.id] : [])) : []);
+  ok('every one of the 24 season clues is pinned exactly once, in the chapter it belongs to', CLUES.filter(c => c.chapter > 0).every(c => STORY_CHAPTERS.flatMap((ch, i) => pinned(ch.id).filter(id => id === c.id).map(() => i + 1)).join() === String(c.chapter)), CLUES.filter(c => c.chapter > 0 && STORY_CHAPTERS.flatMap((ch, i) => pinned(ch.id).filter(id => id === c.id).map(() => i + 1)).join() !== String(c.chapter)).map(c => c.id).join());
+  ok('the three Premium episodes follow the season, need a chapter first, and the bonus clue is pinned only in Year Zero', PREMIUM_EPISODES.length === 3 && PREMIUM_EPISODES.every(e => e.premium && !!getChapter(e.id) && !!SCRIPTS[e.id]?.won && STORY_CHAPTERS.some(c => c.id === e.requires)) && !STORY_CHAPTERS.some(c => pinned(c.id).includes('C25')) && pinned('px2').includes('C25') && !PREMIUM_EPISODES.some(e => STORY_CHAPTERS.some(c => c.id === e.id)));
+  ok('an episode opens only after its chapter is won, and never counts towards the season', (() => { const p0 = emptyStory(); const p1 = { ...p0, results: { c08: { won: true, stars: 1, approach: 'truth' as const, backfires: 0, day: 9, targetId: 'story_security_head', attempts: 1 } } }; return !episodeUnlocked(p0, PREMIUM_EPISODES[0]) && episodeUnlocked(p1, PREMIUM_EPISODES[0]) && !episodeUnlocked(p1, PREMIUM_EPISODES[1]) && chaptersWon(p1) === 1 && !seasonComplete(p1); })());
+  const finale = beats.map(x => x.b).find((b): b is Extract<typeof b, { t: 'choice' }> => b.t === 'choice' && b.id === 'c16_finale');
+  ok('the finale offers each ending behind the right condition, and always at least two', !!finale && finale.options.filter(o => !o.when).length >= 2 && Object.values(ENDINGS).every(e => finale.options.some(o => o.effects?.flags?.includes(e.flag))));
+  ok('the hidden Oracle ending needs 16 clues, Trust 8 and every ally, and each of those can be earned', (() => { const o = finale?.options.find(x => x.id === 'oracle'); const w = o?.when; return !!w && w.cluesGte === 16 && w.trustGte === 8 && (w.flags ?? []).every(f => settable.has(f)); })());
+  ok('the right flags resolve the right ending, and The Signature needs Biko used and going alone', endingFromFlags(['end_public'])?.id === 'public' && endingFromFlags(['x'])?.id === undefined && signatureApplies(['biko_used', 'went_alone', 'end_cut']) && !signatureApplies(['biko_used', 'went_alone', 'end_oracle']) && !signatureApplies(['went_alone']));
   ok('every choice a beat tests for exists', beats.every(({ b }) => !b.when?.choice || optionIds.has(`${b.when.choice[0]}:${b.when.choice[1]}`)));
-  ok('scripted chapters are real chapters, and plot beats fall on playable days', Object.keys(SCRIPTS).every(id => !!STORY_CHAPTERS.find(c => c.id === id)) && allPlotEvents().every(p => p.day >= 4 && p.day <= 30 && p.choices.some(c => !c.cost)));
+  ok('scripted chapters are real chapters, and plot beats fall on playable days', Object.keys(SCRIPTS).every(id => !!STORY_CHAPTERS.find(c => c.id === id) || !!PREMIUM_EPISODES.find(c => c.id === id)) && allPlotEvents().every(p => p.day >= 2 && p.day <= 30 && p.choices.some(c => !c.cost)));
   ok('plot beats are decision cards that are never drawn at random', allPlotEvents().every(p => EVENTS.find(e => e.id === p.id)?.scripted === true));
   const drawn = new Set<string>();
   for (let i = 0; i < 400; i++) { const st = { ...started(), currentDay: 12 + (i % 10), lastEventDay: 0, usedEvents: [] as string[] }; const pk = pickEvent(st, fixed((i % 97) / 97), 1, 0, 0); if (pk) drawn.add(pk.def.id); }

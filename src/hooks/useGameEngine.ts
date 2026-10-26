@@ -1,3 +1,4 @@
+import { isPremium } from '../engine/premium';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, ModalState } from '../engine/types';
 import { SaveManager } from '../engine/saveManager';
@@ -117,7 +118,9 @@ export const useGameEngine = () => {
   const ticking = canTick(gameState) && !hold;
   // ?speed=N shortens the day in the dev server only, so long sessions can be tested quickly. It does not exist in a build.
   const devSpeed = import.meta.env.DEV ? Math.max(1, Number(new URLSearchParams(window.location.search).get('speed')) || 1) : 1;
-  const tickMs = Math.round((gameState.assisted ? TICK_MS * BALANCE.assistTickMult : TICK_MS) / devSpeed);
+  // The guided first case runs shorter days at the start, so the first minute has plenty to do.
+  const baseMs = gameState.training && gameState.currentDay <= 4 ? Math.round(TICK_MS * 0.625) : TICK_MS;
+  const tickMs = Math.round((gameState.assisted ? baseMs * BALANCE.assistTickMult : baseMs) / devSpeed);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => {
@@ -151,7 +154,7 @@ export const useGameEngine = () => {
   // It is always the same very easy Target (Amaka, see ColdOpen), so the first case can be won while learning.
   const trainingMatch = () => {
     const t = getTarget('slay_queen');
-    try { localStorage.removeItem('rumor_tour_done'); } catch { /* storage unavailable */ }
+    try { localStorage.removeItem('rumor_tour_done'); localStorage.removeItem('rumor_tour_progress'); } catch { /* storage unavailable */ }
     return Actions.startMatch(t.id, t.scandals[0].category, null, 'CLEAR_SKIES', { seed: 7, training: true });
   };
   const startTraining = useCallback(() => setGameState(trainingMatch()), []);
@@ -178,6 +181,7 @@ export const useGameEngine = () => {
     const story = profileRef.current.story;
     const variant = ch ? variantFor(ch, story) : null;
     if (!ch || !variant) return;
+    if (ch.premium && !isPremium()) return;   // Premium Gist needs a licence
     const t = getTarget(variant.targetId);
     setGameState(Actions.startMatch(t.id, t.scandals[0].category, perkIdFor(story, approach), variant.climateId, { storyId: ch.id, assisted: getSettings().assist }));
   }, []);

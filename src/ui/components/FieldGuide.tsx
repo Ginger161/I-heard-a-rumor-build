@@ -106,7 +106,7 @@ export const FieldGuide: React.FC<Props> = ({ focus, onClose }) => {
         <PaperGrain />
         <div className="relative flex items-center justify-between px-4 pt-3 pb-2 border-b-2 border-[#1A1A1A] flex-shrink-0">
           <div>
-            <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Reference</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Reference</div>
             <div className="font-serif font-black text-xl leading-none">Field Guide</div>
           </div>
           <button onClick={onClose} aria-label="Close field guide" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
@@ -114,7 +114,7 @@ export const FieldGuide: React.FC<Props> = ({ focus, onClose }) => {
         <div className="relative overflow-y-auto no-scrollbar p-3 flex flex-col gap-3">
           {groups.map(group => (
             <div key={group}>
-              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8B0000] mb-1.5">{group}</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8B0000] mb-1.5">{group}</div>
               <div className="flex flex-col gap-1.5">
                 {GUIDE.filter(g => g.group === group).map(g => {
                   const isOpen = open === g.id;
@@ -135,7 +135,7 @@ export const FieldGuide: React.FC<Props> = ({ focus, onClose }) => {
                       {isOpen && (
                         <div className="px-3 pb-3 pt-0.5 animate-fade-in">
                           <p className="text-[12px] font-sans leading-snug">{g.detail}</p>
-                          {g.tip && <p className="text-[11px] font-sans font-bold text-[#B45309] mt-1.5 leading-snug">💡 {g.tip}</p>}
+                          {g.tip && <p className="text-[11px] font-sans font-bold text-[#92400E] mt-1.5 leading-snug">💡 {g.tip}</p>}
                         </div>
                       )}
                     </div>

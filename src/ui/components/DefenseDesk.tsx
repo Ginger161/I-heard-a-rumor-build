@@ -1,7 +1,9 @@
 import React from 'react';
 import { GameState } from '../../engine/types';
 import { DEFENSE_DATA } from '../../engine/data/defense';
-import { defenseUses } from '../../engine/selectors';
+import { CAMPAIGN_DEFENSE } from '../../engine/data/campaignCopy';
+import { campaignize, vocabFor } from '../../engine/campaigns';
+import { defenseActualCut, defenseCostFor, defenseNominalCut, defenseUses, heatFloor } from '../../engine/selectors';
 import { BrutalButton, PaperGrain, SparkCounter } from './common';
 
 interface DefenseDeskProps {
@@ -12,9 +14,11 @@ interface DefenseDeskProps {
 }
 
 export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, onBuy, docked = false }) => {
+  const V = vocabFor(gameState.activeTargetId);
   const heat = gameState.heat;
   const critical = heat >= 90;
   const activeSpin = gameState.activeSpinBubbles.length;
+  const floor = Math.round(heatFloor(gameState));
 
   return (
     <>
@@ -25,7 +29,7 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
 
         <div className="relative bg-[#1A1A1A] text-[#F4F1EA] p-4 flex-shrink-0 border-b-4 border-[#8B0000]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-base font-black tracking-widest uppercase font-serif">Defense Desk</span>
+            <span className="text-base font-black tracking-widest uppercase font-serif">{V.defenseDesk}</span>
             <div className="flex items-center gap-3">
               <SparkCounter value={gameState.sparks} className="text-xs" />
               {!docked && <button
@@ -38,7 +42,7 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
             </div>
           </div>
           <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-1">
-            <span className="text-slate-400">State Security Heat</span>
+            <span className="text-slate-400">{V.campaign ? 'Backlash' : 'State Security Heat'}</span>
             <span className={critical ? 'text-[#FCA5A5] animate-pulse' : 'text-slate-300'}>{Math.floor(heat)}%</span>
           </div>
           <div className="relative w-full h-3 bg-black border border-white/30 rounded-sm overflow-hidden">
@@ -47,8 +51,9 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
               <div key={m} className="absolute top-0 bottom-0 w-[2px] bg-white/60" style={{ left: `${m}%` }} />
             ))}
           </div>
+          {floor > 0 && <div className="mt-2 text-[10px] font-bold text-slate-300 leading-snug">🗂 {V.campaign ? 'Critics keep a record of how loud you have been' : 'The DSS keeps a file on how loud you have been'}: protection cannot take {V.heat} below {floor}%. Everything you buy makes the next thing dearer.</div>}
           {activeSpin > 0 && (
-            <div className="mt-2 text-[10px] font-black uppercase tracking-wider text-[#FDE68A]">📢 {activeSpin} Spin bubble{activeSpin > 1 ? 's' : ''} live on the map</div>
+            <div className="mt-2 text-[10px] font-black uppercase tracking-wider text-[#FDE68A]">📢 {activeSpin} {V.campaign ? 'Hoax' : 'Spin'} bubble{activeSpin > 1 ? 's' : ''} live on the map</div>
           )}
         </div>
 
@@ -56,7 +61,10 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
           {DEFENSE_DATA.map(item => {
             const uses = defenseUses(gameState, item.id);
             const maxed = uses >= item.maxUses;
-            const canAfford = gameState.sparks >= item.cost;
+            const cost = defenseCostFor(gameState, item);
+            const nominal = defenseNominalCut(gameState, item);
+            const actual = Math.round(defenseActualCut(gameState, item));
+            const canAfford = gameState.sparks >= cost;
             const pulse = item.emergency && critical && !maxed;
 
             return (
@@ -73,18 +81,19 @@ export const DefenseDesk: React.FC<DefenseDeskProps> = ({ gameState, onClose, on
                 )}
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
-                    {item.emergency && <span className="text-[8px] font-black bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm tracking-wider">PANIC BUTTON</span>}
-                    <h3 className="font-bold text-sm text-[#1A1A1A] font-serif leading-tight mt-0.5">{item.name}</h3>
+                    {item.emergency && <span className="text-[10px] font-black bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm tracking-wider">PANIC BUTTON</span>}
+                    <h3 className="font-bold text-sm text-[#1A1A1A] font-serif leading-tight mt-0.5">{V.campaign ? (CAMPAIGN_DEFENSE[item.id]?.name ?? item.name) : item.name}</h3>
                   </div>
-                  <span className="bg-[#FEF3C7] text-[#B45309] font-black text-xs px-2 py-1 rounded border-2 border-[#1A1A1A] flex-shrink-0">{item.cost} ⚡</span>
+                  <span className="bg-[#FEF3C7] text-[#92400E] font-black text-xs px-2 py-1 rounded border-2 border-[#1A1A1A] flex-shrink-0">{cost} ⚡</span>
                 </div>
-                <p className="text-[11px] font-sans text-slate-700 leading-snug">{item.effectText}</p>
+                <p className="text-[11px] font-sans text-slate-700 leading-snug">{V.campaign ? campaignize(CAMPAIGN_DEFENSE[item.id]?.effectText ?? item.effectText, V) : item.effectText}</p>
+                {!maxed && <div className="text-[11px] font-sans font-bold text-[#7F1D1D] leading-snug">{V.heat} removed right now: -{actual}%{actual < nominal ? ` (of -${nominal}%: the DSS file limits it)` : nominal !== item.heatReduction ? ` (this one scrubs less than the first)` : ''}</div>}
                 {item.maxUses > 1 && (
-                  <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60">Used {uses}/{item.maxUses}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">Used {uses}/{item.maxUses}</div>
                 )}
                 {!maxed && (
                   <BrutalButton tone={item.emergency ? 'crimson' : 'ink'} disabled={!canAfford} onClick={() => onBuy(item.id)} className="py-2.5">
-                    {canAfford ? `Activate (${item.cost} ⚡)` : 'Insufficient Sparks'}
+                    {canAfford ? `Activate (${cost} ⚡)` : 'Insufficient Sparks'}
                   </BrutalButton>
                 )}
               </div>

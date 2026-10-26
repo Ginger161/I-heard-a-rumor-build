@@ -4,6 +4,7 @@ import { ZONE_IDS, ZONE_NAMES, ZoneId } from './data/zones';
 import { fillTarget, getTarget } from './data/targets';
 import { Rng } from './effects';
 import { pickFrom } from './data/copy';
+import { campaignize, vocabFor } from './campaigns';
 import type { PlotEvent, StoryEffects } from './season/types';
 
 // Nigerian world events and informant tips. Every event is a decision card: the clock stays stopped
@@ -27,6 +28,8 @@ export interface EventDef {
   minDay?: number;
   weight: number;
   zoned?: boolean;    // Picks a random geopolitical zone at spawn
+  scandalOnly?: boolean;   // Informants and court dates: make no sense when the thing being spread is a campaign
+  campaignOnly?: boolean;  // Community moments that only happen to campaigns
   scripted?: boolean; // A Story Mode plot beat: never drawn at random, only fires on the day its chapter schedules it
   requires?: (s: GameState) => boolean;
   choices: (zone?: ZoneId) => EventChoice[];
@@ -162,6 +165,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'court_adjourns',
+    scandalOnly: true,
     archetype: 'TARGET_PR',
     stamp: 'COURT ADJOURNS',
     headline: 'Court Adjourns "Indefinitely"',
@@ -175,6 +179,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'tip_clerk',
+    scandalOnly: true,
     archetype: 'INFORMANT_TIP',
     stamp: 'INFORMANT // CLERK',
     headline: 'A Records Clerk Has a Certified Copy',
@@ -189,6 +194,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'tip_rival',
+    scandalOnly: true,
     archetype: 'INFORMANT_TIP',
     stamp: 'INFORMANT // RIVAL',
     headline: 'A Rival Offers to Leak Against {Target}',
@@ -202,6 +208,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'tip_driver',
+    scandalOnly: true,
     archetype: 'INFORMANT_TIP',
     stamp: 'INFORMANT // DRIVER',
     headline: '{Target}\'s Former Driver Wants to Talk',
@@ -352,6 +359,63 @@ export const EVENTS: EventDef[] = [
     choices: () => [
       { id: 'dance', label: 'Do the dance', detail: '+22 Freshness • +4 ⚡', effects: [{ kind: 'freshness', amount: 22 }, { kind: 'sparks', amount: 4 }] }
     ]
+  },
+  // ---------------- CAMPAIGN MOMENTS (only drawn when the thing being spread is a campaign) ----------------
+  {
+    id: 'camp_radio', campaignOnly: true, archetype: 'BREAKING_FRONT', stamp: 'COMMUNITY RADIO', headline: 'A Community Station Invites You On Air',
+    body: 'The morning host takes calls from worried people and tired mothers. She has an hour and a very good phone-in voice. She wants somebody from the campaign in the studio by nine.',
+    minDay: 3, weight: 3,
+    choices: () => [
+      { id: 'live', label: 'Go on air yourself', detail: '+20 Freshness • -4% Doubt • +4% Heat', effects: [{ kind: 'freshness', amount: 20 }, { kind: 'doubtAll', amount: -4 }, { kind: 'heat', amount: 4 }] },
+      { id: 'volunteer', label: 'Send a trained volunteer', detail: '-8 ⚡ • +14 Freshness • -6% Doubt', cost: 8, effects: [{ kind: 'freshness', amount: 14 }, { kind: 'doubtAll', amount: -6 }] },
+      { id: 'pass', label: 'Pass this time', detail: 'Nothing happens', effects: [] }
+    ]
+  },
+  {
+    id: 'camp_endorsement', campaignOnly: true, archetype: 'BREAKING_FRONT', stamp: 'TWO PULPITS, ONE MESSAGE', headline: 'A Pastor and an Imam Share a Stage',
+    body: 'They disagree about almost everything, and they agree about this. Both will say so from their pulpits on Friday and Sunday if you let them use your wording.',
+    minDay: 4, weight: 3,
+    choices: () => [
+      { id: 'accept', label: 'Welcome the joint endorsement', detail: 'Street channels +20% for 5 days • +10 Freshness • -3% Doubt', effects: [{ kind: 'timed', effectKind: 'BRANCH_MULT', days: 5, mult: 1.2, label: 'Endorsed', branch: 'STREET' }, { kind: 'freshness', amount: 10 }, { kind: 'doubtAll', amount: -3 }] },
+      { id: 'neutral', label: 'Thank them, and keep it neutral', detail: '+6 Freshness • -3% Heat', effects: [{ kind: 'freshness', amount: 6 }, { kind: 'heat', amount: -3 }] }
+    ]
+  },
+  {
+    id: 'camp_volunteers', campaignOnly: true, archetype: 'STREET_WHISPER', stamp: 'VOLUNTEERS', headline: 'Volunteers Offer to Go Door to Door',
+    body: 'Thirty young people with matching T-shirts, a lot of energy and no budget. They can cover four neighbourhoods a day if somebody feeds them.',
+    minDay: 3, weight: 3,
+    choices: () => [
+      { id: 'fund', label: 'Feed them and send them out', detail: '-14 ⚡ • Land-border spread +50% for 4 days • +10 Freshness', cost: 14, effects: [{ kind: 'timed', effectKind: 'HIGHWAY_MULT', days: 4, mult: 1.5, label: 'Door to door' }, { kind: 'freshness', amount: 10 }] },
+      { id: 'online', label: 'Thank them and keep it online', detail: '+6 Freshness', effects: [{ kind: 'freshness', amount: 6 }] }
+    ]
+  },
+  {
+    id: 'camp_hoax', campaignOnly: true, archetype: 'TARGET_PR', stamp: 'A HOAX ABOUT THE CAMPAIGN', headline: 'A Rumour About the Campaign Goes Viral',
+    body: 'A voice note says the campaign is secretly paid for by somebody sinister. It has no source, no date and four million plays. The correct answer takes longer to say than the lie.',
+    minDay: 5, weight: 3,
+    choices: () => [
+      { id: 'correct', label: 'Answer at once with a clear correction', detail: '-10 ⚡ • +3% Doubt • +10 Freshness', cost: 10, effects: [{ kind: 'doubtAll', amount: 3 }, { kind: 'freshness', amount: 10 }] },
+      { id: 'volunteers', label: 'Ask volunteers to answer, one by one', detail: '+5% Doubt • +4% Investigation', effects: [{ kind: 'doubtAll', amount: 5 }, { kind: 'investigation', amount: 4 }] },
+      { id: 'ignore', label: 'Ignore it. It will pass', detail: '+9% Doubt • +4% Cover-Up', effects: [{ kind: 'doubtAll', amount: 9 }, { kind: 'coverUp', amount: 4 }] }
+    ]
+  },
+  {
+    id: 'camp_schools', campaignOnly: true, archetype: 'STREET_WHISPER', stamp: 'SCHOOLS JOIN IN', headline: 'The Schools Want to Take Part',
+    body: 'A teachers’ association has asked for posters, a ten-minute assembly script and somebody to answer the children’s questions. Children, as everybody knows, repeat everything at dinner.',
+    minDay: 4, weight: 2,
+    choices: () => [
+      { id: 'yes', label: 'Print the materials', detail: '-12 ⚡ • +14 Freshness • Street channels +20% for 5 days', cost: 12, effects: [{ kind: 'freshness', amount: 14 }, { kind: 'timed', effectKind: 'BRANCH_MULT', days: 5, mult: 1.2, label: 'School assemblies', branch: 'STREET' }] },
+      { id: 'later', label: 'Say yes, but next term', detail: '+4 Freshness', effects: [{ kind: 'freshness', amount: 4 }] }
+    ]
+  },
+  {
+    id: 'camp_donor', campaignOnly: true, archetype: 'VIRAL_RECEIPT', stamp: 'A GENEROUS DONOR', headline: 'A Donor Offers Funding With Strings',
+    body: 'A company would like to fund the campaign. It would like its name on every poster, and "a small say" in the wording. It is a lot of money.',
+    minDay: 6, weight: 2,
+    choices: () => [
+      { id: 'take', label: 'Take the money and the logo', detail: '+30 ⚡ • +6% Heat • +3% Doubt', effects: [{ kind: 'sparks', amount: 30 }, { kind: 'heat', amount: 6 }, { kind: 'doubtAll', amount: 3 }] },
+      { id: 'refuse', label: 'Refuse. Stay independent', detail: '+8 Freshness • -2% Doubt', effects: [{ kind: 'freshness', amount: 8 }, { kind: 'doubtAll', amount: -2 }] }
+    ]
   }
 ];
 
@@ -425,7 +489,9 @@ export const findChoice = (eventId: string, choiceId: string): EventChoice | und
 export const pickEvent = (s: GameState, rng: Rng, chance: number, cooldown: number, minDay: number): { def: EventDef; zone?: ZoneId } | null => {
   if (s.currentDay < minDay || s.currentDay - s.lastEventDay < cooldown) return null;
   if (rng() >= chance) return null;
+  const camp = !!getTarget(s.activeTargetId).campaign;
   const eligible = EVENTS.filter(e => !e.scripted && !s.usedEvents.some(u => u.split(':')[0] === e.id)
+    && (camp ? !e.scandalOnly : !e.campaignOnly)
     && (e.minDay ?? 0) <= s.currentDay && (!e.requires || e.requires(s)));
   if (eligible.length === 0) return null;
   const total = eligible.reduce((a, e) => a + e.weight, 0);
@@ -450,10 +516,11 @@ export const scheduledEvent = (s: GameState, occurrences: { eventId: string; day
 
 export const buildEventAlert = (def: EventDef, s: GameState, zone?: ZoneId): GameAlert => {
   const eventId = zone ? `${def.id}:${zone}` : def.id;
+  const voc = vocabFor(s.activeTargetId);   // in a campaign the stock words are re-voiced (Doubt -> Skepticism)
   const choices: AlertChoice[] = def.choices(zone).map(c => ({
     id: c.id,
-    label: c.label,
-    detail: subst(c.detail, s, zone),
+    label: campaignize(c.label, voc),
+    detail: campaignize(subst(c.detail, s, zone), voc),
     cost: c.cost
   }));
   return {
@@ -462,8 +529,8 @@ export const buildEventAlert = (def: EventDef, s: GameState, zone?: ZoneId): Gam
     choices,
     archetype: def.archetype,
     stampText: def.stamp,
-    headline: subst(def.headline, s, zone),
-    body: subst(pickFrom([def.body, ...(ALT_BODIES[def.id] ?? [])], 'evbody:' + def.id, s.copySeed), s, zone),
+    headline: campaignize(subst(def.headline, s, zone), voc),
+    body: campaignize(subst(pickFrom([def.body, ...(ALT_BODIES[def.id] ?? [])], 'evbody:' + def.id, s.copySeed), s, zone), voc),
     subtext: 'Decision needed',
     buttonText: 'Decide',
     priority: 45

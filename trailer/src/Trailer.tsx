@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
 import './fonts';
 import { Graded, PostFX } from './PostFX';
+import { SvgDefs } from './texture';
 import { Scene1 } from './scenes/Scene1';
 import { Scene2 } from './scenes/Scene2';
 import { Scene3 } from './scenes/Scene3';
@@ -22,6 +23,7 @@ const SCENE_LIST: [keyof typeof SCENES, React.FC][] = [
 /** One composition, two aspect ratios: every scene re-composes itself for the frame it is given. */
 export const Trailer: React.FC = () => (
   <AbsoluteFill style={{ background: '#000' }}>
+    <SvgDefs />
     <Graded>
       {SCENE_LIST.map(([key, Scene]) => (
         <Sequence key={key} from={SCENES[key].from} durationInFrames={SCENES[key].dur} layout="none">

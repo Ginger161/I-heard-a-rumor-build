@@ -2,12 +2,15 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C } from './theme';
 
-/** Warm, high-contrast editorial grade applied to everything underneath the grain. */
+/**
+ * Warm, high-contrast editorial grade. The tiny blur is deliberate "film diffusion": it takes the
+ * razor edge off vector shapes and type so the picture reads as photographed, not drawn.
+ */
 export const Graded: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <AbsoluteFill style={{ filter: 'contrast(1.12) saturate(1.08) sepia(0.08)', background: '#000' }}>{children}</AbsoluteFill>
+  <AbsoluteFill style={{ filter: 'contrast(1.12) saturate(1.08) sepia(0.08) blur(0.45px)', background: '#000' }}>{children}</AbsoluteFill>
 );
 
-/** 35mm grain, shadow halftone and a faint gate flutter, drawn over the graded programme. */
+/** Lens edge softness, halftone in the shadows, 35mm grain and a faint gate flutter. */
 export const PostFX: React.FC = () => {
   const f = useCurrentFrame();
   const { width: w, height: h } = useVideoConfig();
@@ -17,19 +20,30 @@ export const PostFX: React.FC = () => {
   const seed = (f * 7) % 97;
   const gateX = Math.sin(f * 0.9) * 0.6;
   const gateY = Math.cos(f * 1.3) * 0.6;
+  const mask = 'radial-gradient(ellipse at 50% 50%, transparent 52%, #000 100%)';
 
   return (
     <>
+      {/* soft-focus falloff toward the frame edges, like a fast vintage lens */}
+      <AbsoluteFill
+        style={{
+          backdropFilter: 'blur(2.4px)',
+          WebkitBackdropFilter: 'blur(2.4px)',
+          WebkitMaskImage: mask,
+          maskImage: mask,
+          pointerEvents: 'none',
+        }}
+      />
       {/* halftone dots, only visible toward the frame edges / in the shadows */}
       <AbsoluteFill
         style={{
-          backgroundImage: `radial-gradient(circle at center, ${C.ink} 0 1.7px, transparent 2.2px)`,
+          backgroundImage: `radial-gradient(circle at center, ${C.ink} 0 1.6px, transparent 2.3px)`,
           backgroundSize: '7px 7px',
           transform: 'rotate(15deg) scale(1.3)',
-          opacity: 0.5,
+          opacity: 0.32,
           mixBlendMode: 'multiply',
-          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, transparent 42%, #000 100%)',
-          maskImage: 'radial-gradient(ellipse at 50% 50%, transparent 42%, #000 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, transparent 46%, #000 100%)',
+          maskImage: 'radial-gradient(ellipse at 50% 50%, transparent 46%, #000 100%)',
           pointerEvents: 'none',
         }}
       />

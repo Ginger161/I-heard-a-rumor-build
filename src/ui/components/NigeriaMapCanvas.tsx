@@ -235,13 +235,10 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
               const jadedRatio = s && s.population ? s.jaded / s.population : 0;
               const awareness = s && s.population ? (s.heard + s.believers) / s.population : 0;
 
-              let stroke = 'var(--m-state-line)';
-              let strokeWidth = 1;
-              if (isStart) { stroke = '#B45309'; strokeWidth = 2.5; }
-              if (isSelected) { strokeWidth = 3; if (!isStart) stroke = 'var(--m-ink)'; }
-              if (isPulsing) { stroke = '#F59E0B'; strokeWidth = 3; }
+              // A highlighted state (the one you started in, the one you picked, one the news just reached) gets a DOUBLE outline: a dark ring with a
+              // bright ring on top, so it stands out against any fill, pale or deep, in any mode.
               const isFlash = flashId === dataId;
-              if (isFlash) { stroke = '#B91C1C'; strokeWidth = 3; }
+              const hi = isFlash || isSelected || isPulsing ? 3 : isStart ? 2.5 : 0;
 
               return (
                 <g
@@ -255,12 +252,19 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                 >
                   <path
                     d={location.path}
-                    fill={isStart && !gameState.hasPoppedFirstSpark ? '#FEF3C7' : stateFill(s)}
-                    stroke={stroke}
-                    strokeWidth={strokeWidth}
+                    fill={isStart && !gameState.hasPoppedFirstSpark ? 'var(--m-start-fill)' : stateFill(s)}
+                    stroke="var(--m-state-line)"
+                    strokeWidth={1}
                     strokeLinejoin="round"
-                    className={`transition-colors duration-[900ms] ${isStart && earlyPulse ? 'animate-pulse' : ''} ${isPulsing || isFlash ? 'animate-border-pulse' : ''}`}
+                    className="transition-colors duration-[900ms]"
                   />
+                  {hi > 0 && (
+                    <>
+                      <path d={location.path} fill="none" stroke="var(--m-hi-outer)" strokeWidth={hi + 3} strokeLinejoin="round" pointerEvents="none" />
+                      <path d={location.path} fill="none" stroke="var(--m-state-hi)" strokeWidth={hi} strokeLinejoin="round" pointerEvents="none"
+                        className={isStart && earlyPulse ? 'animate-border-loop' : isPulsing || isFlash ? 'animate-border-pulse' : ''} />
+                    </>
+                  )}
                   {infected && (
                     <path d={location.path} fill="url(#halftone)" opacity={Math.min(0.4, 0.08 + awareness * 0.5)} pointerEvents="none" />
                   )}
@@ -284,7 +288,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
                 fontSize={l.fontUnits}
                 fontWeight={800}
                 fontFamily="ui-sans-serif, system-ui, sans-serif"
-                fill={l.forced ? 'var(--m-accent2)' : 'var(--m-label)'}
+                fill={l.forced ? 'var(--m-label-forced)' : 'var(--m-label)'}
                 stroke="var(--m-label-halo)"
                 strokeWidth={l.fontUnits * 0.32}
                 strokeLinejoin="round"
@@ -358,7 +362,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
             <foreignObject key={g.key} x={g.x - 20} y={g.y - 20} width={40} height={40} style={{ overflow: 'visible' }} pointerEvents="none">
               <div className="relative w-10 h-10">
                 <ShatterBurst animating={g.animating} color={g.gold ? '#F59E0B' : '#B45309'} />
-                <div className={`absolute left-1/2 -top-1 -translate-x-1/2 whitespace-nowrap text-[13px] font-black animate-float-up ${g.gold ? 'text-[#B45309] drop-shadow-[0_0_4px_rgba(250,204,21,0.9)]' : 'text-[#92400E]'}`}>
+                <div className={`absolute left-1/2 -top-1 -translate-x-1/2 whitespace-nowrap text-[13px] font-black animate-float-up ${g.gold ? 'text-[#92400E] drop-shadow-[0_0_4px_rgba(250,204,21,0.9)]' : 'text-[#92400E]'}`}>
                   {g.label} ⚡
                 </div>
               </div>

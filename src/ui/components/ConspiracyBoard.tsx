@@ -18,10 +18,10 @@ const CANVAS_W = 2000;
 const CANVAS_H = 1000;
 
 const BRANCH_LABELS = [
-  { name: 'STREET', y: 150 },
-  { name: 'SOCIAL', y: 350 },
-  { name: 'PRESS', y: 550 },
-  { name: 'ELITE', y: 750 }
+  { name: 'STREET', y: 150, sub: 'Cheap and local. Starts the gist.' },
+  { name: 'SOCIAL', y: 350, sub: 'Fastest, but breeds Doubt and Heat.' },
+  { name: 'PRESS', y: 550, sub: 'Makes people believe it.' },
+  { name: 'ELITE', y: 750, sub: 'Opens the big cities.' }
 ];
 const DIVIDERS = [250, 450, 650];
 
@@ -76,25 +76,46 @@ const BranchIcon = ({ branch, isLocked }: { branch: string; isLocked: boolean })
   }
 };
 
-// Dymo labels are short: first 12 characters of the part before any dash/slash.
-const dymoName = (name: string): string => {
-  const base = name.split(/ — | - /)[0].replace(/^["']|["']$/g, '');
-  return base.length > 14 ? `${base.slice(0, 13)}.` : base;
+// Dymo labels show the part of the name before any dash, in full (it wraps instead of being cut off).
+const dymoName = (name: string): string => name.split(/ — | - /)[0].replace(/^["']|["']$/g, '');
+
+// What a channel does, in plain words, from its three stats (replaces having to decode Velocity / Credibility / Notoriety).
+const plainEffects = (c: ChannelUpgrade): string[] => {
+  const out: string[] = [];
+  if (c.velocity >= 0.3) out.push('Spreads the gist very fast.'); else if (c.velocity >= 0.22) out.push('Spreads the gist at a good pace.'); else out.push('Spreads the gist slowly.');
+  if (c.credibility >= 0.3) out.push('Strongly convinces people to believe it.'); else if (c.credibility >= 0.14) out.push('Helps people believe it.'); else out.push('Hardly convinces anyone yet.');
+  if (c.notoriety >= 0.22) out.push('Loud: adds a lot of Heat and brings more ⚡ bubbles.'); else if (c.notoriety >= 0.12) out.push('A little loud: some Heat, a few extra ⚡ bubbles.'); else out.push('Quiet: almost no Heat.');
+  if (c.branch === 'SOCIAL') out.push('Social channels also breed Doubt.');
+  return out;
 };
+
+// The first-open tour of the board. Plain language, one idea per card.
+const BOARD_TOUR = [
+  { icon: '🗞️', title: 'This is your Channels board', body: 'Every pin is a way to push the story. Buy one and the rumour travels faster. Drag the board to pan; pinch or use two fingers to zoom.' },
+  { icon: '🛣️', title: 'Four lanes', body: 'STREET is cheap and local. SOCIAL is the fastest but breeds Doubt and Heat. PRESS makes people believe it. ELITE opens the big cities that ignore street gossip.' },
+  { icon: '📌', title: 'Read the pins', body: 'Red pin: you own it. Glowing amber pin: you can buy it now. Grey pin: you need more ⚡. Padlock: buy the channel before it first (the dashed line shows which).' },
+  { icon: '👆', title: 'Tap a pin to buy', body: 'Tap any pin to see what it does in plain words, then tap Acquire. Start with the cheapest one in the STREET lane.' },
+  { icon: '🏷️', title: 'Gold tags are a bonus', body: 'Each channel has tags like FINANCIAL or AFFAIR. When a tag matches your scandal, it shows gold with ×1.35: that channel works 35% harder for this case.' }
+];
+const TOUR_KEY = 'rumor_board_tour';
+const tourSeen = () => { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch { return true; } };
+const markTourSeen = () => { try { localStorage.setItem(TOUR_KEY, '1'); } catch { /* storage unavailable */ } };
 
 const StatBar: React.FC<{ label: string; value: number; max: number; color: string; boosted?: boolean }> = ({ label, value, max, color, boosted }) => (
   <div className="flex items-center gap-2">
-    <span className="w-20 text-[9px] font-black uppercase tracking-wider text-slate-600">{label}</span>
+    <span className="w-20 text-[10px] font-black uppercase tracking-wider text-slate-600">{label}</span>
     <div className="flex-1 h-2.5 bg-[#EBE5D9] border border-[#1A1A1A] rounded-sm overflow-hidden">
       <div className="h-full" style={{ width: `${Math.min(100, (value / max) * 100)}%`, backgroundColor: color }} />
     </div>
-    <span className={`w-12 text-right text-[10px] font-black ${boosted ? 'text-[#B45309]' : 'text-[#1A1A1A]'}`}>+{value.toFixed(2)}</span>
+    <span className={`w-12 text-right text-[10px] font-black ${boosted ? 'text-[#92400E]' : 'text-[#1A1A1A]'}`}>+{value.toFixed(2)}</span>
   </div>
 );
 
 export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBuy, docked = false }) => {
   const { t: pan, viewRef, moved, handlers, zoomBy } = usePanZoom({ minScale: 0.4, maxScale: 1.6, content: { w: CANVAS_W, h: CANVAS_H }, origin: 'topleft', slack: 100 });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [tourStep, setTourStep] = useState<number | null>(() => (tourSeen() ? null : 0));
+  const endTour = () => { markTourSeen(); setTourStep(null); };
   const target = getTarget(gameState.activeTargetId);
   const category = gameState.scandalCategory;
 
@@ -112,12 +133,13 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
           <h2 className={`font-black tracking-wider uppercase text-[#1A1A1A] leading-none mb-1 ${docked ? 'text-2xl' : 'text-xl'}`}>
             {docked ? <>The Conspiracy<br />Board</> : 'Conspiracy Board'}
           </h2>
-          <div className="text-[9px] font-black tracking-widest uppercase text-[#1A1A1A]/50">
+          <div className="text-[10px] font-black tracking-widest uppercase text-[#1A1A1A]/72">
             {gameState.unlockedChannels.length}/{CHANNELS_DATA.length} channels • drag to pan, pinch to zoom
           </div>
         </div>
         <div className="flex items-center gap-3 relative">
           <SparkCounter value={gameState.sparks} className="text-lg px-4 py-2" />
+          <button onClick={() => setTourStep(0)} aria-label="How the board works" className="w-10 h-10 bg-[#FDE68A] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-full font-black text-lg flex items-center justify-center cursor-pointer active:translate-y-[2px]">?</button>
           {!docked && <button
             onClick={onClose}
             aria-label="Close board"
@@ -153,11 +175,12 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
                 <TapeStrip className="-top-2.5 left-1/2 -translate-x-1/2 rotate-[-3deg]" />
                 {branch.name}
               </div>
+              <div className="mt-1.5 max-w-[105px] text-[11px] font-sans font-bold leading-tight text-[#1A1A1A] bg-[#F4F1EA]/90 px-1.5 py-0.5 rounded-sm">{branch.sub}</div>
               {branch.name === target.ai.weaknessBranch && (
-                <div className="mt-1 text-[8px] font-black tracking-wider uppercase bg-[#065F46] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[1deg]">▲ Weak spot ×1.25</div>
+                <div className="mt-1 text-[10px] font-black tracking-wider uppercase bg-[#065F46] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[1deg]">▲ Weak spot ×1.25</div>
               )}
               {branch.name === target.ai.resistanceBranch && (
-                <div className="mt-1 text-[8px] font-black tracking-wider uppercase bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[-1deg]">▼ Resists ×0.75</div>
+                <div className="mt-1 text-[10px] font-black tracking-wider uppercase bg-[#8B0000] text-white px-1.5 py-0.5 rounded-sm w-fit rotate-[-1deg]">▼ Resists ×0.75</div>
               )}
             </div>
           ))}
@@ -209,7 +232,7 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
             if (owned && frozen) {
               circle = 'bg-[#E5E7EB] border-4 border-[#1E3A5F] shadow-[4px_4px_0px_#1E3A5F] opacity-80';
               pin = 'bg-[#1E3A5F]';
-              icon = 'text-slate-500';
+              icon = 'text-slate-600';
             } else if (owned) {
               circle = 'bg-white border-4 border-[#1A1A1A] shadow-[4px_4px_0px_#B91C1C] hover:scale-105';
               pin = 'bg-[#B91C1C]';
@@ -221,7 +244,7 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
             } else if (available) {
               circle = 'bg-white border-4 border-[#1A1A1A] shadow-[2px_2px_0px_rgba(0,0,0,0.1)] hover:scale-105 opacity-90';
               pin = 'bg-[#CBD5E1]';
-              icon = 'text-slate-500';
+              icon = 'text-slate-600';
             }
             const tilt = node.id.length % 2 === 0 ? 'rotate-[-2deg]' : 'rotate-[2deg]';
 
@@ -248,8 +271,8 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
                     </>
                   )}
                 </div>
-                <div className={`mt-1.5 bg-[#1A1A1A] text-[#F4F1EA] font-mono text-[9px] px-1.5 py-0.5 shadow-sm tracking-tighter uppercase whitespace-nowrap z-20 ${tilt} ${locked ? 'opacity-50' : ''}`}>
-                  {dymoName(node.name)} {frozen ? '❄ FROZEN' : owned ? '✓' : `${node.cost} ⚡`}
+                <div className={`mt-1.5 bg-[#1A1A1A] text-[#F4F1EA] font-mono text-[10px] px-1.5 py-0.5 shadow-sm tracking-tighter uppercase text-center max-w-[130px] leading-tight z-20 ${tilt} ${locked ? 'opacity-80' : ''}`}>
+                  {dymoName(node.name)}<br />{frozen ? '❄ FROZEN' : owned ? '✓ OWNED' : `${node.cost} ⚡`}
                 </div>
               </div>
             );
@@ -268,11 +291,11 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
         const missing = selected.requires.filter(r => !gameState.unlockedChannels.includes(r)).map(r => CHANNELS_DATA.find(c => c.id === r)?.name ?? r);
 
         return (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[380px] bg-[#E6D5B8] border-4 border-[#1A1A1A] p-4 shadow-[8px_8px_0px_#1A1A1A] rounded-xl flex flex-col z-30 animate-slide-up">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[380px] bg-[#E6D5B8] border-4 border-[#1A1A1A] p-4 shadow-[8px_8px_0px_#1A1A1A] rounded-xl flex flex-col z-30 animate-slide-up max-h-[88%] overflow-y-auto">
             <div className="absolute -top-3 left-6 w-24 h-4 bg-[#D8C39A] border-2 border-[#1A1A1A] border-b-0 rounded-t-md" />
             <div className="flex justify-between items-start mb-2">
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#B45309] bg-[#FEF3C7] px-2 py-0.5 border border-[#1A1A1A] rounded-sm">{selected.branch}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#92400E] bg-[#FEF3C7] px-2 py-0.5 border border-[#1A1A1A] rounded-sm">{selected.branch}</span>
                 <h3 className="font-black text-lg mt-1.5 leading-tight text-[#1A1A1A] pr-4">{selected.name}</h3>
               </div>
               <button onClick={() => setSelectedNode(null)} aria-label="Close dossier" className="font-black text-2xl p-1 active:scale-90 transition-transform cursor-pointer">✕</button>
@@ -282,7 +305,7 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
               {selected.synergy.map(syn => (
                 <span
                   key={syn}
-                  className={`text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded-sm border ${
+                  className={`text-[10px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded-sm border ${
                     syn === category ? 'bg-[#F59E0B] text-[#1A1A1A] border-[#1A1A1A]' : 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
                   }`}
                 >
@@ -297,10 +320,13 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
               <StatBar label="Notoriety" value={selected.notoriety} max={STAT_MAX.notoriety} color="#B91C1C" />
             </div>
 
+            <ul className="mb-2 flex flex-col gap-0.5">
+              {plainEffects(selected).map(l => <li key={l} className="text-[12px] font-sans font-bold leading-snug text-[#1A1A1A]">• {l}</li>)}
+            </ul>
             <p className="text-xs font-sans text-slate-700 italic mb-3 leading-relaxed border-l-4 border-slate-400 pl-3">"{channelFlavorLine(selected, category, target)}"</p>
 
             {frozenNow && (
-              <div className="mb-2 py-1.5 px-2 text-center border-2 border-[#1E3A5F] bg-[#DBEAFE] text-[#1E3A5F] font-black uppercase tracking-wider text-[9px] rounded-md">
+              <div className="mb-2 py-1.5 px-2 text-center border-2 border-[#1E3A5F] bg-[#DBEAFE] text-[#1E3A5F] font-black uppercase tracking-wider text-[10px] rounded-md">
                 ❄ Frozen until the end of Day {gameState.frozenChannels[selected.id]}. It contributes nothing. A SAN Counter-Injunction thaws it.
               </div>
             )}
@@ -318,6 +344,28 @@ export const ConspiracyBoard: React.FC<BoardProps> = ({ gameState, onClose, onBu
                 {canAfford ? `Acquire Channel (${selected.cost} ⚡)` : `Insufficient Sparks (${selected.cost} ⚡)`}
               </BrutalButton>
             )}
+          </div>
+        );
+      })()}
+
+      {/* FIRST-OPEN TOUR (and the ? button) */}
+      {tourStep !== null && (() => {
+        const st = BOARD_TOUR[tourStep];
+        const last = tourStep === BOARD_TOUR.length - 1;
+        return (
+          <div className="absolute inset-0 z-[60] bg-[#1A1A1A]/60 flex items-center justify-center p-4" role="dialog" aria-label="How the board works">
+            <div className="w-full max-w-[340px] bg-[#FDE68A] text-[#1A1A1A] border-[3px] border-[#1A1A1A] rounded-xl shadow-[5px_5px_0px_#1A1A1A] p-4 animate-pop-in">
+              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-[0.16em] text-[#7F1D1D]">
+                <span>Channels tour</span><span>{tourStep + 1} / {BOARD_TOUR.length}</span>
+              </div>
+              <div className="font-serif font-black text-xl leading-tight mt-1">{st.icon} {st.title}</div>
+              <p className="font-sans font-semibold text-[14px] leading-snug mt-1.5">{st.body}</p>
+              <BrutalButton tone="ink" className="mt-3 py-2 w-full" onClick={() => (last ? endTour() : setTourStep(tourStep + 1))}>{last ? 'Got it' : 'Next'}</BrutalButton>
+              <div className="flex justify-between mt-1">
+                <button onClick={() => setTourStep(Math.max(0, tourStep - 1))} disabled={tourStep === 0} className="min-h-[44px] px-1 text-[12px] font-black uppercase tracking-wider underline disabled:opacity-0 cursor-pointer">Back</button>
+                <button onClick={endTour} className="min-h-[44px] px-1 text-[12px] font-black uppercase tracking-wider underline text-[#7F1D1D] cursor-pointer">Skip tour</button>
+              </div>
+            </div>
           </div>
         );
       })()}

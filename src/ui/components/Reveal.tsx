@@ -13,6 +13,14 @@ export const REVEALS: Record<RevealId, { title: string; body: string; hint?: str
   evidence: { title: '🧾 Evidence', body: 'A real file is ready. Leak it and Doubt drops.', hint: 'evidence', align: 'left', side: 'above' },
   defense:  { title: '🛡 Defense', body: 'Spend ⚡ here to cool the Heat down.', align: 'right', side: 'above' }
 };
+// The same four reveals in a campaign's words.
+const CAMPAIGN_REVEALS: Record<RevealId, { title: string; body: string }> = {
+  heat:     { title: '📣 Backlash', body: 'Critics and regulators are noticing. At 100% the campaign is shut down.' },
+  meters:   { title: '🛡 Opposition', body: 'The other side is fighting back. At 100% the message is dead.' },
+  evidence: { title: '🧾 Proof', body: 'Real proof is ready. Share it and skepticism drops.' },
+  defense:  { title: '🛡 Protect', body: 'Spend ⚡ here to calm the backlash down.' }
+};
+
 const ORDER: RevealId[] = ['heat', 'meters', 'evidence', 'defense'];
 const KEY = 'rumor_reveals_seen';
 const SHOW_MS = 6500;
@@ -61,8 +69,8 @@ export const useReveals = (visible: Record<RevealId, boolean>, enabled: boolean,
 };
 
 /** Wraps an element. While `on`, it shakes, wears a ring and a NEW stamp, and has a pointer and a caption. */
-export const Reveal: React.FC<{ id: RevealId; on: boolean; onDone: () => void; className?: string; children: React.ReactNode }> = ({ id, on, onDone, className = '', children }) => {
-  const r = REVEALS[id];
+export const Reveal: React.FC<{ id: RevealId; on: boolean; onDone: () => void; className?: string; campaign?: boolean; children: React.ReactNode }> = ({ id, on, onDone, className = '', campaign = false, children }) => {
+  const r = campaign ? { ...REVEALS[id], ...CAMPAIGN_REVEALS[id] } : REVEALS[id];
   const pos = r.align === 'left' ? 'left-0' : r.align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2';
   return (
     <div className={`relative ${className}`} onPointerDown={on ? onDone : undefined}>

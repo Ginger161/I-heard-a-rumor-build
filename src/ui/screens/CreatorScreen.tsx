@@ -20,13 +20,13 @@ import { getTarget } from '../../engine/data/targets';
 const STEPS = ['Who', 'Pressure', 'Fighting style', 'Powers', 'World', 'Test'] as const;
 
 const INPUT = 'w-full bg-[var(--m-surface2)] border-2 border-[var(--m-line)] rounded-md px-3 py-2.5 text-[14px] font-sans min-h-[44px] outline-none focus:border-[var(--m-accent)]';
-const LABEL = 'block text-[10px] font-black uppercase tracking-[0.18em] text-[var(--m-ink)]/65 mb-1';
+const LABEL = 'block text-[10px] font-black uppercase tracking-[0.18em] text-[var(--m-ink)]/72 mb-1';
 const CARD = 'bg-[var(--m-surface)] border-2 border-[var(--m-line)] rounded-lg p-3';
 const CHIP = (on: boolean) => `min-h-[44px] px-2.5 py-1.5 rounded-lg border-2 border-[var(--m-line)] text-[12px] font-black leading-tight text-left cursor-pointer transition-all ${on ? 'bg-[var(--m-accent)] text-[var(--m-accent-ink)] shadow-[2px_2px_0px_var(--m-accent2)]' : 'bg-[var(--m-surface2)] text-[var(--m-ink)] shadow-[2px_2px_0px_var(--m-line)]'}`;
 
 const Field: React.FC<{ label: string; value: string; max: number; onChange: (v: string) => void; area?: boolean; placeholder?: string }> = ({ label, value, max, onChange, area, placeholder }) => (
   <label className="block">
-    <span className={LABEL}>{label} <span className="text-[var(--m-ink)]/35 normal-case tracking-normal">{value.length}/{max}</span></span>
+    <span className={LABEL}>{label} <span className="text-[var(--m-ink)]/72 normal-case tracking-normal">{value.length}/{max}</span></span>
     {area
       ? <textarea className={`${INPUT} resize-none h-[72px]`} value={value} maxLength={max} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
       : <input className={INPUT} value={value} maxLength={max} placeholder={placeholder} onChange={e => onChange(e.target.value)} />}
@@ -35,7 +35,7 @@ const Field: React.FC<{ label: string; value: string; max: number; onChange: (v:
 
 const Slider: React.FC<{ label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (v: number) => void }> = ({ label, value, min, max, step = 1, unit = '', onChange }) => (
   <label className="block">
-    <span className="flex justify-between text-[11px] font-black uppercase tracking-wider text-[var(--m-ink)]/70"><span>{label}</span><span className="text-[var(--m-accent)]">{value}{unit}</span></span>
+    <span className="flex justify-between text-[11px] font-black uppercase tracking-wider text-[var(--m-ink)]/72"><span>{label}</span><span className="text-[var(--m-accent-text)]">{value}{unit}</span></span>
     <input type="range" className="w-full h-9 accent-[var(--m-accent)] cursor-pointer" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} />
   </label>
 );
@@ -207,7 +207,7 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
                     })}
                   </div>
                   <input className={INPUT} value={sc.title} maxLength={100} placeholder="The headline of the scandal" onChange={e => set({ scandals: draft.scandals.map((o, j) => (j === i ? { ...o, title: e.target.value } : o)) })} />
-                  {draft.scandals.length > 1 && <button onClick={() => set({ scandals: draft.scandals.filter((_, j) => j !== i) })} className="mt-1.5 min-h-[44px] text-[12px] font-black uppercase text-[var(--m-accent)] underline cursor-pointer">Remove</button>}
+                  {draft.scandals.length > 1 && <button onClick={() => set({ scandals: draft.scandals.filter((_, j) => j !== i) })} className="mt-1.5 min-h-[44px] text-[12px] font-black uppercase text-[var(--m-accent-text)] underline cursor-pointer">Remove</button>}
                 </div>
               ))}
               {draft.scandals.length < 3 && (
@@ -309,15 +309,15 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
             return (
               <div key={i} className={CARD}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-[var(--m-accent)]">Power {i + 1}</span>
-                  {draft.abilities.length > 1 && <button onClick={() => set({ abilities: draft.abilities.filter((_, j) => j !== i) })} className="min-h-[44px] px-2 text-[12px] font-black uppercase text-[var(--m-accent)] underline cursor-pointer">Remove</button>}
+                  <span className="text-[11px] font-black uppercase tracking-widest text-[var(--m-accent-text)]">Power {i + 1}</span>
+                  {draft.abilities.length > 1 && <button onClick={() => set({ abilities: draft.abilities.filter((_, j) => j !== i) })} className="min-h-[44px] px-2 text-[12px] font-black uppercase text-[var(--m-accent-text)] underline cursor-pointer">Remove</button>}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {ABILITY_KINDS.map(k => (
                     <button key={k} onClick={() => setAbility(i, { ...defaultAbility(k) })} className={CHIP(a.kind === k)}>{ABILITY_LABEL[k].icon} {ABILITY_LABEL[k].name}</button>
                   ))}
                 </div>
-                <div className="text-[11px] font-sans text-[var(--m-ink)]/70 mb-1">{ABILITY_LABEL[a.kind].blurb}</div>
+                <div className="text-[11px] font-sans text-[var(--m-ink)]/72 mb-1">{ABILITY_LABEL[a.kind].blurb}</div>
                 <Slider label={`Strength (${r.unit})`} min={r.min} max={r.max} value={a.strength} onChange={v => setAbility(i, { strength: v })} />
                 <Slider label="Every (days)" min={3} max={14} value={a.every} onChange={v => setAbility(i, { every: v })} />
                 <Slider label="First used on day" min={3} max={20} value={a.start} onChange={v => setAbility(i, { start: v })} />
@@ -338,7 +338,7 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
                     <Field label="Stamp" value={a.stamp} max={36} onChange={v => setAbility(i, { stamp: v })} />
                     <Field label="Headline" value={a.headline} max={70} onChange={v => setAbility(i, { headline: v })} />
                     <Field label="Body (use {Target} for their name)" value={a.line} max={220} area onChange={v => setAbility(i, { line: v })} />
-                    <button onClick={() => setAbility(i, { ...ABILITY_WORDS[a.kind] })} className="min-h-[44px] text-[11px] font-black uppercase underline text-[var(--m-ink)]/60 cursor-pointer">Reset the words</button>
+                    <button onClick={() => setAbility(i, { ...ABILITY_WORDS[a.kind] })} className="min-h-[44px] text-[11px] font-black uppercase underline text-[var(--m-ink)]/72 cursor-pointer">Reset the words</button>
                   </div>
                 </details>
               </div>
@@ -367,9 +367,9 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
                     <select className={INPUT} value={o.eventId} onChange={e => set({ occurrences: (draft.occurrences ?? []).map((x, j) => (j === i ? { ...x, eventId: e.target.value } : x)) })}>
                       {EVENTS.filter(e => !e.id.startsWith('schemer')).map(e => <option key={e.id} value={e.id} disabled={(draft.occurrences ?? []).some((x, j) => j !== i && x.eventId === e.id)}>{e.headline.replace(/\{Target\}/g, 'the Target').replace(/\{zone\}/g, 'a region')}</option>)}
                     </select>
-                    <div className="text-[11px] font-sans text-[var(--m-ink)]/65 mt-1 mb-1">{ev?.body.replace(/\{Target\}/g, 'the Target').replace(/\{zone\}/g, 'a region').slice(0, 110)}…</div>
+                    <div className="text-[11px] font-sans text-[var(--m-ink)]/72 mt-1 mb-1">{ev?.body.replace(/\{Target\}/g, 'the Target').replace(/\{zone\}/g, 'a region').slice(0, 110)}…</div>
                     <Slider label="Happens on day" min={4} max={30} value={o.day} onChange={v => set({ occurrences: (draft.occurrences ?? []).map((x, j) => (j === i ? { ...x, day: v } : x)) })} />
-                    <button onClick={() => set({ occurrences: (draft.occurrences ?? []).filter((_, j) => j !== i) })} className="min-h-[44px] text-[12px] font-black uppercase text-[var(--m-accent)] underline cursor-pointer">Remove</button>
+                    <button onClick={() => set({ occurrences: (draft.occurrences ?? []).filter((_, j) => j !== i) })} className="min-h-[44px] text-[12px] font-black uppercase text-[var(--m-accent-text)] underline cursor-pointer">Remove</button>
                   </div>
                 );
               })}
@@ -394,7 +394,7 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
             <div className={CARD}>
               <div className="text-[13px] font-black mb-2">{progress.label}</div>
               <div className="h-4 border-2 border-[var(--m-line)] rounded-full bg-[var(--m-surface2)] overflow-hidden"><div className="h-full bg-[var(--m-accent)] transition-all" style={{ width: `${Math.round(progress.p * 100)}%` }} /></div>
-              <div className="text-[11px] font-sans text-[var(--m-ink)]/60 mt-1.5">This takes a few seconds. Keep this screen open.</div>
+              <div className="text-[11px] font-sans text-[var(--m-ink)]/72 mt-1.5">This takes a few seconds. Keep this screen open.</div>
             </div>
           ) : (
             <BrutalButton tone="ink" disabled={validation.errors.length > 0} onClick={runCheck}>🤖 {report ? 'Run the bot check again' : 'Run the bot check'}</BrutalButton>
@@ -458,11 +458,11 @@ export const CreatorScreen: React.FC<Props> = ({ profileEnvelopes, spendEnvelope
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="text-[13px] font-black">{wasPublished ? 'Update this Target' : 'Publish this Target'}</div>
-                <div className="text-[11px] font-sans text-[var(--m-ink)]/70 leading-snug">{wasPublished ? 'Already published: updating is free.' : report?.ok && report.verdict === 'too_hard' ? 'Make it fair first, then you can publish.' : report?.ok ? `Costs ${fee} ✉️ (you have ${profileEnvelopes}).` : 'Run the bot check to see the cost.'}</div>
+                <div className="text-[11px] font-sans text-[var(--m-ink)]/72 leading-snug">{wasPublished ? 'Already published: updating is free.' : report?.ok && report.verdict === 'too_hard' ? 'Make it fair first, then you can publish.' : report?.ok ? `Costs ${fee} ✉️ (you have ${profileEnvelopes}).` : 'Run the bot check to see the cost.'}</div>
               </div>
               <span className="font-black text-[15px]">✉️ {profileEnvelopes}</span>
             </div>
-            {report?.ok && report.verdict !== 'too_hard' && !wasPublished && profileEnvelopes < fee && <div className="text-[12px] font-bold text-[var(--m-accent)] mt-1">You need {fee - profileEnvelopes} more ✉️. Win cases to earn them, or make it simpler.</div>}
+            {report?.ok && report.verdict !== 'too_hard' && !wasPublished && profileEnvelopes < fee && <div className="text-[12px] font-bold text-[var(--m-accent-text)] mt-1">You need {fee - profileEnvelopes} more ✉️. Win cases to earn them, or make it simpler.</div>}
             <div className="grid grid-cols-2 gap-2 mt-2">
               <BrutalButton tone="paper" onClick={saveDraft}>💾 Save draft</BrutalButton>
               <BrutalButton tone="green" disabled={!canPublish} onClick={publish}>{wasPublished ? 'Update' : 'Publish'}</BrutalButton>
@@ -499,7 +499,7 @@ export const Shell: React.FC<{ title: string; onBack: () => void; envelopes: num
     <div className="relative flex-shrink-0 bg-[var(--m-sunk)] text-[var(--m-ink)] px-3 py-2 flex items-center gap-3 border-b-4 border-[var(--m-accent)]">
       <button onClick={() => { sfx.play('click'); onBack(); }} className="min-h-[44px] px-3 text-[13px] font-black uppercase tracking-wider bg-[var(--m-surface)] text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-md cursor-pointer">← Back</button>
       <div className="flex-1 min-w-0">
-        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--m-accent2)]">Arena • Create a Target</div>
+        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--m-accent2)]">Arena • Create a Target</div>
         <div className="font-serif font-black text-[16px] leading-tight truncate">{title}</div>
       </div>
       <span className="bg-[var(--m-surface2)] text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded px-1.5 py-1 text-[11px] font-black">✉️ {envelopes}</span>

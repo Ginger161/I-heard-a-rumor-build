@@ -46,7 +46,7 @@ export const NigeriaMap: React.FC<Props> = ({ width, fillFor, strokeFor, strokeW
   const height = (width * MAP_H) / MAP_W;
   // fillFor/strokeFor change identity every frame, so memo is cheap insurance for static scenes only
   const states = useMemo(
-    () => <States fillFor={fillFor} strokeFor={strokeFor} strokeWidth={strokeWidth} />,
+    () => <g filter="url(#mapgrain)"><States fillFor={fillFor} strokeFor={strokeFor} strokeWidth={strokeWidth} /></g>,
     [fillFor, strokeFor, strokeWidth],
   );
   return (

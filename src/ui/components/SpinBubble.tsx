@@ -38,7 +38,7 @@ export const SpinBubble: React.FC<SpinBubbleProps> = ({ ticksRemaining, lifetime
           <path d="M3 11l18-5v12L3 14v-3z" />
           <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
         </svg>
-        <span className="text-[7px] font-black text-[#8B0000] tracking-wider">SPIN</span>
+        <span className="text-[10px] font-black text-[#8B0000] tracking-wider">SPIN</span>
       </button>
       <svg className="absolute inset-0 -rotate-90 pointer-events-none" width="44" height="44" viewBox="0 0 44 44">
         <circle

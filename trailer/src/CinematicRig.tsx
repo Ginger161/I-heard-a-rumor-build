@@ -9,6 +9,8 @@ type RigProps = {
   /** unique per scene: SVG filter ids must not collide */
   id: string;
   cam: Cam;
+  /** the same camera one frame earlier: the difference drives directional motion blur */
+  camPrev?: Cam;
   lamp: Lamp;
   /** local frames where something heavy lands: drives shake + chromatic aberration burst */
   impacts?: number[];
@@ -33,6 +35,7 @@ type RigProps = {
 export const CinematicRig: React.FC<RigProps> = ({
   id,
   cam,
+  camPrev,
   lamp,
   impacts = [],
   hud,
@@ -65,6 +68,14 @@ export const CinematicRig: React.FC<RigProps> = ({
   const ry = (cam.ry ?? 0) + jx * e * 0.4;
   const rz = (cam.rz ?? 0) + jr * e * 0.7;
 
+  // motion blur: smear along the direction the camera (and any impact shake) is travelling
+  const pv = camPrev ?? cam;
+  const d = (k: keyof Cam) => Math.abs((cam[k] ?? 0) - (pv[k] ?? 0));
+  const shakeSmear = e * amp * 0.1;
+  const mbx = Math.min(9 * S, (d('tx') + d('rz') * 9 * S + d('ry') * 14 * S) * 0.3 + d('tz') * 0.05 + shakeSmear);
+  const mby = Math.min(9 * S, (d('ty') + d('rx') * 14 * S) * 0.3 + d('tz') * 0.05 + shakeSmear);
+  const mb = mbx > 0.35 || mby > 0.35;
+
   const ca = Math.max(0, e - 0.12) * 7.5 * S;
   const filters: string[] = [];
   if (ca > 0.4) filters.push(`url(#ca-${id})`);
@@ -92,6 +103,9 @@ export const CinematicRig: React.FC<RigProps> = ({
             <feBlend in="ro" in2="g" mode="screen" result="rg" />
             <feBlend in="rg" in2="bo" mode="screen" />
           </filter>
+          <filter id={`mb-${id}`} x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur stdDeviation={`${mbx} ${mby}`} />
+          </filter>
           <filter id={`whip-${id}`} x="-20%" y="-5%" width="140%" height="110%">
             <feGaussianBlur stdDeviation={`${whipBlur} 0`} />
           </filter>
@@ -103,7 +117,7 @@ export const CinematicRig: React.FC<RigProps> = ({
         style={{
           perspective: 1400,
           perspectiveOrigin: '50% 50%',
-          filter: stageBlur > 0.2 ? `blur(${stageBlur}px)` : undefined,
+          filter: [mb ? `url(#mb-${id})` : "", stageBlur > 0.2 ? `blur(${stageBlur}px)` : ""].filter(Boolean).join(" ") || undefined,
         }}
       >
         <div

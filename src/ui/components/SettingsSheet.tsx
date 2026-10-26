@@ -23,7 +23,7 @@ interface Props {
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="border-2 border-[#1A1A1A] rounded-lg bg-white/70 p-3">
-    <div className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8B0000] mb-2">{title}</div>
+    <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8B0000] mb-2">{title}</div>
     <div className="flex flex-col gap-2.5">{children}</div>
   </div>
 );
@@ -136,7 +136,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
         <PaperGrain />
         <div className="relative flex items-center justify-between px-4 pt-3 pb-2 border-b-2 border-[#1A1A1A] flex-shrink-0">
           <div>
-            <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Preferences</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Preferences</div>
             <div className="font-serif font-black text-xl leading-none">Settings</div>
           </div>
           <button onClick={onClose} aria-label="Close settings" className="w-11 h-11 rounded-full border-2 border-[#1A1A1A] bg-white font-black cursor-pointer">✕</button>
@@ -163,7 +163,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
                 >{st.name}</button>
               ))}
             </div>
-            <div className="text-[10px] font-sans text-slate-500 -mt-1">{STATIONS.find(x => x.id === s.musicStyle)?.blurb}</div>
+            <div className="text-[10px] font-sans text-slate-600 -mt-1">{STATIONS.find(x => x.id === s.musicStyle)?.blurb}</div>
             <div className="text-[11px] font-sans">Now playing: <b>{playingId ? (getTrack(playingId)?.name ?? playingId) : 'nothing yet'}</b></div>
             <button onClick={() => setJukebox(v => !v)} aria-expanded={jukebox} className="text-left text-[11px] font-black uppercase tracking-wider underline cursor-pointer">{jukebox ? '▾ Hide the jukebox' : '▸ Open the jukebox'} ({TRACKS.length} tracks)</button>
             {jukebox && (
@@ -179,7 +179,7 @@ export const SettingsSheet: React.FC<Props> = ({ profile, inMatch, onClose, onRe
                       >{active ? '■' : '▶'}</button>
                       <div className="min-w-0 flex-1">
                         <div className="text-[12px] font-bold leading-tight truncate">{tr.name}</div>
-                        <div className="text-[10px] font-sans text-slate-500 leading-snug truncate">{tr.genre} • {tr.bpm} BPM • {tr.blurb}</div>
+                        <div className="text-[10px] font-sans text-slate-600 leading-snug truncate">{tr.genre} • {tr.bpm} BPM • {tr.blurb}</div>
                       </div>
                     </li>
                   );

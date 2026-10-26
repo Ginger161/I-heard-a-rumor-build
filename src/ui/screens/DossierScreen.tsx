@@ -19,6 +19,8 @@ import { getTarget } from '../../engine/data/targets';
 import { sfx } from '../audio';
 import { eggTap } from '../egg';
 import { PremiumSheet } from '../components/PremiumSheet';
+import { HowToPlay } from '../components/HowToPlay';
+import { vocabFor } from '../../engine/campaigns';
 import { usePremium } from '../usePremium';
 import { STORY_CHAPTERS } from '../../engine/data/story';
 import { chaptersWon, seasonComplete } from '../../engine/story';
@@ -45,6 +47,7 @@ interface DossierProps {
   onImportProgress: (raw: unknown) => boolean;
   onOpenBoards?: () => void;
   onOpenArena?: () => void;
+  onOpenCampaigns?: () => void;
   wide?: boolean;   // desktop: a three-pane layout (your desk, the roster, the case file)
 }
 
@@ -57,7 +60,7 @@ const LockIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' 
 
 const Stars: React.FC<{ n: number; className?: string }> = ({ n, className = '' }) => (
   <span className={`tracking-tight ${className}`} aria-label={`${n} of 3 stars`}>
-    {[1, 2, 3].map(i => <span key={i} className={i <= n ? 'text-[#B45309]' : 'text-[#1A1A1A]/20'}>★</span>)}
+    {[1, 2, 3].map(i => <span key={i} className={i <= n ? 'text-[#92400E]' : 'text-[#1A1A1A]/72'}>{i <= n ? '★' : '☆'}</span>)}
   </span>
 );
 
@@ -94,7 +97,7 @@ const DeskAside: React.FC<{ profile: MetaProfile; onOpenPerks: () => void; onOpe
         {[['Cleared', cleared], ['Stars', stars], ['Envelopes', profile.envelopes]].map(([l, v]) => (
           <div key={String(l)} className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-md py-2">
             <div className="font-mono font-black text-[18px] leading-none">{v}</div>
-            <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/55 mt-1">{l}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72 mt-1">{l}</div>
           </div>
         ))}
       </div>
@@ -111,7 +114,7 @@ const DeskAside: React.FC<{ profile: MetaProfile; onOpenPerks: () => void; onOpe
         </ul>
       </div>
       <div className="bg-[#F4F1EA] border-2 border-dashed border-[#1A1A1A] rounded-md px-3 py-2">
-        <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/55">Equipped perk</div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">Equipped perk</div>
         <div className="text-[12px] font-bold leading-tight">{equipped ? equipped.name : 'None'}</div>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -127,9 +130,10 @@ const DeskAside: React.FC<{ profile: MetaProfile; onOpenPerks: () => void; onOpe
 };
 
 export const DossierScreen: React.FC<DossierProps> = ({
-  profile, climateId, daily, onStartDaily, unlockAll, onStart, onReset, onEraseProgress, onBribe, onBuyTier, onBuyPerk, onEquipPerk, onStartTraining, onImportProgress, onOpenStory, onOpenBoards, onOpenArena, wide = false
+  profile, climateId, daily, onStartDaily, unlockAll, onStart, onReset, onEraseProgress, onBribe, onBuyTier, onBuyPerk, onEquipPerk, onStartTraining, onImportProgress, onOpenStory, onOpenBoards, onOpenArena, onOpenCampaigns, wide = false
 }) => {
   const settings = useSettings();
+  const [howToOpen, setHowToOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [folder, setFolder] = useState<Folder>(1);
@@ -170,19 +174,20 @@ export const DossierScreen: React.FC<DossierProps> = ({
   // Small print and reset controls: at the foot of the case file on desktop, inside the menu on a phone.
   const footer = (
     <>
-      {SHOW_DISCLAIMER && <div className="text-[8px] font-sans italic text-center text-[#1A1A1A]/55 leading-tight">{PARODY_DISCLAIMER}</div>}
+      {SHOW_DISCLAIMER && <div className="text-[10px] font-sans italic text-center text-[#1A1A1A]/72 leading-tight">{PARODY_DISCLAIMER}</div>}
 
-      <div className="flex items-center justify-center gap-3 text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50"><a href="./privacy.html" target="_blank" rel="noopener" className="underline">Privacy</a><a href="./terms.html" target="_blank" rel="noopener" className="underline">Terms</a></div>
+      <div className="flex items-center justify-center gap-3 text-[10px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/72"><a href="./privacy.html" target="_blank" rel="noopener" className="underline">Privacy</a><a href="./terms.html" target="_blank" rel="noopener" className="underline">Terms</a></div>
 
       {/* RESET */}
       <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
         {confirm === 'none' && (
           <>
-            {wide && <button onClick={onStartTraining} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">? How to play</button>}
-            {wide && <button onClick={() => setGuideOpen(true)} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">📖 Field Guide</button>}
-            <button onClick={() => setConfirm('save')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">New Investigation / Reset saved game</button>
-            <button onClick={() => setConfirm('progress')} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/50 underline cursor-pointer">Erase progress</button>
-            <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">Start over from scratch…</button>
+            {wide && <button onClick={() => setHowToOpen(true)} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">❓ How to play</button>}
+            {wide && <button onClick={onStartTraining} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">🎓 Practice case</button>}
+            {wide && <button onClick={() => setGuideOpen(true)} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">📖 Field Guide</button>}
+            <button onClick={() => setConfirm('save')} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/72 underline cursor-pointer">New Investigation / Reset saved game</button>
+            <button onClick={() => setConfirm('progress')} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#1A1A1A]/72 underline cursor-pointer">Erase progress</button>
+            <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#8B0000] underline cursor-pointer">Start over from scratch…</button>
           </>
         )}
         {confirm !== 'none' && (
@@ -203,17 +208,17 @@ export const DossierScreen: React.FC<DossierProps> = ({
       {/* MASTHEAD */}
       <div className="relative flex-shrink-0 px-3 pt-2.5 pb-2 border-b-4 border-double border-[#1A1A1A] flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[8px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Classified // Case Files</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000]">Classified // Case Files</div>
           <h1 onClick={eggTap} className={wide ? 'text-[30px] whitespace-nowrap font-black uppercase tracking-tight leading-none' : 'text-[17px] whitespace-nowrap font-black uppercase tracking-tight leading-none'}>I Heard A Rumor</h1>
-          <div className="text-[8px] font-sans italic text-[#1A1A1A]/60 leading-tight mt-0.5 truncate">{tagline}</div>
+          <div className="text-[10px] font-sans italic text-[#1A1A1A]/72 leading-tight mt-0.5 truncate">{tagline}</div>
         </div>
         {wide ? (
           <div className="flex items-center gap-1 flex-shrink-0">
             <button onClick={() => { sfx.play('click'); setSheet('premium'); }} aria-label="Gist Pass" className={`text-[11px] border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer ${premium ? 'bg-[#FDE68A]' : 'bg-white'}`}>⭐</button>
             <span className="bg-[#E6D5B8] border-2 border-[#1A1A1A] rounded px-1.5 py-1 text-[10px] shadow-[2px_2px_0px_#1A1A1A]" aria-label="Brown Envelopes"><Envelope n={profile.envelopes} /></span>
             <button onClick={() => { sfx.play('click'); setSettingsOpen(true); }} aria-label="Settings" className="text-[11px] bg-white border-2 border-[#1A1A1A] rounded px-1.5 py-0.5 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer">⚙</button>
-            <button onClick={() => setSheet('perks')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Perks</button>
-            <button onClick={() => setSheet('archive')} className="text-[8px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Archive</button>
+            <button onClick={() => setSheet('perks')} className="text-[10px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Perks</button>
+            <button onClick={() => setSheet('archive')} className="text-[10px] font-black uppercase tracking-wider bg-white border-2 border-[#1A1A1A] rounded px-1 py-1 shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">Archive</button>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -231,7 +236,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
           <div className="flex items-center gap-2 mt-4 mb-1.5 px-0.5">
             <span className="text-[11px] font-black uppercase tracking-[0.22em] text-[#1A1A1A]">⚡ Arcade</span>
             <span className="flex-1 h-px bg-[#1A1A1A]/25" />
-            <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/55">Quick standalone cases</span>
+            <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/72">Quick standalone cases</span>
           </div>
           <button
             onClick={() => { if (!dailyDone) { sfx.play('click'); onStartDaily(); } }}
@@ -239,16 +244,25 @@ export const DossierScreen: React.FC<DossierProps> = ({
             className={`w-full text-left border-2 border-[#1A1A1A] rounded-lg px-3 py-2 flex items-center justify-between gap-2 min-h-[48px] ${dailyDone ? 'bg-[#D1FAE5] cursor-default' : 'bg-[#FDE68A] shadow-[2px_2px_0px_#1A1A1A] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'}`}
           >
             <div className="min-w-0">
-              <div className="text-[9px] font-black uppercase tracking-widest text-[#1A1A1A]/60 truncate">📅 Daily case{streak > 0 ? ` • 🔥 ${streak}-day streak` : ''}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72 truncate">📅 Daily case{streak > 0 ? ` • 🔥 ${streak}-day streak` : ''}</div>
               <div className="text-[13px] font-black leading-tight truncate">{dailyDone ? '✓ Done today' : dailyTarget.shortName}</div>
             </div>
             {!dailyDone && <span className="text-[11px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-2.5 py-1.5 whitespace-nowrap">Play +{dailyBonus(streak)}✉️</span>}
           </button>
 
+          {onOpenCampaigns && (
+            <button onClick={() => { sfx.play('click'); onOpenCampaigns(); }} data-mode="campaign" className="tex-campaign w-full mt-2 text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 min-h-[52px]">
+              <div className="min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--m-accent-text)]">📣 Campaigns • Spread something good</div>
+                <div className="text-[13px] font-black leading-tight">Health drives, civic drives, launches and myth-busters.</div>
+              </div>
+              <span className="text-[16px]">▶</span>
+            </button>
+          )}
           {onOpenArena && (
             <button onClick={() => { sfx.play('click'); onOpenArena(); }} data-mode="arena" className="tex-arena w-full mt-2 text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 min-h-[52px] shadow-[2px_2px_0px_var(--m-accent)] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
               <div className="min-w-0">
-                <div className="text-[9px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
                 <div className="text-[13px] font-black leading-tight">Build a Target. Beat your friends' Targets.</div>
               </div>
               <span className="text-[16px]">▶</span>
@@ -269,13 +283,13 @@ export const DossierScreen: React.FC<DossierProps> = ({
         <div className={`flex items-center gap-2 border-2 border-[#1A1A1A] rounded-lg px-2.5 py-1.5 ${dailyDone ? 'bg-[#D1FAE5]' : 'bg-[#FDE68A] shadow-[2px_2px_0px_#1A1A1A]'}`}>
           <span className="text-base" aria-hidden>📅</span>
           <div className="min-w-0 flex-1">
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/60">
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">
               Daily Case {streak > 0 ? `• 🔥 ${streak}-day streak` : ''}
             </div>
-            <div className="text-[11px] font-black leading-tight truncate">{dailyTarget.shortName} <span className="font-sans font-bold text-[#1A1A1A]/60">({dailyTarget.prRating}) {getClimate(daily.climateId).icon}</span></div>
+            <div className="text-[11px] font-black leading-tight truncate">{dailyTarget.shortName} <span className="font-sans font-bold text-[#1A1A1A]/72">({dailyTarget.prRating}) {getClimate(daily.climateId).icon}</span></div>
           </div>
           {dailyDone ? (
-            <span className="text-[9px] font-black uppercase tracking-wider text-[#065F46]">✓ Done today</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-[#065F46]">✓ Done today</span>
           ) : (
             <button onClick={onStartDaily} className="text-[11px] font-black uppercase tracking-wider bg-[#1A1A1A] text-[#FDE68A] rounded px-3 py-2 cursor-pointer whitespace-nowrap active:translate-y-[1px]">
               Play +{dailyBonus(streak)}✉️
@@ -283,11 +297,22 @@ export const DossierScreen: React.FC<DossierProps> = ({
           )}
         </div>
       </div>
+      {onOpenCampaigns && (
+        <div className="relative flex-shrink-0 px-3 pt-2">
+          <button onClick={() => { sfx.play('click'); onOpenCampaigns(); }} data-mode="campaign" className="tex-campaign w-full text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 shadow-[2px_2px_0px_var(--m-line)] min-h-[48px]">
+            <div className="min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-widest text-[var(--m-accent-text)]">📣 Campaigns • Spread something good</div>
+              <div className="text-[11px] font-black leading-tight">Health, civic, launches and myth-busters.</div>
+            </div>
+            <span>▶</span>
+          </button>
+        </div>
+      )}
       {onOpenArena && (
         <div className="relative flex-shrink-0 px-3 pt-2">
           <button onClick={() => { sfx.play('click'); onOpenArena(); }} data-mode="arena" className="tex-arena w-full text-left text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-lg px-3 py-2 flex items-center justify-between gap-2 shadow-[2px_2px_0px_var(--m-accent)] cursor-pointer active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
             <div className="min-w-0">
-              <div className="text-[8px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-[var(--m-accent2)]">⚔️ Arena • Player vs Player</div>
               <div className="text-[11px] font-black leading-tight">Build a Target. Beat your friends' Targets.</div>
             </div>
             <span>▶</span>
@@ -312,7 +337,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
                 onClick={() => pickFolder(f)}
                 aria-label={f === 'SPOTLIGHT' ? 'Creator Spotlight' : `Tier ${f}${open ? '' : ' (sealed)'}`}
                 className={`flex-1 min-h-[44px] py-2 border-2 border-[#1A1A1A] rounded-md font-black text-sm flex items-center justify-center gap-1 cursor-pointer transition-all ${
-                  active ? 'bg-[#1A1A1A] text-[#F4F1EA] shadow-[2px_2px_0px_#8B0000]' : open ? (f === 'SPOTLIGHT' ? 'bg-[#FDE68A]' : 'bg-white') : 'bg-[#D4CFC4] text-[#1A1A1A]/55'
+                  active ? 'bg-[#1A1A1A] text-[#F4F1EA] shadow-[2px_2px_0px_#8B0000]' : open ? (f === 'SPOTLIGHT' ? 'bg-[#FDE68A]' : 'bg-white') : 'bg-[#D4CFC4] text-[#1A1A1A]/72'
                 }`}
               >
                 {open ? folderLabel(f) : <><LockIcon className="w-3 h-3" />{f}</>}
@@ -322,14 +347,14 @@ export const DossierScreen: React.FC<DossierProps> = ({
         </div>
         <div className="mt-1.5 flex items-baseline justify-between px-0.5 gap-2">
           <div className="text-[11px] font-black uppercase tracking-wider">{tierOpen ? FOLDER_INFO[folder].name : 'Sealed Files'}</div>
-          <div className="text-[9px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/55 whitespace-nowrap">
+          <div className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/72 whitespace-nowrap">
             {!isTier ? 'Always open' : tierOpen
               ? (folder === 5 ? `${starsInTier(profile, 5 as Tier)}★ earned` : `${starsInTier(profile, folder as Tier)}/${STARS_TO_UNLOCK_TIER}★ opens next tier`)
               : 'Locked'}
           </div>
         </div>
         {wide
-          ? <div className="text-[10px] font-sans text-[#1A1A1A]/65 px-0.5 mb-1.5">
+          ? <div className="text-[10px] font-sans text-[#1A1A1A]/72 px-0.5 mb-1.5">
               {tierOpen ? FOLDER_INFO[folder].blurb : 'The identities in this folder are hidden until you earn or buy access.'}
             </div>
           : <div className="mb-1" />}
@@ -354,24 +379,24 @@ export const DossierScreen: React.FC<DossierProps> = ({
               >
                <div className="relative aspect-[6/7] bg-[#D9CBB0] border-b-2 border-[#1A1A1A] overflow-hidden">
                   <Avatar target={t} locked={!open} emotion={stars > 0 ? 'DEFEATED' : 'NEUTRAL'} className="w-full h-full" />
-                  {open && <span className="absolute top-1 left-1 text-[9px] font-sans font-black tracking-wider bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-[1px] rounded-sm">{t.prRating}</span>}
-                  {!open && <span className="absolute top-1 left-1 text-[#1A1A1A]/60"><LockIcon className="w-3.5 h-3.5" /></span>}
-                  {bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#B45309] text-[#B45309] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">UNSEALED</span>}
-                  {open && stars > 0 && !bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#065F46] text-[#065F46] bg-[#F4F1EA] text-[7px] font-black tracking-widest px-1 py-[1px]">CLOSED</span>}
+                  {open && <span className="absolute top-1 left-1 text-[10px] font-sans font-black tracking-wider bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-[1px] rounded-sm">{t.prRating}</span>}
+                  {!open && <span className="absolute top-1 left-1 text-[#1A1A1A]/72"><LockIcon className="w-3.5 h-3.5" /></span>}
+                  {bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#B45309] text-[#92400E] bg-[#F4F1EA] text-[10px] font-black tracking-widest px-1 py-[1px]">UNSEALED</span>}
+                  {open && stars > 0 && !bribed && <span className="absolute top-1 right-1 rotate-[8deg] border-2 border-[#065F46] text-[#065F46] bg-[#F4F1EA] text-[10px] font-black tracking-widest px-1 py-[1px]">CLOSED</span>}
                 </div>
                 <div className="px-1.5 py-1.5 min-w-0">
                   {open ? (
                     <>
                       <div className="font-black text-[11px] leading-tight truncate">{t.shortName}</div>
-                      <div className="flex items-center justify-between gap-1 mt-0.5">
-                        <span className="text-[9px] font-sans text-[#1A1A1A]/65 truncate">{t.title}</span>
+                      <div className="flex items-start justify-between gap-1 mt-0.5">
+                        <span className="text-[10px] font-sans leading-tight text-[#1A1A1A]/72 min-w-0 break-words">{t.title}</span>
                         <Stars n={stars} className="text-[10px] flex-shrink-0" />
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="font-black text-[11px] leading-tight text-[#1A1A1A]/45 tracking-widest">? ? ?</div>
-                      <div className="text-[8px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/40 mt-0.5">Sealed file</div>
+                      <div className="font-black text-[11px] leading-tight text-[#1A1A1A]/72 tracking-widest">? ? ?</div>
+                      <div className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#1A1A1A]/72 mt-0.5">Sealed file</div>
                     </>
                   )}
                 </div>
@@ -389,7 +414,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
         {!wide && (
           <div className="sticky top-0 z-10 -mx-4 flex-shrink-0 bg-[#1A1A1A] text-[#F4F1EA] px-3 py-2.5 flex items-center gap-3 border-b-4 border-[#8B0000]">
             <button onClick={() => { sfx.play('click'); setFileOpen(false); }} className="text-[13px] font-black uppercase tracking-wider bg-[#F4F1EA] text-[#1A1A1A] border-2 border-[#1A1A1A] rounded-md px-3 py-2 cursor-pointer">← Back</button>
-            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Classified // Case File</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FDE68A]">Classified // Case File</span>
           </div>
         )}
         {selectedOpen ? (
@@ -406,33 +431,33 @@ export const DossierScreen: React.FC<DossierProps> = ({
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 mt-1">
-                <span className="text-[9px] font-sans font-black bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-0.5 rounded-sm tracking-wider">PR RATING {selected.prRating}</span>
-                <span className="text-[9px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{selected.ai.defenseStyle.replace('_', ' ')}</span>
-                <span className="text-[9px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{selected.ai.temperament.replace('_', ' ')}</span>
-                <span className="text-[9px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{BALANCE.tier.days[selected.tier - 1]} DAYS</span>
+                <span className="text-[10px] font-sans font-black bg-[#1A1A1A] text-[#F4F1EA] px-1.5 py-0.5 rounded-sm tracking-wider">PR RATING {selected.prRating}</span>
+                <span className="text-[10px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{selected.ai.defenseStyle.replace('_', ' ')}</span>
+                <span className="text-[10px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{selected.ai.temperament.replace('_', ' ')}</span>
+                <span className="text-[10px] font-sans font-black bg-[#F4F1EA] border border-[#1A1A1A] px-1.5 py-0.5 rounded-sm tracking-wider">{BALANCE.tier.days[selected.tier - 1]} DAYS</span>
               </div>
               <div className="text-[10px] font-sans italic text-slate-700 leading-snug mt-1">{selected.personality}</div>
             </div>
 
             <div className="bg-[#1A1A1A] text-[#F4F1EA] px-2.5 py-2 rounded-sm">
-              <div className="text-[9px] font-black uppercase tracking-widest text-[#FDE68A]">Passive: {selected.passiveName}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#FDE68A]">Passive: {selected.passiveName}</div>
               <div className="text-[10px] font-sans leading-snug mt-0.5 text-slate-300 italic">{selected.passiveFlavor}</div>
               <ul className="mt-1 flex flex-col gap-0.5">
                 {describeTarget(selected).map(line => (
-                  <li key={line} className="text-[9px] font-sans leading-snug text-[#F4F1EA]">• {line}</li>
+                  <li key={line} className="text-[10px] font-sans leading-snug text-[#F4F1EA]">• {line}</li>
                 ))}
               </ul>
             </div>
 
             {playStyleOf(selected) && (
               <div className="bg-[#F4F1EA] border-2 border-[#8B0000] rounded-md px-2.5 py-2">
-                <div className="text-[9px] font-black uppercase tracking-widest text-[#8B0000]">Play style: {playStyleOf(selected)!.label}</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-[#8B0000]">Play style: {playStyleOf(selected)!.label}</div>
                 {playStyleOf(selected)!.hints.map(h => <div key={h} className="text-[11px] font-sans leading-snug mt-1">{h}</div>)}
               </div>
             )}
 
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest mb-1">Choose the scandal</div>
+              <div className="text-[10px] font-black uppercase tracking-widest mb-1">Choose the scandal</div>
               <div className="flex flex-col gap-1.5">
                 {selected.scandals.map((sd, i) => {
                   const active = i === scandalIdx;
@@ -444,29 +469,29 @@ export const DossierScreen: React.FC<DossierProps> = ({
                         active ? 'bg-[#1A1A1A] text-[#F4F1EA] shadow-[2px_2px_0px_#8B0000]' : 'bg-white'
                       }`}
                     >
-                      <div className={`text-[8px] font-black uppercase tracking-widest ${active ? 'text-[#FDE68A]' : 'text-[#B45309]'}`}>{SCANDALS[sd.category].label}</div>
+                      <div className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-[#FDE68A]' : 'text-[#92400E]'}`}>{SCANDALS[sd.category].label}</div>
                       <div className="text-[11px] font-bold leading-tight">{sd.title}</div>
                     </button>
                   );
                 })}
               </div>
-              <div className="text-[9px] font-sans font-bold uppercase tracking-wider text-[#065F46] mt-1.5">
+              <div className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#065F46] mt-1.5">
                 Matching channels get a ×1.35 Velocity &amp; Credibility bonus.
               </div>
             </div>
 
             <div className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-md px-2.5 py-1.5">
-              <div className="text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/55">Forecast for this case</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">Forecast for this case</div>
               <div className="text-[11px] font-bold leading-tight">{climate.icon} {climate.name}</div>
-              <div className="text-[9px] font-sans text-slate-600 leading-snug">{climate.blurb}{describeClimate(climate).length ? ` (${describeClimate(climate).join(', ')})` : ''}</div>
+              <div className="text-[10px] font-sans text-slate-600 leading-snug">{climate.blurb}{describeClimate(climate).length ? ` (${describeClimate(climate).join(', ')})` : ''}</div>
             </div>
 
             <div className="flex items-center justify-between gap-2 bg-[#F4F1EA] border-2 border-dashed border-[#1A1A1A] rounded-md px-2.5 py-1.5">
               <div className="min-w-0">
-                <div className="text-[8px] font-black uppercase tracking-widest text-[#1A1A1A]/55">Equipped perk</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A]/72">Equipped perk</div>
                 <div className="text-[11px] font-bold leading-tight truncate">{equipped ? equipped.name : 'None'}</div>
               </div>
-              <button onClick={() => setSheet('perks')} className="text-[9px] font-black uppercase tracking-wider underline cursor-pointer whitespace-nowrap">{equipped ? 'Change' : 'Browse'}</button>
+              <button onClick={() => setSheet('perks')} className="text-[10px] font-black uppercase tracking-wider underline cursor-pointer whitespace-nowrap">{equipped ? 'Change' : 'Browse'}</button>
             </div>
 
             <div className={wide ? '' : 'sticky bottom-0 z-10 -mx-4 mt-auto px-4 py-3 bg-[#EFEBE0] border-t-4 border-[#1A1A1A]'}>
@@ -484,7 +509,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
             </div>
             <div className="flex gap-1.5">
               {Array.from({ length: STARS_TO_UNLOCK_TIER }).map((_, i) => (
-                <span key={i} className={`text-base ${i < prevTierStars ? 'text-[#B45309]' : 'text-[#1A1A1A]/20'}`}>★</span>
+                <span key={i} className={`text-base ${i < prevTierStars ? 'text-[#92400E]' : 'text-[#1A1A1A]/72'}`}>{i < prevTierStars ? '★' : '☆'}</span>
               ))}
             </div>
             <div className="flex flex-col gap-2 w-full mt-1">
@@ -498,7 +523,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
                 </BrutalButton>
               )}
               {profile.envelopes < BALANCE.bribeTarget && (
-                <div className="text-[9px] font-sans font-bold uppercase tracking-wider text-[#8B0000]">Not enough Brown Envelopes. Win cases to earn more.</div>
+                <div className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#8B0000]">Not enough Brown Envelopes. Win cases to earn more.</div>
               )}
             </div>
           </div>
@@ -511,6 +536,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
       </div>
 
       {sheet === 'premium' && <PremiumSheet onClose={() => setSheet('none')} />}
+      {howToOpen && <HowToPlay vocab={vocabFor(null)} onClose={() => setHowToOpen(false)} />}
       {guideOpen && <FieldGuide onClose={() => setGuideOpen(false)} />}
 
       {settingsOpen && (
@@ -521,7 +547,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
       {!settings.tutorialDone && !settingsOpen && (
         <div className="absolute inset-0 z-50 bg-[#1A1A1A]/70 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
           <div role="dialog" aria-label="New here?" className="relative w-full max-w-[320px] bg-[#FDE68A] border-4 border-[#1A1A1A] rounded-2xl shadow-[8px_8px_0px_#1A1A1A] p-5 animate-pop-in">
-            <div className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8B0000]">New investigator?</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8B0000]">New investigator?</div>
             <div className="font-serif font-black text-2xl leading-tight mt-1">Learn the ropes in 2 minutes</div>
             <p className="text-[12px] font-sans leading-snug mt-2">A short guided case: you plant a rumour, buy a channel and see how Heat, Evidence and Spin work. Nothing in it counts, and you can skip it any time.</p>
             <div className="flex flex-col gap-2 mt-4">
@@ -541,7 +567,8 @@ export const DossierScreen: React.FC<DossierProps> = ({
             {onOpenBoards && <button onClick={() => { setSheet('none'); onOpenBoards(); }} className={`${MENU_BTN} col-span-2 bg-[#FDE68A]`}>🏆 Leaderboards</button>}
             <button onClick={() => setSheet('premium')} className={`${MENU_BTN} col-span-2 ${premium ? 'bg-[#D1FAE5]' : ''}`}>{premium ? '⭐ Supporter • thank you' : '⭐ Gist Pass'}</button>
             <button onClick={() => { setSheet('none'); setGuideOpen(true); }} className={MENU_BTN}>📖 Field Guide</button>
-            <button onClick={() => { setSheet('none'); onStartTraining(); }} className={MENU_BTN}>? How to play</button>
+            <button onClick={() => { setSheet('none'); setHowToOpen(true); }} className={MENU_BTN}>❓ How to play</button>
+            <button onClick={() => { setSheet('none'); onStartTraining(); }} className={MENU_BTN}>🎓 Practice case</button>
             <button onClick={() => { setSheet('none'); setSettingsOpen(true); }} className={`${MENU_BTN} col-span-2`}>⚙ Settings</button>
           </div>
           <div className="flex flex-col gap-2 pt-2 border-t-2 border-dashed border-[#1A1A1A]/30">{footer}</div>
@@ -552,17 +579,17 @@ export const DossierScreen: React.FC<DossierProps> = ({
       {sheet === 'archive' && (
         <SheetFrame title="Front-Page Archive" onClose={() => setSheet('none')}>
           {profile.archive.length === 0 && (
-            <div className="text-center text-xs font-bold uppercase tracking-widest text-[#1A1A1A]/50 py-8">No front pages yet. Take someone down.</div>
+            <div className="text-center text-xs font-bold uppercase tracking-widest text-[#1A1A1A]/72 py-8">No front pages yet. Take someone down.</div>
           )}
           {profile.archive.map((a, i) => (
             <div key={`${a.finishedAt}_${i}`} className="bg-[#F4F1EA] border-2 border-[#1A1A1A] rounded-lg p-3 shadow-[2px_2px_0px_#1A1A1A] rotate-[-0.3deg]">
               <div className="flex justify-between items-center">
-                <div className="text-[8px] font-black uppercase tracking-[0.25em] text-[#065F46]">Target disgraced • Day {a.day}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#065F46]">Target disgraced • Day {a.day}</div>
                 <Stars n={a.stars ?? 1} className="text-[11px]" />
               </div>
               <div className="font-serif font-black text-sm leading-tight mt-0.5">{a.targetName}</div>
               <div className="text-[11px] font-sans italic text-slate-600 mt-0.5">"{a.scandalTitle}"</div>
-              <div className="text-[9px] font-black uppercase tracking-wider text-[#1A1A1A]/50 mt-1">{a.believers.toFixed(0)}% believed • {new Date(a.finishedAt).toLocaleDateString()}</div>
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#1A1A1A]/72 mt-1">{a.believers.toFixed(0)}% believed • {new Date(a.finishedAt).toLocaleDateString()}</div>
             </div>
           ))}
         </SheetFrame>
@@ -582,7 +609,7 @@ export const DossierScreen: React.FC<DossierProps> = ({
               <div key={perk.id} className={`border-2 border-[#1A1A1A] rounded-lg p-3 flex flex-col gap-1.5 ${isEquipped ? 'bg-[#E6D5B8] shadow-[3px_3px_0px_#8B0000]' : 'bg-[#F4F1EA] shadow-[2px_2px_0px_#1A1A1A]'}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-black text-sm leading-tight">{perk.name}</div>
-                  {owned ? <span className="text-[8px] font-black tracking-widest border border-[#065F46] text-[#065F46] px-1 py-0.5 rounded-sm">OWNED</span> : <Envelope n={perk.cost} className="text-xs" />}
+                  {owned ? <span className="text-[10px] font-black tracking-widest border border-[#065F46] text-[#065F46] px-1 py-0.5 rounded-sm">OWNED</span> : <Envelope n={perk.cost} className="text-xs" />}
                 </div>
                 <div className="text-[10px] font-sans italic text-slate-600 leading-snug">{perk.blurb}</div>
                 <div className="text-[10px] font-sans font-bold leading-snug">{perk.effectText}</div>
