@@ -6,7 +6,7 @@ export const PAPER_GRAIN =
 // Subtle feTurbulence paper grain across paper surfaces (spec §1).
 export const PaperGrain: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div
-    className={`absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-multiply ${className}`}
+    className={`paper-grain absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-multiply ${className}`}
     style={{ backgroundImage: PAPER_GRAIN }}
   />
 );

@@ -10,7 +10,7 @@ import { SettingsSheet } from '../components/SettingsSheet';
 import { HintToast, Tutorial } from '../components/Tutorial';
 import { FieldGuide } from '../components/FieldGuide';
 import { accentOf } from '../theme';
-import { sfx } from '../audio';
+import { sfx, haptic } from '../audio';
 import { updateSettings } from '../settings';
 import { HowToPlay, howToSeen } from '../components/HowToPlay';
 import { vocabFor } from '../../engine/campaigns';
@@ -40,7 +40,7 @@ export const useLiveShared = (engine: GameEngine) => {
   }, [gameState.currentDay, gameState.hasPoppedFirstSpark, gameState.status]);
   useEffect(() => {
     if (gameState.status === 'WON') sfx.play('win');
-    else if (gameState.status === 'LOST_HEAT' || gameState.status === 'LOST_TIME' || gameState.status === 'LOST_COVERUP') sfx.play('lose');
+    else if (gameState.status === 'LOST_HEAT' || gameState.status === 'LOST_TIME' || gameState.status === 'LOST_COVERUP') { sfx.play('lose'); haptic([80, 50, 160, 50, 240]); if (gameState.status === 'LOST_HEAT') setTimeout(() => sfx.play('siren'), 700); }
   }, [gameState.status]);
 
   // Escape closes the top layer first (guide, settings, a desk or sheet), otherwise pauses or resumes the case.

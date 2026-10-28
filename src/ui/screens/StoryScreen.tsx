@@ -59,7 +59,7 @@ const Beat: React.FC<{ text: string; index: number }> = ({ text, index }) => {
     </div>
   );
   return biko ? (
-    <div key={index} className="animate-pop-in bg-[#DCF8C6] text-[var(--m-ink)] border-2 border-[var(--m-line)] rounded-2xl rounded-tl-sm p-3.5 shadow-[3px_3px_0px_var(--m-line)]">
+    <div key={index} className="animate-pop-in bg-[#DCF8C6] text-[#14231A] border-2 border-[#1A1A1A] rounded-2xl rounded-tl-sm p-3.5 shadow-[3px_3px_0px_var(--m-line)]">
       <div className="text-[10px] font-black uppercase tracking-widest text-[#065F46] mb-1">💬 Your intern</div>
       <p className="font-sans text-[13px] leading-snug">{text.replace(/^Your intern (says|whispers|slides your phone back to you)[,.]?\s*/i, '')}</p>
     </div>

@@ -1,0 +1,28 @@
+{
+  "name": "i-heard-a-rumor-gameplay-trailer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "record": "node scripts/record.mjs",
+    "stills": "node scripts/stills.mjs",
+    "audio": "node scripts/make-mix.mjs",
+    "render:landscape": "remotion render src/index.ts Gameplay-16x9 out/gameplay-16x9.mp4 --props=render-props.json --port=3421 --concurrency=3",
+    "render:portrait": "remotion render src/index.ts Gameplay-9x16 out/gameplay-9x16.mp4 --props=render-props.json --port=3421 --concurrency=3",
+    "render:all": "npm run render:landscape && npm run render:portrait"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "@remotion/google-fonts": "4.0.538",
+    "@svg-maps/nigeria": "^2.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

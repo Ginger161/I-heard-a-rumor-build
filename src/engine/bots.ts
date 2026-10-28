@@ -146,7 +146,7 @@ const scoreEffects = (effects: Effect[], cost: number): number => {
   return s;
 };
 
-export const play = (targetId: string, skill: Skill, seed: number, perkId: string | null = null, strategy?: Strategy) => {
+export const play = (targetId: string, skill: Skill, seed: number, perkId: string | null = null, strategy?: Strategy, onTick?: (s: GameState) => void) => {
   const rng = mulberry32(seed);
   const target = getTarget(targetId);
   let s: GameState = Actions.startMatch(targetId, target.scandals[0].category, perkId, target.climateId);
@@ -236,6 +236,7 @@ export const play = (targetId: string, skill: Skill, seed: number, perkId: strin
     act();
     s = SimulationEngine.processTick(s, rng);
     drainQueue();
+    onTick?.(s);
     peakJaded = Math.max(peakJaded, nationalJadedPct(s.states));
   }
   return {

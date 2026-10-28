@@ -19,6 +19,9 @@ import { getClimate } from '../../engine/data/climates';
 import { useSettings } from '../settings';
 import { LiveOverlays, useLiveShared } from '../live/shared';
 
+// Phones and tablets: heavy full-screen effects are swapped for cheaper look-alikes (see index.css, "phone performance").
+const TOUCH = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+
 const PILL =
   'flex-1 h-9 rounded-lg border-2 border-[var(--m-line)] shadow-[2px_2px_0px_var(--m-line)] flex items-center justify-center text-xs font-bold font-sans active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all';
 
@@ -96,8 +99,10 @@ export const LiveGameScreen: React.FC<{ engine: GameEngine }> = ({ engine }) => 
   );
 
   return (
-    <div ref={rootRef} className={`w-full h-full flex flex-col ${MODE_META[mode].tex} ${mode === 'story' ? 'fx-film' : ''} text-[#1A1A1A] font-serif overflow-hidden select-none relative transition-[filter] duration-1000`} style={{ filter: settings.vignette ? mood.filter : 'none' }}>
+    <div ref={rootRef} className={`w-full h-full flex flex-col ${MODE_META[mode].tex} ${mode === 'story' ? 'fx-film' : ''} text-[#1A1A1A] font-serif overflow-hidden select-none relative transition-[filter] duration-1000`} style={{ filter: settings.vignette && !TOUCH ? mood.filter : 'none' }}>
       <PaperGrain className="z-50" />
+      {/* A stale story drains colour. A CSS filter on the whole screen is too heavy for phones (every animation frame re-filters everything), so touch devices get the same drained look from a grey wash instead. */}
+      {settings.vignette && TOUCH && mood.filter !== 'none' && <div aria-hidden className="absolute inset-0 pointer-events-none z-[44] bg-[#8A8478] transition-opacity duration-1000" style={{ opacity: (1 - Number(/saturate\(([\d.]+)\)/.exec(mood.filter)?.[1] ?? 1)) * 0.5, mixBlendMode: 'normal' }} />}
 
       {/* MOOD OVERLAY: heat vignette, momentum glow and icy edge. Pure decoration; never blocks a tap. */}
       <div

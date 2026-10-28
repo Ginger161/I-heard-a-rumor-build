@@ -5,3 +5,5 @@ private/
 .env.local
 dist-offline/
 scratch/
+trailer*/out/
+trailer*/*.log

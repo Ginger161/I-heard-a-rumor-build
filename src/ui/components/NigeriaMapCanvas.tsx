@@ -213,7 +213,7 @@ export const NigeriaMapCanvas: React.FC<MapCanvasProps> = ({ gameState, ticking,
         className="w-full h-full absolute flex items-center justify-center"
         style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})` }}
       >
-        <svg ref={svgRef} viewBox={NigeriaMapData?.viewBox || '0 0 744 600'} className="w-[94%] h-[94%] max-w-[640px] max-h-[520px] drop-shadow-md select-none overflow-visible">
+        <svg ref={svgRef} viewBox={NigeriaMapData?.viewBox || '0 0 744 600'} className="w-[94%] h-[94%] max-w-[640px] max-h-[520px] map-shadow select-none overflow-visible">
           <defs>
             <pattern id="jadedHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" strokeWidth="1.8" />

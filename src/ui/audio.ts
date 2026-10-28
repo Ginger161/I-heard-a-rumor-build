@@ -7,7 +7,22 @@ import { getTrack } from './music/library';
 // Zero-asset audio, all synthesised with WebAudio: sound effects, a library of adaptive music (see ui/music) and ambient
 // street / weather beds. Nothing here can throw into the game: every call is guarded and browsers that block or lack
 // audio simply stay silent. Real recorded tracks can be added by listing them in public/music/index.json.
-export type Sound = 'pop' | 'golden' | 'buy' | 'alert' | 'stamp' | 'warn' | 'win' | 'lose' | 'tick' | 'click' | 'combo' | 'whoosh' | 'hint' | 'step';
+export type Sound = 'pop' | 'golden' | 'buy' | 'alert' | 'stamp' | 'warn' | 'win' | 'lose' | 'tick' | 'click' | 'combo' | 'whoosh' | 'hint' | 'step' | 'siren' | 'shutter' | 'thud' | 'type';
+
+// Recorded sound effects (public/sfx, from Epidemic Sound). Each Sound can layer one or more recordings; until they have loaded (or if they fail to) the
+// synthesised version plays, so the game is never silent. keepSynth plays the synth on top of the recording instead of instead of it.
+interface SampleLayer { file: string; vol: number; delay?: number }
+const SAMPLES: Partial<Record<Sound, { layers: SampleLayer[]; keepSynth?: boolean }>> = {
+  lose: { layers: [{ file: 'bighit', vol: 1 }, { file: 'sledge', vol: 0.9, delay: 0.3 }] },
+  stamp: { layers: [{ file: 'stamp', vol: 1 }] },
+  win: { layers: [{ file: 'cork', vol: 0.8 }], keepSynth: true },
+  whoosh: { layers: [{ file: 'whoosh', vol: 0.7 }] },
+  warn: { layers: [{ file: 'thud', vol: 0.8 }], keepSynth: true },
+  siren: { layers: [{ file: 'siren', vol: 0.7 }] },
+  shutter: { layers: [{ file: 'shutter', vol: 0.9 }] },
+  thud: { layers: [{ file: 'thud', vol: 1 }] },
+  type: { layers: [{ file: 'typewriter', vol: 0.5 }] }
+};
 export type AmbientKind = 'street' | 'rain' | 'wind' | 'generator' | 'party' | 'queue';
 
 type Ctor = typeof AudioContext;
@@ -26,6 +41,7 @@ class AudioEngine {
   private musicBus!: GainNode;
   private ambBus!: GainNode;
   private noiseBuf: AudioBuffer | null = null;
+  private samples = new Map<string, AudioBuffer>();
 
   private ambient: AmbientKind | null = null;
   private activeAmbient: AmbientKind | null = null;
@@ -91,6 +107,7 @@ class AudioEngine {
         this.music.attach(this.ctx, this.musicBus);
         this.applyVolumes();
         void this.loadManifest();
+        void this.loadSamples();
       }
       if (this.ctx.state === 'suspended' && !this.gamePaused) void this.ctx.resume();
       return this.ctx;
@@ -165,7 +182,40 @@ class AudioEngine {
     } catch { /* audio unavailable */ }
   }
 
+  // Fetch and decode every recording once. A file that fails to load is simply skipped (its synth stays).
+  private async loadSamples() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const files = new Set(Object.values(SAMPLES).flatMap(d => d!.layers.map(l => l.file)));
+    await Promise.all([...files].map(async f => {
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}sfx/${f}.mp3`);
+        if (!res.ok) return;
+        this.samples.set(f, await ctx.decodeAudioData(await res.arrayBuffer()));
+      } catch { /* missing or undecodable: the synth covers it */ }
+    }));
+  }
+
+  // Play a Sound's recordings. Returns true only if every one was ready and playing.
+  private playSamples(layers: SampleLayer[]): boolean {
+    const ctx = this.live();
+    if (!ctx || !layers.every(l => this.samples.has(l.file))) return false;
+    try {
+      layers.forEach(l => {
+        const src = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        src.buffer = this.samples.get(l.file)!;
+        gain.gain.value = l.vol;
+        src.connect(gain).connect(this.sfxBus);
+        src.start(ctx.currentTime + (l.delay ?? 0));
+      });
+      return true;
+    } catch { return false; }
+  }
+
   play(sound: Sound, level = 0) {
+    const rec = SAMPLES[sound];
+    if (rec && this.playSamples(rec.layers) && !rec.keepSynth) return;
     switch (sound) {
       case 'pop': this.tone(700, 0.09, 'sine', 0.16, 0, 1500); this.noise(0.04, 0.05, 3000); break;
       case 'golden': [880, 1175, 1480, 1760].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.14, i * 0.06)); break;
@@ -180,6 +230,7 @@ class AudioEngine {
       case 'click': this.tone(900, 0.025, 'square', 0.05); break;
       case 'combo': this.tone(600 + Math.min(level, 8) * 110, 0.1, 'triangle', 0.14); break;
       case 'hint': this.tone(660, 0.08, 'sine', 0.09); this.tone(990, 0.12, 'sine', 0.09, 0.07); break;
+      case 'siren': case 'shutter': case 'thud': case 'type': break; // recordings only
       case 'step': this.tone(784, 0.07, 'triangle', 0.1); this.tone(1175, 0.14, 'triangle', 0.1, 0.06); break;
     }
   }

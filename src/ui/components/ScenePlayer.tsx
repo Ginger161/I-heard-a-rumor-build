@@ -113,6 +113,7 @@ const DocBeat: React.FC<{ beat: Extract<Beat, { t: 'doc' }>; skip: boolean; onCo
     const t = setTimeout(() => { setN(k => k + 1); sfx.play('click'); }, 380);
     return () => clearTimeout(t);
   }, [n, skip, beat.lines.length, onComplete]);
+  useEffect(() => { if (!skip && (beat.kind === 'notes' || beat.kind === 'draft' || beat.kind === 'email')) sfx.play('type'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const tag = { notes: 'NOTES', ledger: 'LEDGER', email: 'EMAIL', receipt: 'RECEIPT', court: 'COURT ORDER', draft: 'NOTES • DRAFT' }[beat.kind];
   const mono = beat.kind === 'ledger' || beat.kind === 'receipt';
   return (

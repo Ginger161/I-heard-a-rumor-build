@@ -134,7 +134,7 @@ const ShareButton: React.FC<{ gameState: GameState; stars: number; tone: 'ink' |
   const challengeLink = challenge ? `${baseUrl()}?c=${encodeChallenge(challenge)}` : baseUrl();
 
   const shareCard = async () => {
-    sfx.play('click');
+    sfx.play('shutter');
     const r = await shareResultCard(gameState, { stars, score, name: settings.playerName, url: baseUrl(), link: challengeLink });
     flash(r === 'shared' ? 'Shared!' : r === 'saved' ? 'Picture saved and text copied. Post it!' : 'Could not make the picture. Text copied.');
   };
@@ -183,6 +183,16 @@ const NextHeadline: React.FC<{ teaser: NonNullable<EndgameProps['teaser']> }> = 
       </div>
     </div>
     <BrutalButton tone="crimson" onClick={() => { sfx.play('click'); teaser.onPlay(); }}>🔥 Spread the next one</BrutalButton>
+  </div>
+);
+
+// The first thing on the page: a solid band that says, before a word is read, whether the case was won or lost. Defeats are red with hazard
+// stripes and a red frame round the whole screen (see .end-lost in index.css); wins are green.
+const ResultBanner: React.FC<{ won: boolean; reason: string }> = ({ won, reason }) => (
+  <div className={`relative z-[5] flex-shrink-0 text-center px-4 pt-5 pb-4 text-white border-b-[6px] border-[#1A1A1A] ${won ? 'bg-[#065F46]' : 'bg-[#B91C1C] lose-banner'}`}
+    style={won ? undefined : { backgroundImage: 'repeating-linear-gradient(135deg, rgba(0,0,0,.16) 0 14px, transparent 14px 28px)' }} role="status">
+    <div className={`font-black leading-none tracking-[0.08em] uppercase ${won ? 'text-[44px] animate-stamp-in' : 'text-[64px] animate-slam'}`} style={{ fontFamily: 'Impact, "Arial Black", sans-serif', textShadow: '4px 4px 0 rgba(0,0,0,.5)' }}>{won ? '🏆 You won' : '✖ You lost'}</div>
+    <div className="mt-2 text-[13px] font-black uppercase tracking-[0.2em]">{reason}</div>
   </div>
 );
 
@@ -237,7 +247,8 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
       ['Channels Used', `${gameState.unlockedChannels.length}`], [`${V.evidence} Shared`, `${ev.total}${ev.forged > 0 ? ` (${ev.forged} exaggerated)` : ''}`]
     ];
     return (
-      <div className={`absolute inset-0 z-[120] end-root ${won ? 'bg-[#ECFDF5]' : 'bg-[#F4F1EA]'} text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in`}>
+      <div className={`absolute inset-0 z-[120] end-root ${won ? 'bg-[#ECFDF5]' : 'bg-[#F4F1EA] end-lost'} text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in`}>
+        <ResultBanner won={won} reason={won ? 'Campaign succeeded' : gameState.status === 'LOST_HEAT' ? `${V.heat} hit 100%` : gameState.status === 'LOST_COVERUP' ? `${V.coverUp} hit 100%` : 'Time ran out'} />
         <PaperGrain />
         {won && <Confetti />}
         <div className="relative p-5 flex flex-col gap-4">
@@ -273,6 +284,7 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
     const body = target.parody ? pickFrom(PARODY_WIN_BODIES, 'win-b', seed) : pickFrom(WIN_BODIES, 'win-b', seed);
     return (
       <div className="absolute inset-0 z-[120] end-root bg-[#F4F1EA] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+        <ResultBanner won reason="Story published" />
         <PaperGrain />
         <Confetti />
         <div className="relative p-5 flex flex-col gap-4">
@@ -315,7 +327,8 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
   // ---- DEFEAT: BUSTED (red DSS security report) ----
   if (gameState.status === 'LOST_HEAT') {
     return (
-      <div className="absolute inset-0 z-[120] end-root bg-[#FFE4E6] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+      <div className="absolute inset-0 z-[120] end-root end-lost bg-[#FFE4E6] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+        <ResultBanner won={false} reason="Busted: Heat hit 100%" />
         <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent 0 3px, rgba(139,0,0,0.25) 3px 4px)' }} />
         <div className="relative bg-[#8B0000] text-white px-4 py-2 flex justify-between font-mono text-[10px] font-black tracking-widest">
           <span>DEPT OF STATE SERVICES</span>
@@ -347,7 +360,8 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
   // ---- DEFEAT: STORY SPUN (the Cover-Up reached 100%) ----
   if (gameState.status === 'LOST_COVERUP') {
     return (
-      <div className="absolute inset-0 z-[120] end-root bg-[#FAF8F5] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+      <div className="absolute inset-0 z-[120] end-root end-lost bg-[#FAF8F5] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+        <ResultBanner won={false} reason="Story spun: Cover-Up hit 100%" />
         <PaperGrain />
         <div className="relative m-3 border-double border-[6px] border-[#1A1A1A] p-1">
           <div className="border border-[#1A1A1A] p-4 flex flex-col gap-4">
@@ -385,7 +399,8 @@ export const EndgameScreen: React.FC<EndgameProps> = ({ gameState, rewards, onNe
 
   // ---- DEFEAT: FIZZLED OUT (tabloid front page, the story dies) ----
   return (
-    <div className="absolute inset-0 z-[120] end-root bg-[#E7E2D6] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+    <div className="absolute inset-0 z-[120] end-root end-lost bg-[#E7E2D6] text-[#1A1A1A] flex flex-col overflow-y-auto no-scrollbar animate-fade-in">
+      <ResultBanner won={false} reason="Time's up: the story fizzled out" />
       <PaperGrain />
       <div className="relative p-5 flex flex-col gap-4">
         <div className="border-b-4 border-double border-[#1A1A1A] pb-2 text-center">

@@ -280,3 +280,76 @@ html[data-motion='reduced'] .fx-film::after { opacity: .3; }
 /* A gentle blink for hints: never fades below 75%, so the text stays readable the whole time (animate-pulse dims to 50%). */
 @keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
 .animate-hint { animation: hint 1.8s ease-in-out infinite; }
+
+/* READABILITY NET: the app frame's text is near-white (and light in the Story, Arena modes), so any paper-coloured surface that does not pick its own text
+   colour would inherit pale text on a pale background (this is what made Biko's light-green bubbles unreadable). Every light background used in the UI
+   gets dark default text. It sits in the base layer, so any explicit text-* class on the element still wins. */
+@layer base {
+[class~="bg-[#EFEBE0]"],
+[class~="bg-[#EEF6EA]"],
+[class~="bg-[#F4F1EA]"],
+[class~="bg-[#D4CFC4]"],
+[class~="bg-[#FBF6EC]"],
+[class~="bg-[#FEF3C7]"],
+[class~="bg-[#FFFDF5]"],
+[class~="bg-[#FCA5A5]"],
+[class~="bg-[#E5DDD5]"],
+[class~="bg-[#DCF8C6]"],
+[class~="bg-[#FFFBEB]"],
+[class~="bg-[#FDE047]"],
+[class~="bg-[#F7F3EA]"],
+[class~="bg-[#FFFEF7]"],
+[class~="bg-[#FAF8F5]"],
+[class~="bg-[#E7E5E4]"],
+[class~="bg-[#4ADE80]"],
+[class~="bg-[#FFE4E6]"],
+[class~="bg-[#C4B5FD]"],
+[class~="bg-[#B7D79A]"],
+[class~="bg-[#FACC15]"],
+[class~="bg-[#C9B28A]"],
+[class~="bg-[#E6D5B8]"],
+[class~="bg-[#FDE68A]"],
+[class~="bg-[#EBE5D9]"],
+[class~="bg-[#E5E7EB]"],
+[class~="bg-[#CBD5E1]"],
+[class~="bg-[#D8C39A]"],
+[class~="bg-[#F59E0B]"],
+[class~="bg-[#DBEAFE]"],
+[class~="bg-[#EADCC8]"],
+[class~="bg-[#E2E8F0]"],
+[class~="bg-[#D1FAE5]"],
+[class~="bg-[#FEE2E2]"],
+[class~="bg-[#E3DDCF]"],
+[class~="bg-[#FDFCF8]"],
+[class~="bg-[#D9CBB0]"],
+[class~="bg-[#FEF2F2]"],
+[class~="bg-[#34D399]"],
+[class~="bg-[#ECFDF5]"],
+[class~="bg-[#BFB095]"],
+[class~="bg-[#E7E2D6]"],
+[class~="bg-[#D9D3C3]"],
+[class~="bg-[#2DD4BF]"],
+[class~="bg-white"] { color: #1A1A1A; }
+}
+
+/* PHONE PERFORMANCE: the effects below are what make phones lag (full-screen blend modes, noise textures, a filter on a map that is being dragged).
+   On desktop they stay exactly as designed; on touch devices each is swapped for a look-alike that costs almost nothing. */
+.map-shadow { filter: drop-shadow(0 4px 6px rgba(0,0,0,.1)); }
+@media (pointer: coarse) {
+  .map-shadow { filter: none; }
+  .paper-grain { display: none; }
+  .fx-film::after { background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%); mix-blend-mode: normal; opacity: .8; }
+}
+
+/* A lost case: a red frame and a red glow round the whole end screen, so a defeat can never be mistaken for a win. */
+.end-lost { box-shadow: inset 0 0 0 6px #B91C1C, inset 0 0 110px rgba(185,28,28,.4); }
+
+/* A loss hits hard: the banner slams in from huge, the whole screen shakes, and a red flash burns off over a second. */
+@keyframes slam { 0% { transform: scale(3.2) rotate(-6deg); opacity: 0; } 55% { transform: scale(.92) rotate(1deg); opacity: 1; } 75% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.animate-slam { animation: slam .55s cubic-bezier(.2,.9,.3,1) both; }
+@keyframes lose-shake { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-9px,4px); } 20% { transform: translate(8px,-5px); } 30% { transform: translate(-7px,-3px); } 40% { transform: translate(6px,5px); } 55% { transform: translate(-4px,2px); } 70% { transform: translate(3px,-2px); } 85% { transform: translate(-1px,1px); } }
+.end-lost { animation: lose-shake .6s ease-out .25s 1; }
+.end-lost::before { content: ''; position: fixed; inset: 0; z-index: 130; pointer-events: none; background: #DC2626; animation: lose-flash 1.1s ease-out both; }
+@keyframes lose-flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+html[data-motion='reduced'] .end-lost, html[data-motion='reduced'] .animate-slam { animation: none; }
+html[data-motion='reduced'] .end-lost::before { display: none; }
